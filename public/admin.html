@@ -155,7 +155,7 @@
             <div id="page-withdrawals" class="page">
                 <h2 style="margin-bottom: 20px;">Withdrawal Requests</h2>
                 <div class="table-responsive">
-                    <table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
+                    <table><thead><tr><th>User</th><th>Amount</th><th>Account/Phone</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
                 </div>
             </div>
 
@@ -168,11 +168,11 @@
                     <div class="live-status-item"><span>Cards Taken</span><strong id="game-taken-cards">-</strong></div>
                 </div>
                 
-                <!-- ✅ የካርቴላ ብዛት ማስተካከያ -->
+                <!-- የካርቴላ ብዛት ማስተካከያ -->
                 <div style="background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
                     <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 10px;">🃏 የካርቴላ ብዛት (Max Cards)</h3>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="600">
+                        <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="1000">
                         <button class="btn btn-primary" onclick="updateMaxCards()"><i class="fas fa-save"></i> Update</button>
                     </div>
                     <div style="font-size: 11px; color: #64748b; margin-top: 5px;">* ከ10 እስከ 1000 መሆን አለበት</div>
@@ -252,8 +252,13 @@ async function apiFetch(url, method = 'GET', body = null) {
     if (AUTH_TOKEN) headers['Authorization'] = AUTH_TOKEN;
     const opts = { method, headers };
     if (body) opts.body = JSON.stringify(body);
+    
     const res = await fetch(url, opts);
     if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Request failed');
+    }
     return await res.json();
 }
 
@@ -322,7 +327,7 @@ async function loadStats() {
             document.getElementById('stat-withdrawals').innerText = d.data.totalWithdrawals.toFixed(2) + ' ETB';
             document.getElementById('stat-pending').innerText = (d.data.pendingDeposits + d.data.pendingWithdrawals);
         }
-    } catch (e) {}
+    } catch (e) { showToast(e.message, true); }
 }
 
 async function loadSettings() {
@@ -337,7 +342,7 @@ async function loadSettings() {
             document.getElementById('enable-cbe').checked = enableCbe;
             document.getElementById('cbe-settings-section').style.display = enableCbe ? 'block' : 'none';
         }
-    } catch (e) {}
+    } catch (e) { showToast(e.message, true); }
 }
 
 document.getElementById('enable-cbe').addEventListener('change', (e) => { document.getElementById('cbe-settings-section').style.display = e.target.checked ? 'block' : 'none'; });
@@ -350,13 +355,13 @@ async function saveSettings() {
     const enable_cbe = document.getElementById('enable-cbe').checked;
     if (!telebirr || !telebirr_name) return showToast('Telebirr መረጃ ያስፈልጋል!', true);
     if (enable_cbe && (!cbe || !cbe_name)) return showToast('CBE መረጃ ያስፈልጋል!', true);
-    try { const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: telebirr, telebirr_name, cbe_number: cbe, cbe_name, enable_cbe }); if (d.success) showToast('✅ ሴቲንግስ ተቀይሯል!'); } catch (e) { showToast('Save failed', true); }
+    try { const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: telebirr, telebirr_name, cbe_number: cbe, cbe_name, enable_cbe }); if (d.success) showToast('✅ ሴቲንግስ ተቀይሯል!'); } catch (e) { showToast(e.message, true); }
 }
 
 async function updateMaxCards() {
     const maxCards = parseInt(document.getElementById('max-cards-input').value);
     if (isNaN(maxCards) || maxCards < 10 || maxCards > 1000) return showToast('ቁጥሩ ከ10 እስከ 1000 መሆን አለበት!', true);
-    try { const d = await apiFetch('/api/admin/set-max-cards', 'POST', { maxCards }); if (d.success) showToast(`✅ የካርቴላ ብዛት ወደ ${maxCards} ተቀይሯል!`); } catch (e) { showToast('Update failed', true); }
+    try { const d = await apiFetch('/api/admin/set-max-cards', 'POST', { maxCards }); if (d.success) showToast(`✅ የካርቴላ ብዛት ወደ ${maxCards} ተቀይሯል!`); } catch (e) { showToast(e.message, true); }
 }
 
 async function startGiveaway() {
@@ -365,12 +370,12 @@ async function startGiveaway() {
     const customMessage = document.getElementById('giveaway-message').value.trim();
     if (!amount || !limit) return showToast('እባክዎ መጠን እና ብዛት ያስገቡ!', true);
     if (!confirm(`እርግጠኛ ነዎት?`)) return;
-    try { const d = await apiFetch('/api/admin/giveaway/start', 'POST', { prizeAmount: amount, maxWinners: limit, customMessage }); if (d.success) { showToast('🎁 Giveaway ተጀምሯል!'); document.getElementById('giveaway-amount').value = ''; document.getElementById('giveaway-limit').value = ''; document.getElementById('giveaway-message').value = ''; } } catch (e) { showToast('Giveaway failed', true); }
+    try { const d = await apiFetch('/api/admin/giveaway/start', 'POST', { prizeAmount: amount, maxWinners: limit, customMessage }); if (d.success) { showToast('🎁 Giveaway ተጀምሯል!'); document.getElementById('giveaway-amount').value = ''; document.getElementById('giveaway-limit').value = ''; document.getElementById('giveaway-message').value = ''; } } catch (e) { showToast(e.message, true); }
 }
 
 async function stopGiveaway() {
     if (!confirm("እርግጠኛ ነዎት?")) return;
-    try { const d = await apiFetch('/api/admin/giveaway/stop', 'POST'); if (d.success) showToast('Giveaway ተቆሟል!'); } catch (e) { showToast('Stop failed', true); }
+    try { const d = await apiFetch('/api/admin/giveaway/stop', 'POST'); if (d.success) showToast('Giveaway ተቆሟል!'); } catch (e) { showToast(e.message, true); }
 }
 
 async function loadPlayers() {
@@ -396,7 +401,7 @@ async function editBalance(id, currentPlay, currentWin) {
     let newPlay = prompt("አዲስ Play Balance ያስገቡ:", currentPlay); if (newPlay === null) return;
     let newWin = prompt("አዲስ Win Balance ያስገቡ:", currentWin); if (newWin === null) return;
     if (isNaN(newPlay) || isNaN(newWin)) return showToast("ትክክለኛ ቁጥር ያስገቡ!", true);
-    try { const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); if (res.success) { showToast("ባላንስ ተስተካክሏል!"); loadPlayers(); } } catch (e) { showToast('Update failed', true); }
+    try { const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); if (res.success) { showToast("ባላንስ ተስተካክሏል!"); loadPlayers(); } } catch (e) { showToast(e.message, true); }
 }
 
 async function loadTransactions(type) {
@@ -411,7 +416,8 @@ async function loadTransactions(type) {
             if (d.data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ምንም ጥያቄ አልተገኘም።</td></tr>`; return; }
             const frag = document.createDocumentFragment();
             d.data.forEach(txn => {
-                let dateStr = new Date(txn.created).toLocaleString();
+                let dateStr = 'N/A';
+                try { dateStr = new Date(txn.created).toLocaleString(); } catch(e) {}
                 let refOrPhone = type === 'deposit' ? (txn.reference || txn.method) : txn.phone;
                 let actions = txn.status === 'pending' ? `<button class="btn btn-success" onclick="actionTxn('${txn.id}', 'approve')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-check"></i></button> <button class="btn btn-danger" onclick="actionTxn('${txn.id}', 'reject')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-times"></i></button>` : '-';
                 let tr = document.createElement('tr');
@@ -424,8 +430,8 @@ async function loadTransactions(type) {
 }
 
 async function actionTxn(id, action) {
-    if (!confirm(`እርግጠኛ ነዎት?`)) return;
-    try { const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); if (d.success) { showToast('ተሳክቷል!'); refreshCurrentPage(); loadStats(); } else { showToast(d.error || "ስህተት", true); } } catch (e) { showToast('Action failed', true); }
+    if (!confirm(`እርግጠኛ ነዎት? ${action === 'approve' ? 'አጽድቅ' : 'ውድቅ አድርግ'}`)) return;
+    try { const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); if (d.success) { showToast('ተሳክቷል!'); refreshCurrentPage(); loadStats(); } else { showToast(d.error || "ስህተት", true); } } catch (e) { showToast(e.message, true); }
 }
 
 async function loadGameHistory() {
@@ -469,7 +475,7 @@ async function loadReferrals() {
     } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
 }
 
-async function gameAction(action) { try { const d = await apiFetch(`/api/admin/${action}`, 'POST'); if (d.success) loadGameStatus(); } catch (e) { showToast('Game action failed', true); } }
+async function gameAction(action) { try { const d = await apiFetch(`/api/admin/${action}`, 'POST'); if (d.success) loadGameStatus(); } catch (e) { showToast(e.message, true); } }
 
 let autoOn = false;
 async function toggleAuto() {
@@ -480,22 +486,27 @@ async function toggleAuto() {
         await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: autoOn, speed: speed });
         btn.innerHTML = autoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
         btn.className = autoOn ? 'btn btn-success' : 'btn btn-warning';
-    } catch (e) { autoOn = !autoOn; showToast('Auto failed', true); }
+    } catch (e) { autoOn = !autoOn; showToast(e.message, true); }
 }
 
-function changeSpeed() { if (autoOn) { const speed = parseInt(document.getElementById('speed-select').value); apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); } }
+function changeSpeed() { 
+    const speed = parseInt(document.getElementById('speed-select').value); 
+    apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: autoOn, speed: speed }).catch(() => {}); 
+}
 
 async function loadGameStatus() {
     try {
         const d = await apiFetch('/api/admin/game-status');
         if (d.success && d.data) {
             const state = d.data;
-            document.getElementById('game-phase').innerText = state.phase.toUpperCase();
+            document.getElementById('game-phase').innerText = (state.phase || '-').toUpperCase();
             if (state.currentCall) {
                 let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
                 document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
             } else document.getElementById('game-current-call').innerText = '--';
-            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards).length;
+            
+            const cardsCount = Object.keys(state.takenCards).length;
+            document.getElementById('game-taken-cards').innerText = cardsCount;
 
             if (state.settings && state.settings.maxCards) document.getElementById('max-cards-input').value = state.settings.maxCards;
 
@@ -519,7 +530,7 @@ async function loadGameStatus() {
 async function sendBroadcast() {
     const msg = document.getElementById('bc-message').value;
     if (!msg) return showToast("መልእክት ያስገቡ!", true);
-    try { const d = await apiFetch('/api/admin/broadcast', 'POST', { message: msg }); if (d.success) { showToast('📢 መልእክቱ በመላክ ላይ ነው!'); document.getElementById('bc-message').value = ''; } } catch (e) { showToast('Broadcast failed', true); }
+    try { const d = await apiFetch('/api/admin/broadcast', 'POST', { message: msg }); if (d.success) { showToast('📢 መልእክቱ በመላክ ላይ ነው!'); document.getElementById('bc-message').value = ''; } } catch (e) { showToast(e.message, true); }
 }
 
 setInterval(() => { if (currentPage === 'game') loadGameStatus(); }, 3000);

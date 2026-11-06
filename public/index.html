@@ -8,7 +8,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root {
-    --bg-color: #0f172a; /* Dark Navy Theme */
+    --bg-color: #0f172a;
     --glass-bg: rgba(30, 41, 59, 0.75);
     --glass-border: rgba(255, 255, 255, 0.1);
     --text-color: #f8fafc;
@@ -28,6 +28,16 @@ body.light-theme {
     --btn-bg: rgba(255, 255, 255, 0.9);
     --btn-border: #cbd5e1;
     --card-bg: rgba(255, 255, 255, 0.95);
+}
+body.ocean-theme {
+    --bg-color: #0c2d48;
+    --glass-bg: rgba(14, 116, 144, 0.25);
+    --glass-border: rgba(56, 189, 248, 0.25);
+    --text-color: #e0f2fe;
+    --text-muted: #7dd3fc;
+    --btn-bg: rgba(8, 47, 73, 0.9);
+    --btn-border: #0e7490;
+    --card-bg: rgba(8, 47, 73, 0.9);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
@@ -156,10 +166,10 @@ body {
 .recent-ball:nth-child(1) { background: #10b981; }
 .recent-ball:nth-child(2) { background: #eab308; color: #000; }
 .recent-ball:nth-child(3) { background: #ef4444; }
+.recent-ball:nth-child(4) { background: #6366f1; }
 
 .live-cards-container { flex: 1; overflow-y: auto; padding: 10px; }
 .interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
-/* ✅ የ BINGO ፊደላት ቀለም አንድ ዓይነት (Gold) ሆኗል */
 .card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
 .card-header-letters div { background: var(--gold); color: #000; text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; }
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
@@ -349,7 +359,6 @@ body {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ✅ 1ኛ ጥያቄ፡ የ Theme አስተዳደር (Ocean Blue ተካቷል)
 const savedTheme = localStorage.getItem('theme') || 'dark';
 if (savedTheme === 'light') document.body.classList.add('light-theme');
 if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
@@ -359,6 +368,10 @@ function setTheme(theme) {
     if (theme === 'light') document.body.classList.add('light-theme');
     if (theme === 'ocean') document.body.classList.add('ocean-theme');
     localStorage.setItem('theme', theme);
+    
+    // Update meta theme color
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.content = theme === 'light' ? '#e2e8f0' : theme === 'ocean' ? '#0c2d48' : '#0f172a';
 }
 
 let tg = window.Telegram?.WebApp;
@@ -438,8 +451,10 @@ function updateLiveStats(totalCards) {
     document.getElementById('derash-val').innerText = totalCards * 8;
 }
 
-async function loadWallet() {
-    const now = Date.now(); if ((now - _lastWalletLoad) < WALLET_LOAD_MIN_INTERVAL) return; _lastWalletLoad = now;
+async function loadWallet(force = false) {
+    const now = Date.now(); 
+    if (!force && (now - _lastWalletLoad) < WALLET_LOAD_MIN_INTERVAL) return; 
+    _lastWalletLoad = now;
     try { 
         const res = await fetch('/api/wallet/me?t=' + now); 
         const data = await res.json(); 
@@ -484,11 +499,10 @@ window.toggleCard = function(num) {
     socket.emit('select_card', { cardNum: num, action: 'select' });
 }
 
-// ✅ 2ኛ ጥያቄ፡ የተመረጡ ካርቴላዎች ማሳያ (Preview)
 function updatePreviewUI() {
     const c = document.getElementById('preview-container');
     if (selectedCards.size === 0) { 
-        c.innerHTML = ''; // ✅ ጽሑፉ ተወግዶ ቦታው ነፃ ሆኗል
+        c.innerHTML = ''; 
         return; 
     }
     
@@ -558,12 +572,25 @@ async function loadLeaderboard() {
         div.className = 'glass-panel';
         div.style.cssText = "padding:12px; display:flex; justify-content:space-between; align-items:center;"; 
         div.innerHTML = `<div style="display:flex; gap:10px; align-items:center;"><span style="font-size:20px;">${medals[i] || ''}</span><span style="font-weight:bold; color:var(--text-color);">${u.name}</span></div><span style="color:var(--gold); font-weight:900;">${Number(u.win_balance).toFixed(2)} ETB</span>`; 
-        frag.appendChild(div); 
+        frag.appendChild(d); 
     });
     container.appendChild(frag);
 }
 
-function copyNumberToClipboard(num) { navigator.clipboard.writeText(num).then(() => alert('ቁጥሩ ተቀድቷል: ' + num)).catch(() => alert('ኮፒ ማድረግ አልተቻለም')); }
+function copyNumberToClipboard(num) { 
+    navigator.clipboard.writeText(num).then(() => {
+        if (tg && tg.showAlert) tg.showAlert('ቁጥሩ ተቀድቷል: ' + num);
+        else alert('ቁጥሩ ተቀድቷል: ' + num);
+    }).catch(() => {});
+}
+function copyInviteLink() {
+    const link = document.getElementById('invite-link-input').value;
+    navigator.clipboard.writeText(link).then(() => {
+        if (tg && tg.showAlert) tg.showAlert('ሊንኩ ተቀድቷል!');
+        else alert('ሊንኩ ተቀድቷል!');
+    }).catch(() => {});
+}
+
 function toggleDepositOptions() { document.getElementById('withdraw-options-section').classList.add('hidden'); document.getElementById('deposit-options-section').classList.toggle('hidden'); }
 function toggleWithdrawOptions() { document.getElementById('deposit-options-section').classList.add('hidden'); document.getElementById('withdraw-options-section').classList.toggle('hidden'); }
 function selectDepositMethod(m) { 
@@ -598,13 +625,18 @@ async function submitWithdrawRequest(event) {
         const res = await fetch('/api/wallet/withdraw-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, phone }) }); 
         const data = await res.json(); 
         if (data.success) { 
-            alert(`✅ የወጭ ጥያቄ በተሳካ ሁኔታ ተልኳል!`); 
+            if (tg && tg.showAlert) tg.showAlert(`✅ የወጭ ጥያቄ በተሳካ ሁኔታ ተልኳል!`); else alert(`✅ የወጭ ጥያቄ በተሳካ ሁኔታ ተልኳል!`);
             document.getElementById('withdraw-amount-input').value = ''; 
             if (!phoneInput.classList.contains('hidden')) phoneInput.value = ''; 
             document.getElementById('withdraw-options-section').classList.add('hidden'); 
-            await loadWallet(); 
-        } else { alert('❌ ' + (data.error || 'ስህተት ተከስቷል')); } 
-    } catch (e) { alert('❌ የኢንተርኔት ስህተት።'); } 
+            await loadWallet(true); 
+        } else { 
+            const errMsg = '❌ ' + (data.error || 'ስህተት ተከስቷል');
+            if (tg && tg.showAlert) tg.showAlert(errMsg); else alert(errMsg); 
+        } 
+    } catch (e) { 
+        if (tg && tg.showAlert) tg.showAlert('❌ የኢንተርኔት ስህተት።'); else alert('❌ የኢንተርኔት ስህተት።'); 
+    } 
     finally { btn.disabled = false; btn.innerText = originalText; } 
 }
 
@@ -626,13 +658,12 @@ function generateCardLayout(cn) {
             let j = Math.floor((seed / 233280) * (i + 1)); 
             [avail[i], avail[j]] = [avail[j], avail[i]]; 
         }
-        cols[c] = avail.slice(0, 5);
+        cols[c] = avail.slice(0, 5).sort((a, b) => a - b); // ✅ Sort Added
     }
     cols[2][2] = 'FREE';
     return cols;
 }
 
-// ✅ 3ኛ ጥያቄ፡ የ BINGO ፊደላትን ማነጣጠር (በአንድ ወጥ ቀለም)
 function updateLiveCardsContainer() {
     const c = document.getElementById('live-cards-container'); 
     if (selectedCards.size === 0) { 
@@ -646,7 +677,6 @@ function updateLiveCardsContainer() {
     selectedCards.forEach(cn => { 
         if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn); 
         const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn; 
-        // የ BINGO ፊደላት አሁን በአንድ ወጥ ቀለም (Gold) ናቸው
         d.innerHTML = `
             <div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div>
             <div class="card-header-letters">
@@ -707,7 +737,7 @@ function updateCalledNumbersUI(allCalled) {
 }
 
 const socket = io({ transports: ['websocket', 'polling'] });
-socket.on('connect', () => { socket.emit('join_room', { clientId: clientId }); });
+socket.on('connect', () => { socket.emit('join_room', { clientId: clientId, initData: TG_INIT_DATA }); });
 
 socket.on('init_state', (state) => {
     gamePhase = state.phase;
@@ -733,6 +763,7 @@ socket.on('init_state', (state) => {
 });
 
 socket.on('sync_taken_cards', (data) => {
+    if (!data || !Array.isArray(data.takenCards)) return;
     updateLiveStats(data.totalCards);
     
     for(let i=1; i<=maxCards; i++) {
@@ -750,7 +781,7 @@ socket.on('settings_updated', (data) => {
     }
 });
 
-socket.on('wallet_updated', () => loadWallet());
+socket.on('wallet_updated', () => loadWallet(true));
 socket.on('card_error', (data) => { showFooterNotification(data.message); });
 socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
 socket.on('phase_change', (data) => { 
@@ -770,61 +801,66 @@ socket.on('reset_game', () => {
     document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0';
     document.getElementById('recent-calls-container').innerHTML = '';
     updatePreviewUI(); 
-    loadWallet();
+    loadWallet(true);
 });
 
-// ✅ 4ኛ ጥያቄ፡ የ Bingo ማሳያ (5x5 + Blinking + Called Numbers)
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
-    document.getElementById('winner-text').innerHTML = data.winners.some(w => String(w.id) === String(userProfile.id)) ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 Cartela ${data.winningCard} አሸንፏል`;
+    
+    const isWinner = Array.isArray(data.winners) && data.winners.some(w => String(w.id) === String(userProfile.id));
+    document.getElementById('winner-text').innerHTML = isWinner ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 Cartela ${data.winningCard} አሸንፏል`;
     document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
     document.getElementById('board-number-text').innerText = `BOARD ${data.winningCard}`;
     
     const container = document.getElementById('winning-card-container');
     const winningCard = data.winningCard;
-    const cols = generateCardLayout(winningCard);
-    const winInfo = data.winners[0]; 
-    const calledNumbersArray = data.calledNumbers || [];
     
-    let html = `<div class="winning-matrix">`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
+    if (!winningCard) {
+        container.innerHTML = '<div style="color:#fff; text-align:center;">ማንም አላሸነፈም</div>';
+    } else {
+        const cols = generateCardLayout(winningCard);
+        const winInfo = data.winners[0]; 
+        const calledNumbersArray = data.calledNumbers || [];
+        
+        let html = `<div class="winning-matrix">`;
+        html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
+        html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
+        html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
+        html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
+        html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
 
-    for(let r = 0; r < 5; r++) {
-        for(let c = 0; c < 5; c++) {
-            const v = cols[c][r];
-            const isFree = v === 'FREE';
-            const isCalled = !isFree && calledNumbersArray.includes(v); 
-            const isWin = winInfo?.allLines?.some(line => {
-                if(line.type === 'row') return line.index === r;
-                if(line.type === 'col') return line.index === c;
-                if(line.type === 'diag1') return r === c;
-                if(line.type === 'diag2') return r === (4 - c);
-                if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
-                return false;
-            });
-            const isLastCall = (v === data.lastCall);
-            
-            let cls = 'winning-cell';
-            if (isWin) cls += ' highlight';
-            else if (isCalled) cls += ' called-cell';
-            if (isLastCall && isWin && !isFree) cls += ' last-call-blink';
-            
-            html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+        for(let r = 0; r < 5; r++) {
+            for(let c = 0; c < 5; c++) {
+                const v = cols[c][r];
+                const isFree = v === 'FREE';
+                const isCalled = !isFree && calledNumbersArray.includes(v); 
+                const isWin = winInfo?.allLines?.some(line => {
+                    if(line.type === 'row') return line.index === r;
+                    if(line.type === 'col') return line.index === c;
+                    if(line.type === 'diag1') return r === c;
+                    if(line.type === 'diag2') return r === (4 - c);
+                    if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
+                    return false;
+                });
+                const isLastCall = (v === data.lastCall);
+                
+                let cls = 'winning-cell';
+                if (isWin) cls += ' highlight';
+                else if (isCalled) cls += ' called-cell';
+                if (isLastCall && isWin && !isFree) cls += ' last-call-blink';
+                
+                html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+            }
         }
+        html += `</div>`;
+        container.innerHTML = html;
     }
-    html += `</div>`;
-    container.innerHTML = html;
 
     const overlay = document.getElementById('game-over-overlay'); overlay.classList.remove('hidden');
     let cd = 10; const cdEl = document.getElementById('modal-countdown'); cdEl.innerText = cd;
     const ci = setInterval(() => { cd--; cdEl.innerText = cd; if (cd <= 0) { clearInterval(ci); overlay.classList.add('hidden'); isModalShown = false; } }, 1000);
 });
 
-function toggleVoice() { isVoiceOn = !isVoiceOn; document.getElementById('voice-toggle').innerText = isVoiceOn ? '🔊' : '🔇'; }
 function showFooterNotification(msg) { const n = document.getElementById('footer-notification'); n.innerText = msg; clearTimeout(notificationTimeout); notificationTimeout = setTimeout(() => { n.innerText = ''; }, 3000); }
 
 setTimeout(hideLoadingScreen, 3000);
