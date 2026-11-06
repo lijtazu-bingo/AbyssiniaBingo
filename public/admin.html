@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - Abisinya Bingo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    :root { --primary: #f59e0b; --bg: #0f172a; --card: #1e293b; --text: #fff; --danger: #ef4444; --success: #22c55e; --blue: #3b82f6; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+    #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; }
+    .login-box { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid #334155; width: 90%; max-width: 350px; }
+    .login-box h2 { text-align: center; color: var(--blue); margin-bottom: 20px; }
+    .login-box input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; margin-bottom: 12px; outline: none; }
+    .login-box button { width: 100%; padding: 12px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .error-msg { color: var(--danger); text-align: center; margin-bottom: 15px; font-size: 13px; display: none; }
+
+    #main-content { flex: 1; display: flex; flex-direction: row; overflow: hidden; display: none; }
+    #sidebar { width: 250px; background: var(--card); padding: 20px 0; border-right: 1px solid #334155; flex-shrink: 0; overflow-y: auto; }
+    .logo { padding: 0 20px 20px; border-bottom: 1px solid #334155; margin-bottom: 20px; font-size: 20px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+    .menu-item { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: #94a3b8; font-size: 14px; font-weight: 600; border-left: 4px solid transparent; }
+    .menu-item:hover, .menu-item.active { background: #334155; color: #fff; border-left-color: var(--primary); }
+
+    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .top-bar { height: 60px; background: var(--card); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #334155; }
+    .logout-btn { background: var(--danger); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+
+    .page-container { flex: 1; padding: 20px; overflow-y: auto; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+    .stat-title { font-size: 13px; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; }
+    .stat-value { font-size: 24px; font-weight: bold; color: var(--primary); }
+
+    .table-responsive { overflow-x: auto; background: var(--card); border-radius: 12px; border: 1px solid #334155; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; font-size: 14px; }
+    th { background: #0f172a; color: #94a3b8; }
+    tr:hover td { background: #1e293b; }
+
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+    .badge.pending { background: #f59e0b; color: #000; }
+    .badge.approved { background: #22c55e; color: #fff; }
+    .badge.rejected { background: #ef4444; color: #fff; }
+
+    .btn { padding: 8px 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-primary { background: var(--blue); }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
+    .btn-warning { background: var(--primary); color: #000; }
+
+    .form-control { padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; outline: none; font-size: 14px; width: 100%; }
+    .game-controls { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+
+    .live-status { background: #0f172a; border: 2px solid var(--blue); border-radius: 10px; padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-bottom: 20px; }
+    .live-status-item span { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 5px; }
+    .live-status-item strong { font-size: 20px; color: var(--primary); }
+
+    #active-players-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .player-tag { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--blue); color: #fff; }
+
+    #admin-toast { position: fixed; top: 20px; right: 20px; background: var(--success); color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 13px; z-index: 99999; opacity: 0; transform: translateX(100%); transition: 0.2s; pointer-events: none; }
+    #admin-toast.show { opacity: 1; transform: translateX(0); }
+    #admin-toast.error { background: var(--danger); }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2><i class="fas fa-lock"></i> Admin Login</h2>
+        <div class="error-msg" id="login-error">የተሳሳተ የተጠቃሚ ስም ወይም የይለፍ ቃል!</div>
+        <input type="text" id="login-username" placeholder="Username">
+        <input type="password" id="login-password" placeholder="Password" onkeypress="if(event.key==='Enter')attemptLogin()">
+        <button id="login-btn" onclick="attemptLogin()">Login</button>
+    </div>
+</div>
+
+<div id="admin-toast"></div>
+
+<div id="main-content">
+    <div id="sidebar">
+        <div class="logo"><i class="fas fa-dice"></i> Admin Panel</div>
+        <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-home"></i> Dashboard</div>
+        <div class="menu-item" onclick="switchPage('players', this)"><i class="fas fa-users"></i> Players</div>
+        <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-arrow-down"></i> Deposits</div>
+        <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals</div>
+        <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
+        <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Giveaway</div>
+        <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
+        <div class="menu-item" onclick="switchPage('referrals', this)"><i class="fas fa-user-friends"></i> Referrals</div>
+        <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
+        <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
+    </div>
+
+    <div class="main-panel">
+        <div class="top-bar">
+            <h3 style="font-size: 16px;">Abisinya Bingo</h3>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button class="btn btn-primary" onclick="refreshCurrentPage()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <div class="page-container">
+            <!-- DASHBOARD -->
+            <div id="page-dashboard" class="page active">
+                <h2 style="margin-bottom: 20px;">Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-title">Total Players</div><div class="stat-value" id="stat-players">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Total Deposits</div><div class="stat-value" id="stat-deposits">0 ETB</div></div>
+                    <div class="stat-card"><div class="stat-title">Total Withdrawals</div><div class="stat-value" id="stat-withdrawals">0 ETB</div></div>
+                    <div class="stat-card"><div class="stat-title">Pending Requests</div><div class="stat-value" id="stat-pending">0</div></div>
+                </div>
+            </div>
+
+            <!-- GIVEAWAY -->
+            <div id="page-giveaway" class="page">
+                <h2 style="margin-bottom: 20px;">Start Giveaway 🎁</h2>
+                <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155;">
+                    <div style="display:flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Bonus Amount (ETB)</label><input type="number" id="giveaway-amount" class="form-control" placeholder="50"></div>
+                        <div style="flex: 1; min-width: 200px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Max Winners</label><input type="number" id="giveaway-limit" class="form-control" placeholder="100"></div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Custom Message</label>
+                        <textarea id="giveaway-message" class="form-control" rows="5" placeholder="ይፍጠኑ!..."></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="startGiveaway()" style="width: 100%;"><i class="fas fa-gift"></i> Start Giveaway</button>
+                    <button class="btn btn-danger" onclick="stopGiveaway()" style="width: 100%; margin-top: 10px;"><i class="fas fa-stop"></i> Stop Active Giveaway</button>
+                </div>
+            </div>
+
+            <!-- PLAYERS -->
+            <div id="page-players" class="page">
+                <h2 style="margin-bottom: 20px;">Players Management</h2>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Actions</th></tr></thead><tbody id="players-table-body"></tbody></table>
+                </div>
+            </div>
+
+            <!-- DEPOSITS -->
+            <div id="page-deposits" class="page">
+                <h2 style="margin-bottom: 20px;">Deposit Requests</h2>
+                <div class="table-responsive">
+                    <table><thead><tr><th>User</th><th>Amount</th><th>Method/Ref</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="deposit-table-body"></tbody></table>
+                </div>
+            </div>
+
+            <!-- WITHDRAWALS -->
+            <div id="page-withdrawals" class="page">
+                <h2 style="margin-bottom: 20px;">Withdrawal Requests</h2>
+                <div class="table-responsive">
+                    <table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
+                </div>
+            </div>
+
+            <!-- GAME CONTROL -->
+            <div id="page-game" class="page">
+                <h2 style="margin-bottom: 20px;">Game Control & Status</h2>
+                <div class="live-status">
+                    <div class="live-status-item"><span>Game Phase</span><strong id="game-phase">-</strong></div>
+                    <div class="live-status-item"><span>Current Call</span><strong id="game-current-call">-</strong></div>
+                    <div class="live-status-item"><span>Cards Taken</span><strong id="game-taken-cards">-</strong></div>
+                </div>
+                
+                <!-- ✅ የካርቴላ ብዛት ማስተካከያ -->
+                <div style="background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
+                    <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 10px;">🃏 የካርቴላ ብዛት (Max Cards)</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="600">
+                        <button class="btn btn-primary" onclick="updateMaxCards()"><i class="fas fa-save"></i> Update</button>
+                    </div>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 5px;">* ከ10 እስከ 1000 መሆን አለበት</div>
+                </div>
+
+                <div class="game-controls">
+                    <button class="btn btn-success" onclick="gameAction('start-game')"><i class="fas fa-play"></i> Start Game</button>
+                    <button class="btn btn-danger" onclick="gameAction('stop-game')"><i class="fas fa-stop"></i> Stop Game</button>
+                    <button class="btn btn-primary" onclick="gameAction('call-number')"><i class="fas fa-arrow-right"></i> Next Number</button>
+                    <div style="display:flex; gap:10px; align-items:center; margin-left: auto;">
+                        <select class="form-control" id="speed-select" onchange="changeSpeed()" style="width: 120px;"><option value="3">Speed 3s</option><option value="5" selected>Speed 5s</option><option value="7">Speed 7s</option></select>
+                        <button class="btn btn-warning" id="auto-btn" onclick="toggleAuto()"><i class="fas fa-robot"></i> Auto: OFF</button>
+                    </div>
+                </div>
+                <div style="background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
+                    <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 10px;">🎮 Active Players</h3>
+                    <div id="active-players-list"></div>
+                </div>
+            </div>
+
+            <!-- GAME HISTORY -->
+            <div id="page-history" class="page">
+                <h2 style="margin-bottom: 20px;">Game History</h2>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Game ID / Date</th><th>Winners</th><th>Total Prize</th><th>Players</th></tr></thead><tbody id="history-table-body"></tbody></table>
+                </div>
+            </div>
+
+            <!-- REFERRALS -->
+            <div id="page-referrals" class="page">
+                <h2 style="margin-bottom: 20px;">Referral Leaderboard</h2>
+                <div class="table-responsive">
+                    <table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Invited</th><th>Bonus</th></tr></thead><tbody id="referrals-table-body"></tbody></table>
+                </div>
+            </div>
+
+            <!-- BROADCAST -->
+            <div id="page-broadcast" class="page">
+                <h2 style="margin-bottom: 20px;">Send Broadcast Message</h2>
+                <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155;">
+                    <textarea id="bc-message" class="form-control" rows="5" placeholder="መልእክት እዚህ ይጻፉ..."></textarea>
+                    <button class="btn btn-primary" style="margin-top: 10px;" onclick="sendBroadcast()"><i class="fas fa-paper-plane"></i> Send to All Users</button>
+                </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div id="page-settings" class="page">
+                <h2 style="margin-bottom: 20px;">Payment Settings</h2>
+                <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155;">
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="enable-cbe" style="width: 20px; height: 20px;">
+                        <label for="enable-cbe" style="font-size: 14px; color: #fff;">Enable CBE Option</label>
+                    </div>
+                    <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Telebirr Number</label><input type="text" id="set-telebirr" class="form-control"></div>
+                    <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Telebirr Name</label><input type="text" id="set-telebirr-name" class="form-control"></div>
+                    <div id="cbe-settings-section" style="display: none;">
+                        <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">CBE Number</label><input type="text" id="set-cbe" class="form-control"></div>
+                        <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">CBE Name</label><input type="text" id="set-cbe-name" class="form-control"></div>
+                    </div>
+                    <button class="btn btn-success" onclick="saveSettings()" style="width: 100%;"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 'dashboard';
+let playersData = [];
+let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
+
+function showToast(msg, isError = false) { const toast = document.getElementById('admin-toast'); toast.innerText = msg; toast.classList.toggle('error', isError); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+
+async function apiFetch(url, method = 'GET', body = null) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (AUTH_TOKEN) headers['Authorization'] = AUTH_TOKEN;
+    const opts = { method, headers };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+    return await res.json();
+}
+
+async function attemptLogin() {
+    const username = document.getElementById('login-username').value.trim();
+    const password = document.getElementById('login-password').value.trim();
+    const btn = document.getElementById('login-btn'); const errEl = document.getElementById('login-error');
+    if (!username || !password) { errEl.innerText = "እባክዎ ሁለቱንም መስኮች ይሙሉ!"; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.innerText = 'Loading...';
+    const basicAuth = 'Basic ' + btoa(username + ':' + password);
+    try {
+        const res = await fetch('/api/admin/dashboard', { method: 'GET', headers: { 'Authorization': basicAuth } });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            AUTH_TOKEN = basicAuth; sessionStorage.setItem('admin_auth', basicAuth);
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-content').style.display = 'flex';
+            loadStats();
+        } else { errEl.innerText = "የተሳሳተ የይለፍ ቃል!"; errEl.style.display = 'block'; }
+    } catch (e) { errEl.innerText = "የሰርቨር ስህተት!"; errEl.style.display = 'block'; }
+    finally { btn.disabled = false; btn.innerText = 'Login'; }
+}
+
+function logout() {
+    AUTH_TOKEN = ""; sessionStorage.removeItem('admin_auth');
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-content').style.display = 'none';
+}
+
+if (AUTH_TOKEN) {
+    (async () => {
+        try {
+            const res = await fetch('/api/admin/dashboard', { headers: { 'Authorization': AUTH_TOKEN } });
+            if (res.ok) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-content').style.display = 'flex'; loadStats(); }
+            else { sessionStorage.removeItem('admin_auth'); AUTH_TOKEN = ""; }
+        } catch (e) {}
+    })();
+}
+
+function switchPage(pageId, element) {
+    currentPage = pageId;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+    const target = document.getElementById(`page-${pageId}`); if (target) target.classList.add('active');
+    if (element) element.classList.add('active');
+    refreshCurrentPage();
+}
+
+function refreshCurrentPage() {
+    if (currentPage === 'dashboard') loadStats();
+    else if (currentPage === 'players') loadPlayers();
+    else if (currentPage === 'deposits') loadTransactions('deposit');
+    else if (currentPage === 'withdrawals') loadTransactions('withdrawal');
+    else if (currentPage === 'game') loadGameStatus();
+    else if (currentPage === 'history') loadGameHistory();
+    else if (currentPage === 'referrals') loadReferrals();
+    else if (currentPage === 'settings') loadSettings();
+}
+
+async function loadStats() {
+    try {
+        const d = await apiFetch('/api/admin/dashboard');
+        if (d.success) {
+            document.getElementById('stat-players').innerText = d.data.totalPlayers;
+            document.getElementById('stat-deposits').innerText = d.data.totalDeposits.toFixed(2) + ' ETB';
+            document.getElementById('stat-withdrawals').innerText = d.data.totalWithdrawals.toFixed(2) + ' ETB';
+            document.getElementById('stat-pending').innerText = (d.data.pendingDeposits + d.data.pendingWithdrawals);
+        }
+    } catch (e) {}
+}
+
+async function loadSettings() {
+    try {
+        const d = await apiFetch('/api/settings');
+        if (d.success && d.data) {
+            document.getElementById('set-telebirr').value = d.data.telebirr_number || '';
+            document.getElementById('set-telebirr-name').value = d.data.telebirr_name || '';
+            document.getElementById('set-cbe').value = d.data.cbe_number || '';
+            document.getElementById('set-cbe-name').value = d.data.cbe_name || '';
+            const enableCbe = d.data.enable_cbe !== false;
+            document.getElementById('enable-cbe').checked = enableCbe;
+            document.getElementById('cbe-settings-section').style.display = enableCbe ? 'block' : 'none';
+        }
+    } catch (e) {}
+}
+
+document.getElementById('enable-cbe').addEventListener('change', (e) => { document.getElementById('cbe-settings-section').style.display = e.target.checked ? 'block' : 'none'; });
+
+async function saveSettings() {
+    const telebirr = document.getElementById('set-telebirr').value;
+    const telebirr_name = document.getElementById('set-telebirr-name').value;
+    const cbe = document.getElementById('set-cbe').value;
+    const cbe_name = document.getElementById('set-cbe-name').value;
+    const enable_cbe = document.getElementById('enable-cbe').checked;
+    if (!telebirr || !telebirr_name) return showToast('Telebirr መረጃ ያስፈልጋል!', true);
+    if (enable_cbe && (!cbe || !cbe_name)) return showToast('CBE መረጃ ያስፈልጋል!', true);
+    try { const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: telebirr, telebirr_name, cbe_number: cbe, cbe_name, enable_cbe }); if (d.success) showToast('✅ ሴቲንግስ ተቀይሯል!'); } catch (e) { showToast('Save failed', true); }
+}
+
+async function updateMaxCards() {
+    const maxCards = parseInt(document.getElementById('max-cards-input').value);
+    if (isNaN(maxCards) || maxCards < 10 || maxCards > 1000) return showToast('ቁጥሩ ከ10 እስከ 1000 መሆን አለበት!', true);
+    try { const d = await apiFetch('/api/admin/set-max-cards', 'POST', { maxCards }); if (d.success) showToast(`✅ የካርቴላ ብዛት ወደ ${maxCards} ተቀይሯል!`); } catch (e) { showToast('Update failed', true); }
+}
+
+async function startGiveaway() {
+    const amount = document.getElementById('giveaway-amount').value;
+    const limit = document.getElementById('giveaway-limit').value;
+    const customMessage = document.getElementById('giveaway-message').value.trim();
+    if (!amount || !limit) return showToast('እባክዎ መጠን እና ብዛት ያስገቡ!', true);
+    if (!confirm(`እርግጠኛ ነዎት?`)) return;
+    try { const d = await apiFetch('/api/admin/giveaway/start', 'POST', { prizeAmount: amount, maxWinners: limit, customMessage }); if (d.success) { showToast('🎁 Giveaway ተጀምሯል!'); document.getElementById('giveaway-amount').value = ''; document.getElementById('giveaway-limit').value = ''; document.getElementById('giveaway-message').value = ''; } } catch (e) { showToast('Giveaway failed', true); }
+}
+
+async function stopGiveaway() {
+    if (!confirm("እርግጠኛ ነዎት?")) return;
+    try { const d = await apiFetch('/api/admin/giveaway/stop', 'POST'); if (d.success) showToast('Giveaway ተቆሟል!'); } catch (e) { showToast('Stop failed', true); }
+}
+
+async function loadPlayers() {
+    const tbody = document.getElementById('players-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">በመጫን ላይ...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/users');
+        if (d.success) {
+            playersData = d.data; tbody.innerHTML = '';
+            if (playersData.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ምንም ተጫዋች አልተገኘም።</td></tr>'; return; }
+            const frag = document.createDocumentFragment();
+            playersData.forEach(u => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${escapeHtml(u.name || '-')}</td><td><code>${u.id}</code></td><td>${escapeHtml(u.phone || '-')}</td><td style="color:#facc15; font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td><td style="color:#22c55e; font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td><td><button class="btn btn-primary" style="padding:5px 10px; font-size:11px;" onclick="editBalance('${u.id}', ${u.play_balance}, ${u.win_balance})"><i class="fas fa-edit"></i> Edit</button></td>`;
+                frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+}
+
+async function editBalance(id, currentPlay, currentWin) {
+    let newPlay = prompt("አዲስ Play Balance ያስገቡ:", currentPlay); if (newPlay === null) return;
+    let newWin = prompt("አዲስ Win Balance ያስገቡ:", currentWin); if (newWin === null) return;
+    if (isNaN(newPlay) || isNaN(newWin)) return showToast("ትክክለኛ ቁጥር ያስገቡ!", true);
+    try { const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); if (res.success) { showToast("ባላንስ ተስተካክሏል!"); loadPlayers(); } } catch (e) { showToast('Update failed', true); }
+}
+
+async function loadTransactions(type) {
+    const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">በመጫን ላይ...</td></tr>';
+    try {
+        let url = `/api/admin/transactions?type=${type}`;
+        const d = await apiFetch(url);
+        if (d.success) {
+            tbody.innerHTML = '';
+            if (d.data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ምንም ጥያቄ አልተገኘም።</td></tr>`; return; }
+            const frag = document.createDocumentFragment();
+            d.data.forEach(txn => {
+                let dateStr = new Date(txn.created).toLocaleString();
+                let refOrPhone = type === 'deposit' ? (txn.reference || txn.method) : txn.phone;
+                let actions = txn.status === 'pending' ? `<button class="btn btn-success" onclick="actionTxn('${txn.id}', 'approve')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-check"></i></button> <button class="btn btn-danger" onclick="actionTxn('${txn.id}', 'reject')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-times"></i></button>` : '-';
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${escapeHtml(txn.user_name)}<br><small style="color:#94a3b8;">${txn.user_id}</small></td><td style="font-weight:bold; color:var(--primary);">${Number(txn.amount).toFixed(2)} ETB</td><td>${escapeHtml(txn.method || '')} <br> <small>${escapeHtml(refOrPhone || '')}</small></td><td>${dateStr}</td><td><span class="badge ${txn.status}">${txn.status}</span></td><td>${actions}</td>`;
+                frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+}
+
+async function actionTxn(id, action) {
+    if (!confirm(`እርግጠኛ ነዎት?`)) return;
+    try { const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); if (d.success) { showToast('ተሳክቷል!'); refreshCurrentPage(); loadStats(); } else { showToast(d.error || "ስህተት", true); } } catch (e) { showToast('Action failed', true); }
+}
+
+async function loadGameHistory() {
+    const tbody = document.getElementById('history-table-body');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">በመጫን ላይ...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/game-history');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if (d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">ምንም ጨዋታ የለም።</td></tr>'; return; }
+            const frag = document.createDocumentFragment();
+            d.data.forEach(g => {
+                let dateStr = new Date(g.createdAt).toLocaleString();
+                let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 <b>${escapeHtml(w.name)}</b> (Board ${w.cardNum}) - ${w.prize} ETB`).join('<br>') : 'No Winner';
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td><small style="color:#94a3b8;">${g.gameId}</small><br>${dateStr}</td><td>${winnersHtml}</td><td style="font-weight:bold; color:#facc15;">${g.totalPrize} ETB</td><td>${g.totalPlayers}</td>`;
+                frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+}
+
+async function loadReferrals() {
+    const tbody = document.getElementById('referrals-table-body');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">በመጫን ላይ...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/referrals');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if (d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">እስካሁን ማንም አልጋበዘም።</td></tr>'; return; }
+            const frag = document.createDocumentFragment();
+            d.data.forEach((r, index) => {
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${medal} ${escapeHtml(r.name)}</td><td><code>${r.id}</code></td><td>${escapeHtml(r.phone || '-')}</td><td style="font-weight:bold; color:#3b82f6;">${r.count}</td><td style="font-weight:bold; color:#22c55e;">${r.bonus_earned} ETB</td>`;
+                frag.appendChild(tr);
+            });
+            tbody.appendChild(frag);
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+}
+
+async function gameAction(action) { try { const d = await apiFetch(`/api/admin/${action}`, 'POST'); if (d.success) loadGameStatus(); } catch (e) { showToast('Game action failed', true); } }
+
+let autoOn = false;
+async function toggleAuto() {
+    const btn = document.getElementById('auto-btn');
+    const speed = parseInt(document.getElementById('speed-select').value);
+    autoOn = !autoOn;
+    try {
+        await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: autoOn, speed: speed });
+        btn.innerHTML = autoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
+        btn.className = autoOn ? 'btn btn-success' : 'btn btn-warning';
+    } catch (e) { autoOn = !autoOn; showToast('Auto failed', true); }
+}
+
+function changeSpeed() { if (autoOn) { const speed = parseInt(document.getElementById('speed-select').value); apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); } }
+
+async function loadGameStatus() {
+    try {
+        const d = await apiFetch('/api/admin/game-status');
+        if (d.success && d.data) {
+            const state = d.data;
+            document.getElementById('game-phase').innerText = state.phase.toUpperCase();
+            if (state.currentCall) {
+                let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
+                document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
+            } else document.getElementById('game-current-call').innerText = '--';
+            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards).length;
+
+            if (state.settings && state.settings.maxCards) document.getElementById('max-cards-input').value = state.settings.maxCards;
+
+            const playersList = document.getElementById('active-players-list');
+            if (state.takenCardsDetails && Object.keys(state.takenCardsDetails).length > 0) {
+                const uniquePlayers = new Set(); let html = '';
+                Object.values(state.takenCardsDetails).forEach(card => {
+                    if (!uniquePlayers.has(card.userId)) { uniquePlayers.add(card.userId); html += `<span class="player-tag"><i class="fas fa-user"></i> ${escapeHtml(card.userName)}</span>`; }
+                });
+                playersList.innerHTML = html;
+            } else playersList.innerHTML = '<span style="color:#64748b; font-size:12px;">ምንም ተጫዋች የለም</span>';
+
+            autoOn = state.isAutoOn;
+            const btn = document.getElementById('auto-btn');
+            btn.innerHTML = autoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
+            btn.className = autoOn ? 'btn btn-success' : 'btn btn-warning';
+        }
+    } catch (e) {}
+}
+
+async function sendBroadcast() {
+    const msg = document.getElementById('bc-message').value;
+    if (!msg) return showToast("መልእክት ያስገቡ!", true);
+    try { const d = await apiFetch('/api/admin/broadcast', 'POST', { message: msg }); if (d.success) { showToast('📢 መልእክቱ በመላክ ላይ ነው!'); document.getElementById('bc-message').value = ''; } } catch (e) { showToast('Broadcast failed', true); }
+}
+
+setInterval(() => { if (currentPage === 'game') loadGameStatus(); }, 3000);
+</script>
+</body>
+</html>
