@@ -3,893 +3,841 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Abisinya Bingo</title>
+<meta name="theme-color" content="#0f172a">
+<title>Abyssinia Bingo</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="/socket.io/socket.io.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #064e3b; color: #fff; width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+:root {
+    --bg-color: #0f172a; /* Dark Navy Theme */
+    --glass-bg: rgba(30, 41, 59, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --btn-bg: rgba(30, 41, 59, 0.9);
+    --btn-border: #334155;
+    --card-bg: rgba(15, 23, 42, 0.9);
+    --gold: #facc15;
+    --blue: #3b82f6;
+}
+body.light-theme {
+    --bg-color: #e2e8f0;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --text-color: #0f172a;
+    --text-muted: #475569;
+    --btn-bg: rgba(255, 255, 255, 0.9);
+    --btn-border: #cbd5e1;
+    --card-bg: rgba(255, 255, 255, 0.95);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+body { 
+    background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%);
+}
 .hidden { display: none !important; }
-.main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
-#page-ticket { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 6px; }
-.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 4px; }
-.dash-card { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px 2px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.dash-label { font-size: 7px; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
-.dash-value { font-size: 10px; color: #fff; font-weight: 800; }
-.dash-value.timer { color: #60a5fa; }
-.dash-value.wallet { color: #facc15; }
-.instruction-text { text-align: center; color: #fff; font-size: 11px; margin-bottom: 4px; font-weight: 700; }
-.grid-container { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; flex: 1; overflow-y: auto; margin-bottom: 4px; background: #f3e8ff; padding: 6px; border-radius: 10px; border: 1px solid #d8b4fe; }
-.number-btn { background: #fff; color: #581c87; border: 1px solid #d8b4fe; padding: 6px 0; font-size: 13px; font-weight: 900; border-radius: 6px; cursor: pointer; }
-.number-btn.selected { background: #3b82f6 !important; color: #fff !important; }
-.number-btn.taken-by-other { background: #22c55e !important; color: #fff !important; cursor: not-allowed; opacity: 0.9; }
-.footer-notification { text-align: center; font-size: 10px; color: #fef08a; font-weight: 700; min-height: 14px; margin-bottom: 2px; }
-.preview-section { background: #f3e8ff; border-radius: 10px; padding: 6px; border: 1px solid #d8b4fe; max-height: 20vh; overflow-y: auto; }
-.preview-title { text-align: center; font-size: 10px; color: #6b21a8; margin-bottom: 3px; font-weight: 700; }
-.card-preview-card { background: #fff; color: #581c87; border-radius: 6px; padding: 4px; margin-bottom: 3px; border: 1px solid #d8b4fe; }
-.card-preview-header { background: linear-gradient(135deg, #b45309, #d97706); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 4px; margin-bottom: 3px; border-radius: 4px; }
-.mini-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-.mini-cell { background: #f3e8ff; border: 1px solid #d8b4fe; text-align: center; padding: 4px 0; font-size: 10px; font-weight: 800; color: #581c87; border-radius: 3px; }
-.mini-cell.free { background: #3b82f6; color: #fff; font-size: 8px; }
-.h-b { background: #2563eb; color: white; text-align: center; font-size: 9px; font-weight: bold; padding: 3px 0; border-radius: 3px; }
-.h-i { background: #0d9488; color: white; text-align: center; font-size: 9px; font-weight: bold; padding: 3px 0; border-radius: 3px; }
-.h-n { background: #4f46e5; color: white; text-align: center; font-size: 9px; font-weight: bold; padding: 3px 0; border-radius: 3px; }
-.h-g { background: #d97706; color: white; text-align: center; font-size: 9px; font-weight: bold; padding: 3px 0; border-radius: 3px; }
-.h-o { background: #dc2626; color: white; text-align: center; font-size: 9px; font-weight: bold; padding: 3px 0; border-radius: 3px; }
-.page-inner-content { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 12px; background: #064e3b; overflow-y: auto; }
-.sec-title { font-size: 13px; font-weight: 900; color: #fff; margin-bottom: 8px; text-transform: uppercase; }
-.wallet-balances-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-.balance-box { background: #0f172a; border: 1.5px solid #1e293b; border-radius: 12px; padding: 12px; text-align: center; }
-.balance-box-title { font-size: 10px; font-weight: 800; color: #94a3b8; margin-bottom: 6px; }
-.balance-box-val { font-size: 18px; font-weight: 900; color: #fff; }
-.wallet-action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
-.action-btn-deposit { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; padding: 12px; font-size: 12px; font-weight: 900; border-radius: 10px; cursor: pointer; }
-.action-btn-withdraw { background: linear-gradient(135deg, #eab308, #ca8a04); color: #1e293b; border: none; padding: 12px; font-size: 12px; font-weight: 900; border-radius: 10px; cursor: pointer; }
-.deposit-options-box, .withdraw-options-box { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 10px; margin-bottom: 12px; }
-.deposit-sub-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px; }
-.sub-option-btn { background: #1e293b; color: #fff; border: 1px solid #334155; padding: 8px; font-size: 11px; font-weight: 800; border-radius: 6px; cursor: pointer; }
-.deposit-info-display { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; margin-top: 8px; font-size: 11px; color: #facc15; font-weight: bold; text-align: center; }
-.form-input { width: 100%; background: #1e293b; border: 1px solid #334155; color: #fff; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 6px; outline: none; }
-.submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 12px; font-size: 13px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
-.info-box-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 11px; }
-.profile-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
-.profile-row { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px solid #1e293b; }
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
+#loading-screen.hide-loader { opacity: 0; pointer-events: none; }
+.loader-spinner { width: 60px; height: 60px; border: 6px solid #1e293b; border-top: 6px solid var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { color: var(--gold); font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
+
+.main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px; }
+#page-ticket { display: flex; flex-direction: column; height: 100%; }
+
+.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.dash-card { padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.dash-label { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+.dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
+.dash-value.wallet { color: var(--gold); }
+.dash-value.derash { color: #10b981; }
+.dash-value.selected { color: var(--blue); }
+.dash-value.timer { color: #f87171; }
+
+.instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
+
+.grid-container {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    flex: 1; overflow-y: auto; padding: 8px; align-content: start;
+}
+.number-btn { 
+    background: var(--btn-bg); border: 1px solid var(--btn-border);
+    color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 700; 
+    border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+}
+.number-btn:active { transform: scale(0.95); }
+.number-btn.taken-by-other { background: rgba(100, 116, 139, 0.3) !important; border-color: #475569; color: #64748b !important; opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+.number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
+
+.footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
+
+/* Preview Section */
+.preview-section { height: 110px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 5px; margin-bottom: 5px; }
+.preview-card { display: inline-block; background: #fff; border-radius: 8px; padding: 6px; margin-right: 8px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); vertical-align: top; }
+.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 3px; border-radius: 4px; margin-bottom: 4px; }
+.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 10px; font-weight: 800; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+.preview-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
+
+.page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
+.sec-title { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
+.profile-card { padding: 15px; margin-bottom: 15px; }
+.profile-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--glass-border); }
 .profile-row:last-child { border-bottom: none; }
-.profile-label { color: #94a3b8; font-weight: bold; }
-.profile-val { color: #facc15; font-weight: bold; }
-.bottom-nav { height: 55px; background: #064e3b; border-top: 1px solid #047857; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; z-index: 1000; }
-.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: #94a3b8; font-size: 9px; font-weight: 700; gap: 2px; }
-.nav-item.active { color: #facc15; }
-.nav-icon { font-size: 16px; }
-#page-live { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 6px; position: relative; }
-.stats-header { display: flex; justify-content: space-between; background: #0f172a; color: #fff; padding: 8px 4px; border-radius: 8px; font-size: 11px; font-weight: 800; text-align: center; margin-bottom: 4px; border: 2px solid #3b82f6; }
-.stats-header div { flex: 1; border-right: 1px solid #334155; display: flex; flex-direction: column; align-items: center; }
-.stats-header div:last-child { border-right: none; }
-.stats-header .stat-label { color: #94a3b8; font-size: 8px; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 3px; }
-.stats-header .stat-value { color: #facc15; font-size: 16px; font-weight: 900; }
-.game-main-layout { display: flex; gap: 6px; flex: 1; overflow: hidden; }
-.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: #f3e8ff; padding: 6px; border-radius: 10px; width: 50%; border: 1px solid #d8b4fe; align-content: start; overflow-y: auto; }
-.board-cell { background: #fff; color: #581c87; border: 1px solid #d8b4fe; text-align: center; padding: 5px 0; font-size: 10px; font-weight: 800; border-radius: 4px; }
-.board-cell.marked { background: #3b82f6 !important; color: #fff !important; }
-.right-panel { width: 50%; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-.status-box { background: #1e3a8a; color: #fff; padding: 5px; text-align: center; border-radius: 6px; font-weight: bold; font-size: 10px; }
-.current-call-box { background: #0f172a; border: 2px solid #3b82f6; border-radius: 8px; text-align: center; padding: 8px; margin-bottom: 4px; }
-.current-call-title { color: #94a3b8; font-size: 10px; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
-.current-call-number { background: #3b82f6; color: #fff; font-size: 28px; font-weight: 900; display: inline-block; padding: 4px 16px; border-radius: 50px; margin-top: 2px; }
-.recent-calls-container { display: flex; justify-content: center; gap: 6px; margin-top: 6px; }
-.recent-circle-1, .recent-circle-2, .recent-circle-3 { width: 28px; height: 28px; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; }
-.recent-circle-1 { background: #0d9488; }
-.recent-circle-2 { background: #d97706; }
-.recent-circle-3 { background: #dc2626; }
-.wait-in-live { background: #1e293b; border: 2px solid #facc15; border-radius: 8px; padding: 12px; text-align: center; margin-top: 6px; }
-.wait-in-live-icon { font-size: 32px; margin-bottom: 6px; }
-.wait-in-live-title { font-size: 13px; font-weight: 900; color: #facc15; margin-bottom: 4px; }
-.wait-in-live-text { font-size: 11px; color: #cbd5e1; font-weight: 600; line-height: 1.4; }
-.live-cards-container { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px; flex: 1; overflow-y: auto; }
-.interactive-card-view { background: #1e293b; color: #fff; border-radius: 8px; padding: 8px; margin-bottom: 6px; border: 1.5px solid #334155; }
-.interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-bottom: 6px; }
-.interactive-cell { background: #334155; border: 1px solid #475569; text-align: center; padding: 8px 0; font-size: 12px; font-weight: 900; color: #fff; border-radius: 5px; cursor: pointer; }
-.interactive-cell.free { background: #3b82f6; color: #fff; font-size: 9px; }
-.interactive-cell.marked-cell { background: #3b82f6 !important; color: #fff !important; }
-.interactive-cell.called-highlight { background: #f59e0b !important; color: #fff !important; }
-.interactive-cell.winning-highlight { background: #facc15 !important; color: #713f12 !important; font-weight: 900 !important; }
-.bingo-action-btn { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; width: 100%; padding: 10px 0; font-size: 14px; font-weight: 900; border-radius: 6px; cursor: pointer; }
-#game-over-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 10px; }
-.game-over-box { background: #1e293b; width: 95%; max-width: 340px; border-radius: 12px; padding: 12px; text-align: center; border: 2px solid #facc15; color: #fff; }
-.game-over-title { font-size: 16px; font-weight: 900; color: #facc15; margin-bottom: 6px; }
-.winner-badge { background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 6px; }
-.prize-pool-box { background: #0f172a; border-radius: 6px; padding: 5px; font-size: 10px; font-weight: bold; color: #60a5fa; margin-bottom: 6px; }
-.winning-line-info { font-size: 10px; color: #4ade80; font-weight: bold; margin-bottom: 6px; }
-.modal-card-container { background: #0f172a; border-radius: 8px; padding: 6px; margin-bottom: 6px; }
-.modal-board-footer { background: #1e293b; color: #fff; font-size: 10px; font-weight: bold; padding: 4px; border-radius: 5px; text-align: center; margin-top: 4px; }
-.modal-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-.modal-cell { background: #334155; border: 1px solid #475569; text-align: center; padding: 6px 0; font-size: 10px; font-weight: 900; color: #fff; border-radius: 3px; }
-.modal-cell.free { background: #3b82f6; color: #fff; font-size: 8px; }
-.modal-cell.marked { background: #0d9488; color: #fff; }
-.modal-cell.winning-highlight { background: #facc15 !important; color: #713f12 !important; font-weight: 900 !important; }
-.countdown-number { font-size: 24px; font-weight: 900; color: #facc15; margin-top: 4px; }
+.profile-val { color: var(--gold); font-weight: bold; }
+
+.theme-options { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.theme-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 1px solid var(--glass-border); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 30%; }
+.theme-btn.dark { background: #0f172a; color: #fff; border-color: #334155; }
+.theme-btn.light { background: #e2e8f0; color: #0f172a; }
+.theme-btn.ocean { background: #0ea5e9; color: #fff; }
+
+.wallet-balances-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+.balance-box { padding: 15px; text-align: center; }
+.balance-box-title { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; }
+.balance-box-val { font-size: 24px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
+.wallet-action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+.action-btn-deposit { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; padding: 14px; font-size: 13px; font-weight: 900; border-radius: 10px; cursor: pointer; }
+.action-btn-withdraw { background: linear-gradient(135deg, #ca8a04, #a16207); color: #fff; border: none; padding: 14px; font-size: 13px; font-weight: 900; border-radius: 10px; cursor: pointer; }
+
+.deposit-options-box, .withdraw-options-box { padding: 15px; margin-bottom: 15px; }
+.sub-option-btn { background: var(--btn-bg); color: var(--text-color); border: 1px solid var(--btn-border); padding: 12px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 5px; }
+.deposit-info-display { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 13px; color: var(--gold); font-weight: bold; text-align: center; }
+.form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-color); padding: 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; outline: none; }
+.submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 14px; font-size: 14px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+.copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin-left: 5px; }
+
+/* Live Page */
+#page-live { display: flex; flex-direction: column; height: 100%; }
+.stats-header { display: flex; justify-content: space-around; padding: 10px; margin-bottom: 10px; border: 1px solid var(--blue); }
+.stat-item { text-align: center; }
+.stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
+.stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
+.game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
+
+/* Dark Bingo Board */
+.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 45%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
+.board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
+.board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
+
+.right-panel { width: 55%; display: flex; flex-direction: column; gap: 10px; }
+.current-call-container { text-align: center; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+.current-call-ball {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+    color: white; font-size: 38px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3);
+    animation: bounceBall 1.5s infinite ease-in-out;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+@keyframes bounceBall {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.recent-calls { display: flex; gap: 8px; justify-content: center; }
+.recent-ball {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.recent-ball:nth-child(1) { background: #10b981; }
+.recent-ball:nth-child(2) { background: #eab308; color: #000; }
+.recent-ball:nth-child(3) { background: #ef4444; }
+
+.live-cards-container { flex: 1; overflow-y: auto; padding: 10px; }
+.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+/* ✅ የ BINGO ፊደላት ቀለም አንድ ዓይነት (Gold) ሆኗል */
+.card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
+.card-header-letters div { background: var(--gold); color: #000; text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; }
+.interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 8px 0; font-size: 15px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
+.interactive-cell.free { background: var(--blue); color: #fff; font-size: 12px; }
+.interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
+
+/* Bottom Nav */
+.bottom-nav { height: 65px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 10px; font-weight: 700; gap: 4px; }
+.nav-item.active { color: var(--gold); }
+.nav-icon { font-size: 20px; }
+
+/* Game Over */
+#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+.game-over-title { font-size: 40px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px rgba(250,204,21,0.6); font-family: 'Courier New', Courier, monospace;}
+.winner-text { font-size: 22px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
+.prize-text { font-size: 32px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(16,185,129,0.5); }
+.winning-card-container { padding: 15px; width: 90%; max-width: 350px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); }
+.winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 12px 0; font-size: 16px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
+.winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
+.winning-cell.highlight { background: var(--gold) !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
+
+@keyframes pulseLastNum {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); background: #10b981; color: white; }
+    50% { transform: scale(1.3); box-shadow: 0 0 20px 10px rgba(16, 185, 129, 0); background: #34d399; color: white; }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); background: #10b981; color: white; }
+}
+.winning-cell.last-call-blink { animation: pulseLastNum 1s infinite; border: 2px solid #fff; z-index: 10; position: relative; }
 </style>
 </head>
 <body>
 
+<div id="loading-screen">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">LOADING...</div>
+</div>
+
 <div class="main-content-area">
+  <!-- TICKET PAGE -->
   <div id="page-ticket">
     <div class="top-dashboard">
-      <div class="dash-card"><span class="dash-label">Wallet</span><span class="dash-value wallet"><span id="wallet-display">100.00</span></span></div>
-      <div class="dash-card"><span class="dash-label">Stake</span><span class="dash-value">10 ብር</span></div>
-      <div class="dash-card"><span class="dash-label">Selected</span><span class="dash-value" id="taken-cards-badge">0</span></div>
-      <div class="dash-card"><span class="dash-label">Time Left</span><span class="dash-value timer"><span id="timer-val">30</span>ሰ</span></div>
+      <div class="dash-card glass-panel"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
+      <div class="dash-card glass-panel"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
+      <div class="dash-card glass-panel"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
+      <div class="dash-card glass-panel">
+        <span class="dash-label">Time Left</span>
+        <span class="dash-value timer" id="timer-val">50ሰ</span>
+      </div>
     </div>
-    <div class="instruction-text">እባክዎ እስከ 3 ካርቴላዎች ይምረጡ</div>
+    <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
+    
     <div class="grid-container" id="number-grid"></div>
+    
     <div class="footer-notification" id="footer-notification"></div>
-    <div class="preview-section">
-      <div class="preview-title">የተመረጡ ካርቴላዎች ፕሬቪው:</div>
-      <div id="preview-container"><div style="text-align:center; color:#6b21a8; font-size:10px; padding:4px;">ካርቴላ የለም</div></div>
+    
+    <!-- Preview Section (Free Space) -->
+    <div class="preview-section glass-panel" id="preview-container">
+        <!-- ካርቴላዎች እዚህ ይመጣሉ -->
     </div>
   </div>
 
+  <!-- LIVE PAGE -->
+  <div id="page-live" class="hidden">
+    <div class="stats-header glass-panel">
+      <div class="stat-item"><span class="stat-label">DERASH</span><div class="stat-value" id="derash-val">0</div></div>
+      <div class="stat-item"><span class="stat-label">PLAYERS</span><div class="stat-value" id="players-val">0</div></div>
+      <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0</div></div>
+    </div>
+    <div class="game-main-layout">
+      <div class="bingo-board" id="bingo-board"></div>
+      <div class="right-panel">
+        
+        <div class="current-call-container glass-panel">
+          <div style="font-size:12px; color:var(--text-muted); font-weight:bold; margin-bottom:10px; letter-spacing:1px;">CURRENT CALL</div>
+          <div class="current-call-ball" id="current-call-display">--</div>
+          <div class="recent-calls" id="recent-calls-container"></div>
+        </div>
+
+        <div id="wait-message-box" class="wait-in-live glass-panel hidden">
+          <div style="font-size:32px; margin-bottom:10px;">⏳</div>
+          <div style="font-size:14px; font-weight:900; color:var(--gold);">እባክዎ ይጠብቁ</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">ይሄ ዙር ጨዋታ እስኪጠናቀቅ ይጠብቁ</div>
+        </div>
+        <div class="live-cards-container glass-panel" id="live-cards-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
   <div id="page-profile" class="page-inner-content hidden">
     <div class="sec-title">የተጠቃሚ መገለጫ</div>
-    <div class="profile-card">
-      <div class="profile-row"><span class="profile-label">ስም:</span><span class="profile-val" id="profile-name-val">--</span></div>
-      <div class="profile-row"><span class="profile-label">ዩዘርኔም:</span><span class="profile-val" id="profile-username-val">--</span></div>
-      <div class="profile-row"><span class="profile-label">መለያ ቁጥር:</span><span class="profile-val" id="profile-id-val">--</span></div>
+    <div class="profile-card glass-panel">
+      <div class="profile-row"><span>ስም:</span><span class="profile-val" id="profile-name-val">--</span></div>
+      <div class="profile-row"><span>መለያ ቁጥር:</span><span class="profile-val" id="profile-id-val">--</span></div>
+      <div class="profile-row"><span>📱 ስልክ ቁጥር:</span><span class="profile-val" id="profile-phone-val">--</span></div>
+      <div class="profile-row"><span>የተጫወቱት ጨዋታ:</span><span class="profile-val" id="profile-games-val">0</span></div>
+      <div class="profile-row"><span>ያሸነፉት ጨዋታ:</span><span class="profile-val" id="profile-wins-val">0</span></div>
     </div>
+    
+    <div class="sec-title">Theme Settings</div>
+    <div class="profile-card glass-panel">
+      <div style="font-size: 12px; margin-bottom: 8px; color:var(--text-muted);">የገጹን ቀለም ይምረጡ</div>
+      <div class="theme-options">
+          <button class="theme-btn dark" onclick="setTheme('dark')">🌙 Dark</button>
+          <button class="theme-btn light" onclick="setTheme('light')">☀️ Light</button>
+          <button class="theme-btn ocean" onclick="setTheme('ocean')">🌊 Ocean</button>
+      </div>
+    </div>
+
     <div class="sec-title">የግብዣ ሊንክ</div>
-    <div class="profile-card">
-      <div style="font-size: 11px; color: #facc15; font-weight: bold; margin-bottom: 4px;">✨ 30 ብር ያግኙ!</div>
-      <input type="text" id="invite-link-input" class="form-input" readonly style="font-size: 10px; color: #facc15;">
+    <div class="profile-card glass-panel">
+      <div style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 8px;">✨ 30 ብር ያግኙ!</div>
+      <input type="text" id="invite-link-input" class="form-input" readonly>
       <button class="submit-req-btn" style="margin-top: 8px;" onclick="copyInviteLink()">ሊንኩን ቅዳ</button>
     </div>
   </div>
 
+  <!-- WALLET PAGE -->
   <div id="page-wallet" class="page-inner-content hidden">
     <div class="sec-title">YOUR BALANCES</div>
     <div class="wallet-balances-grid">
-      <div class="balance-box"><div class="balance-box-title">🎮 PLAY</div><div class="balance-box-val"><span id="wallet-page-val">100.00</span></div></div>
-      <div class="balance-box"><div class="balance-box-title">🏆 WIN</div><div class="balance-box-val" id="win-wallet-display">0.00</div></div>
+      <div class="balance-box glass-panel"><div class="balance-box-title">🎮 PLAY</div><div class="balance-box-val" id="wallet-page-val">0.00</div></div>
+      <div class="balance-box glass-panel"><div class="balance-box-title">🏆 WIN</div><div class="balance-box-val" id="win-wallet-display">0.00</div></div>
     </div>
     <div class="wallet-action-buttons">
       <button class="action-btn-deposit" onclick="toggleDepositOptions()">💳 DEPOSIT</button>
       <button class="action-btn-withdraw" onclick="toggleWithdrawOptions()">💸 WITHDRAW</button>
     </div>
-    <div id="deposit-options-section" class="deposit-options-box hidden">
-      <div style="font-size: 11px; font-weight: bold; color: #94a3b8; text-align: center;">የክፍያ አማራጭ ይምረጡ:</div>
-      <div class="deposit-sub-btns">
-        <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
-        <button class="sub-option-btn" onclick="selectDepositMethod('cbe')">🏦 CBE</button>
-      </div>
+    
+    <div id="deposit-options-section" class="deposit-options-box glass-panel hidden">
+      <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የክፍያ አማራጭ ይምረጡ:</div>
+      <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
+      <button class="sub-option-btn" onclick="selectDepositMethod('cbe')">🏦 CBE</button>
       <div id="deposit-info-box" class="deposit-info-display hidden"></div>
     </div>
-    <div id="withdraw-options-section" class="withdraw-options-box hidden">
-      <div style="font-size: 11px; font-weight: bold; color: #94a3b8; text-align: center;">የወጭ አማራጭ ይምረጡ:</div>
-      <div class="deposit-sub-btns">
-        <button class="sub-option-btn" onclick="selectWithdrawMethod('self')">👤 በቴሌግራም</button>
-        <button class="sub-option-btn" onclick="selectWithdrawMethod('other')">👥 ወደ ሌላ ቁጥር</button>
-      </div>
-      <div id="withdraw-form-box" class="hidden" style="margin-top: 8px;">
-        <div id="withdraw-target-label" style="font-size: 11px; color: #facc15; font-weight: bold; text-align: center; margin-bottom: 4px;"></div>
+
+    <div id="withdraw-options-section" class="withdraw-options-box glass-panel hidden">
+      <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የወጭ አማራጭ ይምረጡ:</div>
+      <button class="sub-option-btn" onclick="selectWithdrawMethod('self')">👤 በቴሌግራም</button>
+      <button class="sub-option-btn" onclick="selectWithdrawMethod('other')">👥 ወደ ሌላ ቁጥር</button>
+      <div id="withdraw-form-box" class="hidden" style="margin-top: 10px;">
+        <div id="withdraw-target-label" style="font-size: 12px; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 4px;"></div>
         <input type="number" id="withdraw-amount-input" class="form-input" placeholder="የሚወጣውን መጠን (ETB)">
         <input type="text" id="withdraw-phone-input" class="form-input hidden" placeholder="የቴሌብር ቁጥር">
-        <button class="submit-req-btn" onclick="submitWithdrawRequest()">SUBMIT REQUEST</button>
+        <button class="submit-req-btn" onclick="submitWithdrawRequest(event)">SUBMIT REQUEST</button>
       </div>
     </div>
-    <div class="sec-title" style="margin-top: 10px;">RECENT HISTORY</div>
-    <div id="history-list-container"></div>
   </div>
 
+  <!-- HISTORY PAGE -->
+  <div id="page-history" class="page-inner-content hidden">
+    <div class="sec-title">የግብይት ታሪክ (History)</div>
+    <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+
+  <!-- RANK PAGE -->
   <div id="page-rank" class="page-inner-content hidden">
-    <div class="sec-title">ደረጃ ሰንጠረዥ</div>
-    <div class="info-box-card">
-      <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px;">
-        <span>ተጫዋች</span><span>አሸናፊነት</span>
-      </div>
-      <div style="display: flex; justify-content: space-between; color: #facc15; font-size: 10px; padding: 3px 0;"><span>1. Abisinya_Pro</span><span>14 ድል</span></div>
-      <div style="display: flex; justify-content: space-between; color: #cbd5e1; font-size: 10px; padding: 3px 0;"><span>2. Winner_77</span><span>9 ድል</span></div>
-      <div style="display: flex; justify-content: space-between; color: #cd7f32; font-size: 10px; padding: 3px 0;"><span>3. BingoKing</span><span>6 ድል</span></div>
-    </div>
-  </div>
-
-  <div id="page-live" class="hidden">
-    <div id="game-over-overlay" class="hidden">
-      <div class="game-over-box">
-        <div class="game-over-title">🏆 GAME OVER 🏆</div>
-        <div class="winner-badge" id="winner-name-badge">--</div>
-        <div class="prize-pool-box">PRIZE<br><span id="modal-prize-val" style="font-size:14px; color:#60a5fa;">0 ETB</span></div>
-        <div id="modal-winning-card-container"></div>
-        <div class="winning-line-info" id="winning-line-desc">--</div>
-        <div style="font-size:10px; color:#94a3b8; font-weight:bold; margin-bottom:4px;">አዲስ ጨዋታ በ 10 ሰከንድ</div>
-        <div class="countdown-number" id="modal-countdown">10</div>
-      </div>
-    </div>
-    <div class="stats-header">
-      <div><span class="stat-label">DERASH</span><span class="stat-value" id="derash-val">0</span></div>
-      <div><span class="stat-label">PLAYERS</span><span class="stat-value" id="players-val">0</span></div>
-      <div><span class="stat-label">BET</span><span class="stat-value">10</span></div>
-      <div><span class="stat-label">CALL</span><span class="stat-value" id="call-count">0</span></div>
-    </div>
-    <div class="game-main-layout">
-      <div class="bingo-board" id="bingo-board"></div>
-      <div class="right-panel">
-        <div class="status-box" id="game-status-label">STARTED</div>
-        <div class="current-call-box">
-          <div class="current-call-title">Current Call</div>
-          <div class="current-call-number" id="current-call-display">--</div>
-          <div class="recent-calls-container" id="recent-calls-container"></div>
-        </div>
-        <div id="wait-message-box" class="wait-in-live hidden">
-          <div class="wait-in-live-icon">⏳</div>
-          <div class="wait-in-live-title">እባክዎ ይጠብቁ</div>
-          <div class="wait-in-live-text">ይሄ ዙር ጨዋታ እስኪጠናቀቅ ይጠብቁ</div>
-        </div>
-        <div class="live-cards-container" id="live-cards-container"></div>
-      </div>
-    </div>
+    <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 10)</div>
+    <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
 
-<nav class="bottom-nav">
-  <button class="nav-item" id="nav-btn-ticket" onclick="switchTab('ticket')"><span class="nav-icon">🎮</span><span>BINGO</span></button>
-  <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
-  <button class="nav-item active" id="nav-btn-wallet" onclick="switchTab('wallet')"><span class="nav-icon">💳</span><span>WALLET</span></button>
+<!-- BOTTOM NAVIGATION -->
+<nav class="bottom-nav glass-panel">
+  <button class="nav-item active" id="nav-btn-ticket" onclick="switchTab('ticket')"><span class="nav-icon">🎮</span><span>BINGO</span></button>
+  <button class="nav-item" id="nav-btn-wallet" onclick="switchTab('wallet')"><span class="nav-icon">💳</span><span>WALLET</span></button>
+  <button class="nav-item" id="nav-btn-history" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>HISTORY</span></button>
   <button class="nav-item" id="nav-btn-rank" onclick="switchTab('rank')"><span class="nav-icon">🏆</span><span>RANK</span></button>
+  <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
 </nav>
 
+<!-- GAME OVER OVERLAY -->
+<div id="game-over-overlay" class="hidden">
+  <div class="game-over-title">🏆 BINGO! 🏆</div>
+  <div class="winner-text" id="winner-text">--</div>
+  <div class="prize-text" id="prize-text">0 ETB</div>
+  <div class="winning-card-container glass-panel" id="winning-card-container"></div>
+  <div style="font-size: 28px; color: #3b82f6; font-weight: 900; margin-top: 15px; font-family:'Courier New', Courier, monospace;" id="board-number-text">BOARD --</div>
+  <div style="margin-top: 20px; text-align: center;">
+    <div style="font-size: 14px; color: #cbd5e1;">አዲስ ጨዋታ በ...</div>
+    <div style="font-size: 40px; color: var(--gold); font-weight: 900;" id="modal-countdown">10</div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
-let tg = window.Telegram.WebApp;
-tg.expand();
+// ✅ 1ኛ ጥያቄ፡ የ Theme አስተዳደር (Ocean Blue ተካቷል)
+const savedTheme = localStorage.getItem('theme') || 'dark';
+if (savedTheme === 'light') document.body.classList.add('light-theme');
+if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
 
-let userProfile = { name: "ቴሌግራም ተጠቃሚ", username: "@user", id: "123456789", phone: "" };
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-  let tgUser = tg.initDataUnsafe.user;
-  userProfile.name = (tgUser.first_name || '') + (tgUser.last_name ? ' ' + tgUser.last_name : '');
-  userProfile.username = tgUser.username ? '@' + tgUser.username : 'የለም';
-  userProfile.id = tgUser.id;
+function setTheme(theme) {
+    document.body.classList.remove('light-theme', 'ocean-theme');
+    if (theme === 'light') document.body.classList.add('light-theme');
+    if (theme === 'ocean') document.body.classList.add('ocean-theme');
+    localStorage.setItem('theme', theme);
 }
 
-let currentWallet = parseFloat(localStorage.getItem('abisinya_wallet')) || 100.00;
-let currentWinWallet = parseFloat(localStorage.getItem('abisinya_win_wallet')) || 0.00;
+let tg = window.Telegram?.WebApp;
+if (tg) { tg.expand(); tg.ready(); }
 
-const socket = io();
-socket.emit('join_room', 'abisinya_global_room');
-
-let selectedCards = new Set();
-let calledNumbersSet = new Set();
-let userManuallyMarked = new Set();
-let currentLatestCalledNumber = null;
-let notificationTimeout = null;
-let gameEndedAlready = false;
-let liveGameInitialized = false;
-let clientId = String(userProfile.id);
-let gamePhase = 'waiting';
-
-function saveSelectedCards() {
-  localStorage.setItem('abisinya_selected_cards', JSON.stringify(Array.from(selectedCards)));
-}
-
-function loadSavedCards() {
-  let saved = localStorage.getItem('abisinya_selected_cards');
-  if (saved) {
-    try {
-      let arr = JSON.parse(saved);
-      arr.forEach(c => selectedCards.add(parseInt(c)));
-    } catch(e) {}
-  }
-}
-loadSavedCards();
-
-function loadProfileData() {
-  document.getElementById('profile-name-val').innerText = userProfile.name;
-  document.getElementById('profile-username-val').innerText = userProfile.username;
-  document.getElementById('profile-id-val').innerText = userProfile.id;
-  let botUsername = "Abisinyabingo_bot";
-  document.getElementById('invite-link-input').value = 'https://t.me/' + botUsername + '?start=' + userProfile.id;
-}
-loadProfileData();
-
-function copyInviteLink() {
-  let copyText = document.getElementById('invite-link-input');
-  copyText.select();
-  navigator.clipboard.writeText(copyText.value);
-  alert("ሊንኩ ተገልብጧል!");
-}
-
-function updateWalletDisplay() {
-  document.getElementById('wallet-display').innerText = currentWallet.toFixed(2);
-  document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2);
-  document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2);
-  localStorage.setItem('abisinya_wallet', currentWallet);
-  localStorage.setItem('abisinya_win_wallet', currentWinWallet);
-}
-
-function toggleDepositOptions() {
-  document.getElementById('withdraw-options-section').classList.add('hidden');
-  document.getElementById('deposit-options-section').classList.toggle('hidden');
-}
-function toggleWithdrawOptions() {
-  document.getElementById('deposit-options-section').classList.add('hidden');
-  document.getElementById('withdraw-options-section').classList.toggle('hidden');
-}
-function selectDepositMethod(method) {
-  const infoBox = document.getElementById('deposit-info-box');
-  infoBox.classList.remove('hidden');
-  if (method === 'telebirr') infoBox.innerHTML = '📲 Telebirr:<br><b>0968940123</b><br>ስም: <b>tazebew</b>';
-  else if (method === 'cbe') infoBox.innerHTML = '🏦 CBE:<br><b>1000390803005</b><br>ስም: <b>tazebew</b>';
-}
-function selectWithdrawMethod(type) {
-  const formBox = document.getElementById('withdraw-form-box');
-  const targetLabel = document.getElementById('withdraw-target-label');
-  const phoneInput = document.getElementById('withdraw-phone-input');
-  formBox.classList.remove('hidden');
-  if (type === 'self') {
-    targetLabel.innerHTML = 'ID: <b>' + userProfile.id + '</b>';
-    phoneInput.classList.add('hidden');
-  } else {
-    targetLabel.innerHTML = 'የቴሌብር ቁጥር ያስገቡ:';
-    phoneInput.classList.remove('hidden');
-  }
-}
-function submitWithdrawRequest() {
-  let amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-  if (!amount || amount <= 0) { alert("ትክክለኛ መጠን ያስገቡ!"); return; }
-  if (amount > currentWinWallet) { alert("በቂ አይደለም!"); return; }
-  currentWinWallet -= amount;
-  updateWalletDisplay();
-  saveGameHistoryRecord({ won: false, prize: -amount, date: new Date().toLocaleDateString() });
-  alert('የወጭ ጥያቄ ተልኳል! ' + amount + ' ETB');
-  document.getElementById('withdraw-amount-input').value = '';
-  document.getElementById('withdraw-options-section').classList.add('hidden');
-  renderHistoryData();
-}
-
-function switchTab(tabName) {
-  if (gamePhase === 'calling' && tabName === 'ticket') {
-    tabName = 'live';
-  }
-  ['ticket', 'profile', 'wallet', 'rank', 'live'].forEach(t => {
-    const el = document.getElementById('page-' + t);
-    if (el) el.classList.add('hidden');
-  });
-  document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-  document.getElementById('page-' + tabName).classList.remove('hidden');
-  const navBtn = document.getElementById('nav-btn-' + (tabName === 'live' ? 'ticket' : tabName));
-  if (navBtn) navBtn.classList.add('active');
-  if (tabName === 'wallet') renderHistoryData();
-  if (tabName === 'live') {
-    if (selectedCards.size > 0) {
-      document.getElementById('wait-message-box').classList.add('hidden');
+let userProfile = { name: "ቴሌግራም ተጠቃሚ", username: "@user", id: "123456789" };
+try {
+    let tgUser = tg?.initDataUnsafe?.user;
+    if (tgUser && tgUser.id) {
+        let fullName = ((tgUser.first_name || '') + ' ' + (tgUser.last_name || '')).trim();
+        userProfile.name = fullName || (tgUser.username ? '@' + tgUser.username : 'ተጫዋች ' + tgUser.id);
+        userProfile.username = tgUser.username ? '@' + tgUser.username : 'የለም';
+        userProfile.id = String(tgUser.id);
+        localStorage.setItem('tg_user_profile', JSON.stringify(userProfile));
     } else {
-      document.getElementById('wait-message-box').classList.remove('hidden');
+        let savedProfile = localStorage.getItem('tg_user_profile');
+        if (savedProfile) userProfile = JSON.parse(savedProfile);
     }
-  }
-}
+} catch (e) {}
 
-function getGameHistory() { let data = localStorage.getItem('abisinya_game_history'); return data ? JSON.parse(data) : []; }
-function saveGameHistoryRecord(record) {
-  let history = getGameHistory();
-  history.unshift(record);
-  if (history.length > 20) history = history.slice(0, 20);
-  localStorage.setItem('abisinya_game_history', JSON.stringify(history));
-}
-function renderHistoryData() {
-  let history = getGameHistory();
-  const container = document.getElementById('history-list-container');
-  if (history.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:10px; padding:10px;">ታሪክ የለም</div>'; return; }
-  container.innerHTML = '';
-  history.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'info-box-card';
-    div.style.cssText = 'padding:6px; display:flex; justify-content:space-between;';
-    const color = item.prize > 0 ? '#4ade80' : '#f87171';
-    const label = item.prize > 0 ? 'ድል' : 'ወጭ';
-    div.innerHTML = '<div><div style="font-weight:bold; color:' + color + ';">' + label + '</div><div style="font-size:7px; color:#94a3b8;">' + item.date + '</div></div><div style="font-weight:bold; color:' + color + ';">' + (item.prize > 0 ? '+' + item.prize : item.prize) + ' ETB</div>';
-    container.appendChild(div);
-  });
-}
+const TG_INIT_DATA = tg?.initData || '';
+const originalFetch = window.fetch;
+window.fetch = function(url, opts = {}) { if (typeof url === 'string' && url.includes('/api/')) { opts.headers = opts.headers || {}; opts.headers['X-Telegram-Init-Data'] = TG_INIT_DATA; opts.headers['X-User-Id'] = String(userProfile.id); } return originalFetch(url, opts); };
 
-function showFooterNotification(msg) {
-  const notifEl = document.getElementById('footer-notification');
-  notifEl.innerText = msg;
-  if (notificationTimeout) clearTimeout(notificationTimeout);
-  notificationTimeout = setTimeout(() => { notifEl.innerText = ''; }, 3000);
-}
+let currentWallet = 0, currentWinWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
+let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', cbe_number: '1000390803005', cbe_name: 'Tazebew', enable_cbe: true };
+let isVoiceOn = localStorage.getItem('abisinya_voice') !== 'off';
+let selectedCards = new Set(), calledNumbersSet = new Set();
+let currentLatestCalledNumber = null, notificationTimeout = null, gameEndedAlready = false, liveGameInitialized = false;
+let clientId = String(userProfile.id), gamePhase = 'waiting', isModalShown = false, lastAttemptedCard = null;
+let maxCards = 1000;
+let numberButtons = [];
+let _liveCardsRendered = new Set();
+let _lastWalletLoad = 0;
+const WALLET_LOAD_MIN_INTERVAL = 1000;
 
-function getAllTakenCardsMap() { let data = localStorage.getItem('abisinya_all_taken_map'); return data ? JSON.parse(data) : {}; }
-function saveAllTakenCardsMap(mapObj) { localStorage.setItem('abisinya_all_taken_map', JSON.stringify(mapObj)); }
-
-const gridContainer = document.getElementById('number-grid');
-for (let i = 1; i <= 600; i++) {
-  const btn = document.createElement('button');
-  btn.className = 'number-btn';
-  btn.id = 'grid-btn-' + i;
-  btn.innerText = i;
-  btn.onclick = () => toggleCard(i, btn);
-  gridContainer.appendChild(btn);
-}
-
-function refreshGridTakenStatus() {
-  let mapObj = getAllTakenCardsMap();
-  for (let i = 1; i <= 600; i++) {
-    let btn = document.getElementById('grid-btn-' + i);
-    if (!btn) continue;
-    let owner = mapObj[i];
-    if (selectedCards.has(i)) {
-      // ✅ የኔ ካርቴላ — ሰማያዊ
-      btn.classList.add('selected');
-      btn.classList.remove('taken-by-other');
-      btn.disabled = false;
-    } else if (owner && String(owner) !== clientId) {
-      // ✅ የሌላ ሰው — አረንጓዴ
-      btn.classList.remove('selected');
-      btn.classList.add('taken-by-other');
-      btn.disabled = true;
-    } else {
-      btn.classList.remove('selected');
-      btn.classList.remove('taken-by-other');
-      btn.disabled = false;
+function hideLoadingScreen() {
+    const loader = document.getElementById('loading-screen');
+    if (loader && !loader.classList.contains('hide-loader')) {
+        loader.classList.add('hide-loader');
+        setTimeout(() => { try { loader.remove(); } catch(e) {} }, 350);
     }
-  }
 }
 
-function toggleCard(num, btn) {
-  if (gamePhase === 'calling') {
-    showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
-    return;
-  }
-  let mapObj = getAllTakenCardsMap();
-  let owner = mapObj[num];
-  if (selectedCards.has(num)) {
-    selectedCards.delete(num);
-    delete mapObj[num];
-    currentWallet += 10;
-    updateWalletDisplay();
-    btn.classList.remove('selected');
-    socket.emit('select_card', { cardNum: num, clientId: clientId, action: 'deselect' });
-  } else {
-    // ✅ የሌላ ሰው ካርቴላ ከሆነ — አትፍቀድ
-    if (owner && String(owner) !== clientId) { showFooterNotification("ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!"); return; }
-    if (selectedCards.size >= 3) { showFooterNotification("ከ3 ካርቴላ በላይ መምረጥ አይችሉም!"); return; }
-    if (currentWallet < 10) { showFooterNotification("ቀሪ ሂሳብ በቂ አይደለም!"); return; }
-    selectedCards.add(num);
-    mapObj[num] = clientId;
-    currentWallet -= 10;
-    updateWalletDisplay();
-    btn.classList.add('selected');
-    socket.emit('select_card', { cardNum: num, clientId: clientId, action: 'select' });
-  }
-  saveAllTakenCardsMap(mapObj);
-  saveSelectedCards();
-  document.getElementById('taken-cards-badge').innerText = selectedCards.size;
-  updatePreview();
-  refreshGridTakenStatus();
-}
-
-function updatePreview() {
-  const container = document.getElementById('preview-container');
-  if (selectedCards.size === 0) { container.innerHTML = '<div style="text-align:center; color:#6b21a8; font-size:10px; padding:4px;">ካርቴላ የለም</div>'; return; }
-  container.innerHTML = '';
-  selectedCards.forEach(cardNum => {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'card-preview-card';
-    cardDiv.innerHTML = '<div class="card-preview-header">BOARD ' + cardNum + '</div><div class="mini-matrix"><div class="h-b">B</div><div class="h-i">I</div><div class="h-n">N</div><div class="h-g">G</div><div class="h-o">O</div>' + generatePreviewMatrixHTML(cardNum) + '</div>';
-    container.appendChild(cardDiv);
-  });
-}
-
-function getCardCols(cardNum) {
-  let cols = [[], [], [], [], []];
-  for (let c = 0; c < 5; c++) {
-    let min = c * 15 + 1, max = c * 15 + 15;
-    let available = [];
-    for (let n = min; n <= max; n++) available.push(n);
-    let seed = cardNum * 2654435761;
-    for (let i = available.length - 1; i > 0; i--) {
-      seed = (seed * 1103515245 + 12345) % 0x80000000;
-      let j = Math.floor((seed / 0x80000000) * (i + 1));
-      let temp = available[i]; available[i] = available[j]; available[j] = temp;
+function initGrid() {
+    const grid = document.getElementById('number-grid');
+    if (!grid) return;
+    grid.innerHTML = ''; numberButtons = [];
+    const frag = document.createDocumentFragment();
+    for (let i = 1; i <= maxCards; i++) { 
+        const btn = document.createElement('button'); 
+        btn.className = 'number-btn'; btn.id = 'grid-btn-' + i; btn.innerText = i; 
+        btn.onclick = (function(num) { return function() { toggleCard(num); }; })(i); 
+        frag.appendChild(btn); numberButtons[i] = btn; 
     }
-    cols[c] = available.slice(0, 5);
-    cols[c].sort((a, b) => a - b);
-  }
-  cols[2][2] = 'FREE';
-  return cols;
+    grid.appendChild(frag);
 }
 
-function generatePreviewMatrixHTML(cardNum) {
-  let cols = getCardCols(cardNum);
-  let html = '';
-  for (let r = 0; r < 5; r++) {
+function updateWalletUI() { 
+    document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); 
+    document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); 
+    document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); 
+}
+function updateProfileUI() { 
+    document.getElementById('profile-name-val').innerText = userProfile.name; 
+    document.getElementById('profile-id-val').innerText = userProfile.id; 
+    document.getElementById('profile-games-val').innerText = userTotalGames; 
+    document.getElementById('profile-wins-val').innerText = userTotalWins; 
+    document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; 
+    document.getElementById('invite-link-input').value = 'https://t.me/Ethiobingo_bot?start=' + userProfile.id; 
+}
+
+function updateLiveStats(totalCards) {
+    document.getElementById('players-val-top').innerText = totalCards;
+    document.getElementById('derash-val-top').innerText = totalCards * 8;
+    document.getElementById('players-val').innerText = totalCards;
+    document.getElementById('derash-val').innerText = totalCards * 8;
+}
+
+async function loadWallet() {
+    const now = Date.now(); if ((now - _lastWalletLoad) < WALLET_LOAD_MIN_INTERVAL) return; _lastWalletLoad = now;
+    try { 
+        const res = await fetch('/api/wallet/me?t=' + now); 
+        const data = await res.json(); 
+        if (data.success && data.data) { 
+            currentWallet = Number(data.data.play_balance) || 0; 
+            currentWinWallet = Number(data.data.win_balance) || 0; 
+            userTotalGames = Number(data.data.total_games) || 0; 
+            userTotalWins = Number(data.data.total_wins) || 0; 
+            userPhone = data.data.phone || ""; 
+            updateWalletUI(); 
+            updateProfileUI(); 
+        } 
+    } catch (e) {}
+}
+
+async function loadSettings() {
+    try { 
+        const res = await fetch('/api/settings'); 
+        const data = await res.json(); 
+        if (data.success && data.data) { 
+            paymentSettings = data.data; 
+        } 
+    } catch (e) {}
+}
+
+async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) return null; return await res.json(); } catch (e) { return null; } }
+
+window.toggleCard = function(num) {
+    if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
+    
+    if (selectedCards.has(num)) { 
+        selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
+        updatePreviewUI();
+        socket.emit('select_card', { cardNum: num, action: 'deselect' }); 
+        return; 
+    }
+    if (numberButtons[num].classList.contains('taken-by-other')) {
+        showFooterNotification("❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!"); return;
+    }
+    selectedCards.add(num); numberButtons[num].className = 'number-btn selected'; 
+    updatePreviewUI();
+    socket.emit('select_card', { cardNum: num, action: 'select' });
+}
+
+// ✅ 2ኛ ጥያቄ፡ የተመረጡ ካርቴላዎች ማሳያ (Preview)
+function updatePreviewUI() {
+    const c = document.getElementById('preview-container');
+    if (selectedCards.size === 0) { 
+        c.innerHTML = ''; // ✅ ጽሑፉ ተወግዶ ቦታው ነፃ ሆኗል
+        return; 
+    }
+    
+    c.innerHTML = ''; 
+    selectedCards.forEach(cn => { 
+        const cols = generateCardLayout(cn);
+        const d = document.createElement('div'); 
+        d.className = 'preview-card'; 
+        
+        let gridHtml = `<div class="preview-header">BOARD ${cn}</div><div class="preview-grid">`;
+        for(let r=0; r<5; r++) {
+            for(let col=0; col<5; col++) {
+                const v = cols[col][r];
+                if(v === 'FREE') gridHtml += `<div class="preview-cell free">F</div>`;
+                else gridHtml += `<div class="preview-cell">${v}</div>`;
+            }
+        }
+        gridHtml += `</div>`;
+        
+        d.innerHTML = gridHtml; 
+        c.appendChild(d); 
+    });
+}
+
+window.switchTab = function(tabName) {
+    if (gamePhase === 'calling' && tabName === 'ticket') tabName = 'live';
+    ['ticket', 'profile', 'wallet', 'rank', 'history', 'live'].forEach(t => { const el = document.getElementById('page-' + t); if (el) el.classList.add('hidden'); });
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById('page-' + tabName); if (target) target.classList.remove('hidden');
+    
+    const navName = (tabName === 'live') ? 'ticket' : tabName;
+    const nb = document.getElementById('nav-btn-' + navName); 
+    if (nb) nb.classList.add('active');
+    
+    if (tabName === 'wallet') loadWallet(); 
+    if (tabName === 'history') loadHistory(); 
+    if (tabName === 'rank') loadLeaderboard(); 
+    if (tabName === 'profile') loadWallet();
+    if (tabName === 'live') { if (selectedCards.size > 0) document.getElementById('wait-message-box').classList.add('hidden'); else document.getElementById('wait-message-box').classList.remove('hidden'); }
+}
+
+async function loadHistory() {
+    const container = document.getElementById('history-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
+    const data = await apiGet('/api/wallet/history'); if (!data || !data.success) { container.innerHTML = 'Error loading history.'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">📭 እስካሁን ግብይት የለም።</div>'; return; }
+    const frag = document.createDocumentFragment();
+    data.data.forEach(txn => { 
+        let icon = txn.type === 'deposit' ? '💰' : '💸'; 
+        let statusColor = txn.status === 'approved' ? '#10b981' : txn.status === 'rejected' ? '#ef4444' : '#f59e0b'; 
+        let div = document.createElement('div'); 
+        div.className = 'glass-panel';
+        div.style.cssText = "padding:12px; display:flex; flex-direction:column; gap:4px;"; 
+        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${icon} ${txn.type.toUpperCase()}</span><span style="color:var(--gold);">${txn.amount} ETB</span></div><div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8;"><span>${new Date(txn.created).toLocaleDateString()}</span><span style="color:${statusColor}; font-weight:bold;">${txn.status.toUpperCase()}</span></div>`; 
+        frag.appendChild(div); 
+    });
+    container.appendChild(frag);
+}
+
+async function loadLeaderboard() {
+    const container = document.getElementById('leaderboard-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
+    const data = await apiGet('/api/leaderboard'); if (!data || !data.success) { container.innerHTML = 'Error loading rank.'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">📭 እስካሁን አሸናፊ የለም።</div>'; return; }
+    let medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]; 
+    const frag = document.createDocumentFragment();
+    data.data.forEach((u, i) => { 
+        let div = document.createElement('div'); 
+        div.className = 'glass-panel';
+        div.style.cssText = "padding:12px; display:flex; justify-content:space-between; align-items:center;"; 
+        div.innerHTML = `<div style="display:flex; gap:10px; align-items:center;"><span style="font-size:20px;">${medals[i] || ''}</span><span style="font-weight:bold; color:var(--text-color);">${u.name}</span></div><span style="color:var(--gold); font-weight:900;">${Number(u.win_balance).toFixed(2)} ETB</span>`; 
+        frag.appendChild(div); 
+    });
+    container.appendChild(frag);
+}
+
+function copyNumberToClipboard(num) { navigator.clipboard.writeText(num).then(() => alert('ቁጥሩ ተቀድቷል: ' + num)).catch(() => alert('ኮፒ ማድረግ አልተቻለም')); }
+function toggleDepositOptions() { document.getElementById('withdraw-options-section').classList.add('hidden'); document.getElementById('deposit-options-section').classList.toggle('hidden'); }
+function toggleWithdrawOptions() { document.getElementById('deposit-options-section').classList.add('hidden'); document.getElementById('withdraw-options-section').classList.toggle('hidden'); }
+function selectDepositMethod(m) { 
+    const b = document.getElementById('deposit-info-box'); b.classList.remove('hidden'); 
+    if (m === 'telebirr') { 
+        b.innerHTML = `<div style="text-align:left; padding:10px;">📲 <b>Telebirr</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.telebirr_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.telebirr_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.telebirr_name || 'Tazebew'}</b></div></div>`; 
+    } else { 
+        b.innerHTML = `<div style="text-align:left; padding:10px;">🏦 <b>CBE</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.cbe_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.cbe_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.cbe_name || 'Tazebew'}</b></div></div>`; 
+    } 
+}
+function selectWithdrawMethod(t) { 
+    document.getElementById('withdraw-form-box').classList.remove('hidden'); 
+    const lbl = document.getElementById('withdraw-target-label'); const ph = document.getElementById('withdraw-phone-input'); 
+    if (t === 'self') { 
+        if (userPhone) { lbl.innerHTML = 'ስልክ: <b>' + userPhone + '</b>'; ph.classList.add('hidden'); } 
+        else { lbl.innerHTML = 'የቴሌብር ስልክ ቁጥርዎን ያስገቡ:'; ph.classList.remove('hidden'); } 
+    } else { 
+        lbl.innerHTML = 'የቴሌብር ቁጥር ያስገቡ:'; ph.classList.remove('hidden'); 
+    } 
+}
+async function submitWithdrawRequest(event) {
+    const btn = event?.target; if (!btn) return;
+    const amt = parseFloat(document.getElementById('withdraw-amount-input').value); 
+    if (!amt || amt <= 0) return alert("ትክክለኛ መጠን ያስገቡ!"); 
+    if (amt < 100) return alert("ዝቅተኛው የወጭ መጠን 100 ETB ነው!"); 
+    if (amt > currentWinWallet) return alert("የWin ባላንስ በቂ አይደለም!"); 
+    const phoneInput = document.getElementById('withdraw-phone-input'); 
+    let phone = phoneInput.classList.contains('hidden') ? (userPhone || '') : phoneInput.value.trim(); 
+    if (!phone || phone.replace(/\D/g, '').length < 9) return alert("ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ!"); 
+    const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'በመላክ ላይ...'; 
+    try { 
+        const res = await fetch('/api/wallet/withdraw-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, phone }) }); 
+        const data = await res.json(); 
+        if (data.success) { 
+            alert(`✅ የወጭ ጥያቄ በተሳካ ሁኔታ ተልኳል!`); 
+            document.getElementById('withdraw-amount-input').value = ''; 
+            if (!phoneInput.classList.contains('hidden')) phoneInput.value = ''; 
+            document.getElementById('withdraw-options-section').classList.add('hidden'); 
+            await loadWallet(); 
+        } else { alert('❌ ' + (data.error || 'ስህተት ተከስቷል')); } 
+    } catch (e) { alert('❌ የኢንተርኔት ስህተት።'); } 
+    finally { btn.disabled = false; btn.innerText = originalText; } 
+}
+
+function buildBingoBoard() { 
+    const b = document.getElementById('bingo-board'); b.innerHTML = ''; const frag = document.createDocumentFragment(); 
+    [{t:'B',c:'#2563eb'},{t:'I',c:'#0d9488'},{t:'N',c:'#4f46e5'},{t:'G',c:'#d97706'},{t:'O',c:'#dc2626'}].forEach(h => { const d = document.createElement('div'); d.style.cssText = `background:${h.c}; color:white; text-align:center; font-weight:bold; padding:4px; border-radius:4px; font-size:10px;`; d.innerText = h.t; frag.appendChild(d); }); 
+    for (let row = 1; row <= 15; row++) for (let col = 0; col < 5; col++) { let num = col * 15 + row; const c = document.createElement('div'); c.className = 'board-cell'; c.id = 'cell-' + num; c.innerText = num; if (calledNumbersSet.has(num)) c.classList.add('marked'); frag.appendChild(c); } 
+    b.appendChild(frag); 
+}
+
+function generateCardLayout(cn) {
+    let cols = [[],[],[],[],[]];
+    let seed = cn * 100;
     for (let c = 0; c < 5; c++) {
-      let val = cols[c][r];
-      html += val === 'FREE' ? '<div class="mini-cell free">FREE</div>' : '<div class="mini-cell">' + val + '</div>';
+        let min = c * 15 + 1, max = c * 15 + 15;
+        let avail = []; for (let n = min; n <= max; n++) avail.push(n);
+        for (let i = avail.length - 1; i > 0; i--) { 
+            seed = (seed * 9301 + 49297) % 233280;
+            let j = Math.floor((seed / 233280) * (i + 1)); 
+            [avail[i], avail[j]] = [avail[j], avail[i]]; 
+        }
+        cols[c] = avail.slice(0, 5);
     }
-  }
-  return html;
+    cols[2][2] = 'FREE';
+    return cols;
 }
 
-function startLiveGame() {
-  buildBingoBoard();
-  updateLiveCardsContainer();
-  liveGameInitialized = true;
-}
-
-function buildBingoBoard() {
-  const bingoBoard = document.getElementById('bingo-board');
-  bingoBoard.innerHTML = '';
-  const headers = [{text:'B',cls:'h-b'},{text:'I',cls:'h-i'},{text:'N',cls:'h-n'},{text:'G',cls:'h-g'},{text:'O',cls:'h-o'}];
-  headers.forEach(h => { const div = document.createElement('div'); div.className = h.cls; div.innerText = h.text; bingoBoard.appendChild(div); });
-  for (let row = 1; row <= 15; row++) {
-    for (let col = 0; col < 5; col++) {
-      let num = col * 15 + row;
-      const cell = document.createElement('div');
-      cell.className = 'board-cell';
-      cell.id = 'cell-' + num;
-      cell.innerText = num;
-      if (calledNumbersSet.has(num)) cell.classList.add('marked');
-      bingoBoard.appendChild(cell);
-    }
-  }
-}
-
+// ✅ 3ኛ ጥያቄ፡ የ BINGO ፊደላትን ማነጣጠር (በአንድ ወጥ ቀለም)
 function updateLiveCardsContainer() {
-  const container = document.getElementById('live-cards-container');
-  container.innerHTML = '';
-  if (selectedCards.size === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:10px;">ካርቴላ የለም</div>'; return; }
-  selectedCards.forEach(cardNum => {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'interactive-card-view';
-    cardDiv.innerHTML = '<div class="card-preview-header">BOARD ' + cardNum + '</div><div class="interactive-matrix"><div class="h-b" style="font-size:9px;padding:3px;">B</div><div class="h-i" style="font-size:9px;padding:3px;">I</div><div class="h-n" style="font-size:9px;padding:3px;">N</div><div class="h-g" style="font-size:9px;padding:3px;">G</div><div class="h-o" style="font-size:9px;padding:3px;">O</div>' + generateInteractiveMatrixHTML(cardNum) + '</div><button class="bingo-action-btn" onclick="verifyAndClaimBingo(' + cardNum + ')">BINGO!</button>';
-    container.appendChild(cardDiv);
-  });
-}
-
-function handleCardCellClick(val) {
-  if (val === 'FREE') return;
-  if (!calledNumbersSet.has(val)) return;
-  if (userManuallyMarked.has(val)) userManuallyMarked.delete(val);
-  else userManuallyMarked.add(val);
-  updateLiveCardsContainer();
-}
-
-function generateInteractiveMatrixHTML(cardNum) {
-  let cols = getCardCols(cardNum);
-  let html = '';
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 5; c++) {
-      let val = cols[c][r];
-      let isFree = (val === 'FREE');
-      let isCalled = calledNumbersSet.has(val);
-      let isManuallyMarked = userManuallyMarked.has(val);
-      let cls = 'interactive-cell';
-      if (isFree) cls += ' free';
-      else if (isManuallyMarked) cls += ' marked-cell';
-      else if (isCalled) cls += ' called-highlight';
-      if (isFree) html += '<div class="' + cls + '">FREE</div>';
-      else html += '<div class="' + cls + '" onclick="handleCardCellClick(' + val + ')">' + val + '</div>';
+    const c = document.getElementById('live-cards-container'); 
+    if (selectedCards.size === 0) { 
+        c.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:10px;">ካርቴላ የለም</div>'; 
+        _liveCardsRendered.clear(); 
+        return; 
     }
-  }
-  return html;
-}
-
-function getWinningLineDetails(markedSet, cardNum) {
-  let cols = getCardCols(cardNum);
-  let matrix = [];
-  for (let r = 0; r < 5; r++) {
-    let rowArr = [];
-    for (let c = 0; c < 5; c++) {
-      let val = cols[c][r];
-      let isMarked = (val === 'FREE' || markedSet.has(val));
-      rowArr.push(isMarked);
+    
+    if (!_liveCardsRendered.size) c.innerHTML = '';
+    
+    selectedCards.forEach(cn => { 
+        if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn); 
+        const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn; 
+        // የ BINGO ፊደላት አሁን በአንድ ወጥ ቀለም (Gold) ናቸው
+        d.innerHTML = `
+            <div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div>
+            <div class="card-header-letters">
+                <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+            </div>
+            <div class="interactive-matrix" id="im-${cn}"></div>
+        `; 
+        c.appendChild(d); 
+    });
+    
+    for (const cn of [..._liveCardsRendered]) { 
+        if (!selectedCards.has(cn)) { 
+            const el = c.querySelector('[data-card="' + cn + '"]'); 
+            if (el) el.remove(); 
+            _liveCardsRendered.delete(cn); 
+        } 
     }
-    matrix.push(rowArr);
-  }
-  for (let r = 0; r < 5; r++) if (matrix[r].every(v => v)) return { type: 'row', index: r, desc: 'አግድም ረድፍ ' + (r + 1) };
-  for (let c = 0; c < 5; c++) { let colWin = true; for (let r = 0; r < 5; r++) if (!matrix[r][c]) { colWin = false; break; } if (colWin) return { type: 'col', index: c, desc: 'ቀጥ ያለ ኮሎም ' + (c + 1) }; }
-  let d1 = true, d2 = true;
-  for (let i = 0; i < 5; i++) { if (!matrix[i][i]) d1 = false; if (!matrix[i][4 - i]) d2 = false; }
-  if (d1) return { type: 'diag1', desc: "ሰያፍ መስመር 1" };
-  if (d2) return { type: 'diag2', desc: "ሰያፍ መስመር 2" };
-  return null;
+    
+    _liveCardsRendered.forEach(cn => {
+        const container = document.getElementById('im-' + cn);
+        if (!container) return;
+        
+        const cols = generateCardLayout(cn);
+        let html = '';
+        for(let r = 0; r < 5; r++) {
+            for(let c = 0; c < 5; c++) {
+                const v = cols[c][r];
+                const isFree = v === 'FREE';
+                const isCalled = !isFree && calledNumbersSet.has(v);
+                let cls = 'interactive-cell';
+                if (isFree) cls += ' free';
+                else if (isCalled) cls += ' marked-cell'; 
+                html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+            }
+        }
+        container.innerHTML = html;
+    });
 }
 
-function checkAutoBingo(cardNum) {
-  if (gameEndedAlready) return false;
-  let winObj = getWinningLineDetails(calledNumbersSet, cardNum);
-  if (winObj) {
-    gameEndedAlready = true;
-    let mapObj = getAllTakenCardsMap();
-    let totalCardsCount = Object.keys(mapObj).length;
-    let totalPrize = (totalCardsCount > 0 ? totalCardsCount : 1) * 8;
-    currentWinWallet += totalPrize;
-    updateWalletDisplay();
-    saveGameHistoryRecord({ won: true, prize: totalPrize, date: new Date().toLocaleDateString() });
-    socket.emit('claim_bingo', { winnerName: userProfile.name, cardNum: cardNum, prize: totalPrize, winDesc: winObj.desc, winType: winObj.type, winIndex: winObj.index });
-    triggerGameOverScreen(userProfile.name, winObj, cardNum, totalPrize);
-    return true;
-  }
-  return false;
+function updateCalledNumbersUI(allCalled) { 
+    if (!allCalled?.length) return; 
+    let last = allCalled[allCalled.length - 1]; 
+    
+    document.getElementById('current-call-display').innerText = last; 
+    
+    let rc = document.getElementById('recent-calls-container'); 
+    rc.innerHTML = ''; 
+    let recent = allCalled.slice(Math.max(0, allCalled.length - 4), allCalled.length - 1).reverse(); 
+    recent.forEach((n) => {
+        let c = document.createElement('div'); 
+        c.className = 'recent-ball'; 
+        c.innerText = n; 
+        rc.appendChild(c); 
+    }); 
+
+    document.getElementById('call-count').innerText = allCalled.length; 
+    allCalled.forEach(n => { let cell = document.getElementById('cell-' + n); if (cell) cell.classList.add('marked'); }); 
 }
 
-function verifyAndClaimBingo(cardNum) {
-  if (gameEndedAlready) return;
-  if (!currentLatestCalledNumber) return;
-  let winObj = getWinningLineDetails(calledNumbersSet, cardNum);
-  if (winObj) {
-    gameEndedAlready = true;
-    let mapObj = getAllTakenCardsMap();
-    let totalCardsCount = Object.keys(mapObj).length;
-    let totalPrize = (totalCardsCount > 0 ? totalCardsCount : 1) * 8;
-    currentWinWallet += totalPrize;
-    updateWalletDisplay();
-    saveGameHistoryRecord({ won: true, prize: totalPrize, date: new Date().toLocaleDateString() });
-    socket.emit('claim_bingo', { winnerName: userProfile.name, cardNum: cardNum, prize: totalPrize, winDesc: winObj.desc, winType: winObj.type, winIndex: winObj.index });
-    triggerGameOverScreen(userProfile.name, winObj, cardNum, totalPrize);
-  } else {
-    showFooterNotification("ያልተሟላ ካርቴላ ነው!");
-  }
-}
+const socket = io({ transports: ['websocket', 'polling'] });
+socket.on('connect', () => { socket.emit('join_room', { clientId: clientId }); });
 
-function triggerGameOverScreen(winnerName, winObj, cardNum, totalPrize) {
-  let overlay = document.getElementById('game-over-overlay');
-  overlay.classList.remove('hidden');
-  document.getElementById('winner-name-badge').innerText = winnerName + " won!";
-  document.getElementById('modal-prize-val').innerText = totalPrize + " ETB";
-  document.getElementById('winning-line-desc').innerText = "ያሸነፈበት መስመር: " + (winObj ? winObj.desc : "ቢንጎ ተገኘ");
-  const modalContainer = document.getElementById('modal-winning-card-container');
-  modalContainer.innerHTML = '<div class="modal-card-container"><div class="modal-matrix"><div class="h-b" style="font-size:9px;padding:3px;">B</div><div class="h-i" style="font-size:9px;padding:3px;">I</div><div class="h-n" style="font-size:9px;padding:3px;">N</div><div class="h-g" style="font-size:9px;padding:3px;">G</div><div class="h-o" style="font-size:9px;padding:3px;">O</div>' + generateModalMatrixHTML(cardNum, winObj) + '</div><div class="modal-board-footer">Board ' + cardNum + '</div></div>';
-
-  let countdownVal = 10;
-  let cdEl = document.getElementById('modal-countdown');
-  cdEl.innerText = countdownVal;
-  let countdownInterval = setInterval(() => {
-    countdownVal--;
-    cdEl.innerText = countdownVal;
-    if (countdownVal <= 0) {
-      clearInterval(countdownInterval);
-      selectedCards.clear();
-      userManuallyMarked.clear();
-      calledNumbersSet.clear();
-      currentLatestCalledNumber = null;
-      gameEndedAlready = false;
-      liveGameInitialized = false;
-      gamePhase = 'waiting';
-      localStorage.removeItem('abisinya_all_taken_map');
-      localStorage.removeItem('abisinya_selected_cards');
-      switchTab('ticket');
-      updatePreview();
-      refreshGridTakenStatus();
-      document.getElementById('taken-cards-badge').innerText = '0';
-      document.getElementById('current-call-display').innerText = '--';
-      document.getElementById('call-count').innerText = '0';
-      document.getElementById('derash-val').innerText = '0';
-      document.getElementById('players-val').innerText = '0';
-      document.getElementById('recent-calls-container').innerHTML = '';
-      document.getElementById('live-cards-container').innerHTML = '';
-      for (let i = 1; i <= 75; i++) {
-        let cell = document.getElementById('cell-' + i);
-        if (cell) cell.classList.remove('marked');
-      }
-      document.getElementById('game-over-overlay').classList.add('hidden');
-    }
-  }, 1000);
-}
-
-function generateModalMatrixHTML(cardNum, winObj) {
-  let cols = getCardCols(cardNum);
-  let html = '';
-  for (let r = 0; r < 5; r++) {
-    for (let c = 0; c < 5; c++) {
-      let val = cols[c][r];
-      let isFree = (val === 'FREE');
-      let isMarked = isFree || calledNumbersSet.has(val);
-      let isWinningData = false;
-      if (winObj) {
-        if (winObj.type === 'row' && winObj.index === r) isWinningData = true;
-        if (winObj.type === 'col' && winObj.index === c) isWinningData = true;
-        if (winObj.type === 'diag1' && r === c) isWinningData = true;
-        if (winObj.type === 'diag2' && r + c === 4) isWinningData = true;
-      }
-      let cls = 'modal-cell';
-      if (isWinningData) cls += ' winning-highlight';
-      else if (isMarked) cls += ' marked';
-      html += isFree ? '<div class="' + cls + ' free">FREE</div>' : '<div class="' + cls + '">' + val + '</div>';
-    }
-  }
-  return html;
-}
-
-// ✅ INIT_STATE — የራስህን ካርቴላ ብቻ አንብብ
 socket.on('init_state', (state) => {
-  console.log('📥 init_state:', state);
-  gamePhase = state.phase || 'waiting';
-
-  if (state.takenCards) {
-    saveAllTakenCardsMap(state.takenCards);
-    // ✅ የራስህን ካርቴላዎች ብቻ
-    selectedCards.clear();
-    Object.keys(state.takenCards).forEach(cardNum => {
-      if (String(state.takenCards[cardNum]) === clientId) {
-        selectedCards.add(parseInt(cardNum));
-      }
-    });
-    saveSelectedCards();
-    console.log('✅ My cards:', Array.from(selectedCards));
-    refreshGridTakenStatus();
-    updatePreview();
-  }
-
-  if (state.calledNumbers && state.calledNumbers.length > 0) {
-    calledNumbersSet = new Set(state.calledNumbers);
-    currentLatestCalledNumber = state.calledNumbers[state.calledNumbers.length - 1];
-    updateCalledNumbersUI(state.calledNumbers);
-  }
-
-  if (state.remainingTime !== undefined) {
-    document.getElementById('timer-val').innerText = state.remainingTime;
-  }
-
-  // ✅ ሁሉም ተጫዋቾች የመረጡት ጠቅላላ ቁጥር
-  let totalCards = state.totalSelected || Object.keys(state.takenCards || {}).length;
-  document.getElementById('derash-val').innerText = totalCards * 8;
-  document.getElementById('players-val').innerText = totalCards;
-  // ✅ "Selected" ላይ የራስህ ብቻ ሳይሆን ሁሉም ተጫዋቾች የመረጡት ጠቅላላ
-  document.getElementById('taken-cards-badge').innerText = totalCards;
-
-  if (state.gameStarted || state.phase === 'calling' || state.phase === 'countdown') {
-    switchTab('live');
-    startLiveGame();
-    updateLiveCardsContainer();
-    if (selectedCards.size > 0) {
-      document.getElementById('wait-message-box').classList.add('hidden');
-    } else {
-      document.getElementById('wait-message-box').classList.remove('hidden');
+    gamePhase = state.phase;
+    maxCards = state.maxCards || 1000;
+    selectedCards.clear(); state.myCards.forEach(n => selectedCards.add(n));
+    initGrid();
+    updatePreviewUI(); 
+    
+    updateLiveStats(state.totalCards);
+    
+    state.myCards.forEach(n => { if(numberButtons[n]) numberButtons[n].className = 'number-btn selected'; });
+    
+    if (state.calledNumbers?.length) { 
+        calledNumbersSet = new Set(state.calledNumbers); 
+        updateCalledNumbersUI(state.calledNumbers); 
     }
-  } else {
-    switchTab('ticket');
-    updatePreview();
-  }
+    if (state.remainingTime !== undefined) document.getElementById('timer-val').innerText = state.remainingTime + 'ሰ';
+    
+    loadWallet();
+    if (state.phase === 'calling' || state.phase === 'gameover') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
+    else { switchTab('ticket'); }
+    hideLoadingScreen();
 });
 
-socket.on('sync_taken_cards', (takenMap) => {
-  saveAllTakenCardsMap(takenMap);
-  refreshGridTakenStatus();
-  // ✅ ሁሉም ተጫዋቾች የመረጡት ጠቅላላ ቁጥር
-  let totalCards = Object.keys(takenMap).length;
-  document.getElementById('derash-val').innerText = totalCards * 8;
-  document.getElementById('players-val').innerText = totalCards;
-  document.getElementById('taken-cards-badge').innerText = totalCards;
-});
-
-socket.on('update_total_selected', (count) => {
-  document.getElementById('taken-cards-badge').innerText = count;
-  document.getElementById('derash-val').innerText = count * 8;
-  document.getElementById('players-val').innerText = count;
-});
-
-socket.on('need_more_cards', (data) => {
-  showFooterNotification(data.message || "ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!");
-});
-
-socket.on('game_started', (data) => {
-  if (data.status === 'calling') {
-    gamePhase = 'calling';
-    if (selectedCards.size > 0) {
-      switchTab('live');
-      startLiveGame();
-    } else {
-      switchTab('live');
-      document.getElementById('wait-message-box').classList.remove('hidden');
+socket.on('sync_taken_cards', (data) => {
+    updateLiveStats(data.totalCards);
+    
+    for(let i=1; i<=maxCards; i++) {
+        if(!numberButtons[i]) continue;
+        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
+        else if(data.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
+        else { numberButtons[i].className = 'number-btn'; }
     }
-  } else if (data.status === 'countdown') {
-    gamePhase = 'countdown';
-    switchTab('ticket');
-  }
 });
 
-socket.on('timer_tick', (data) => {
-  document.getElementById('timer-val').innerText = data.remaining;
-  if (data.remaining <= 0 && gamePhase === 'countdown') {
-    gamePhase = 'calling';
-    if (selectedCards.size > 0) {
-      switchTab('live');
-      startLiveGame();
-      updateLiveCardsContainer();
-    } else {
-      switchTab('live');
-      document.getElementById('wait-message-box').classList.remove('hidden');
+socket.on('settings_updated', (data) => {
+    if (data.settings) {
+        paymentSettings = data.settings;
+        showFooterNotification("⚙️ የክፍያ መረጃ ተስተካክሏል!");
     }
-  }
 });
 
+socket.on('wallet_updated', () => loadWallet());
+socket.on('card_error', (data) => { showFooterNotification(data.message); });
+socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
+socket.on('phase_change', (data) => { 
+    gamePhase = data.phase; 
+    if(data.phase === 'calling') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
+    else if(data.phase === 'countdown') { switchTab('ticket'); }
+});
 socket.on('new_number_called', (data) => {
-  gamePhase = 'calling';
-  currentLatestCalledNumber = data.number;
-  calledNumbersSet.add(data.number);
-  updateCalledNumbersUI(data.allCalled);
-
-  if (!liveGameInitialized && selectedCards.size > 0) {
-    switchTab('live');
-    startLiveGame();
-  } else if (!liveGameInitialized) {
-    switchTab('live');
-  }
-
-  updateLiveCardsContainer();
-
-  if (selectedCards.size > 0) {
-    document.getElementById('wait-message-box').classList.add('hidden');
-  } else {
-    document.getElementById('wait-message-box').classList.remove('hidden');
-  }
-
-  if (!gameEndedAlready && selectedCards.size > 0) {
-    selectedCards.forEach(cardNum => {
-      if (!gameEndedAlready) checkAutoBingo(cardNum);
-    });
-  }
+    calledNumbersSet.add(data.number); 
+    updateCalledNumbersUI(data.allCalled);
+    if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
+    updateLiveCardsContainer(); 
 });
-
-socket.on('game_over', (data) => {
-  gameEndedAlready = true;
-  if (data.reason === 'bingo') {
-    let winObj = { desc: data.winDesc || "ቢንጎ ተገኘ", type: data.winType, index: data.winIndex };
-    triggerGameOverScreen(data.winner, winObj, data.cardNum, data.prize);
-  }
-});
-
 socket.on('reset_game', () => {
-  selectedCards.clear();
-  userManuallyMarked.clear();
-  calledNumbersSet.clear();
-  currentLatestCalledNumber = null;
-  gameEndedAlready = false;
-  liveGameInitialized = false;
-  gamePhase = 'waiting';
-  localStorage.removeItem('abisinya_all_taken_map');
-  localStorage.removeItem('abisinya_selected_cards');
-  switchTab('ticket');
-  updatePreview();
-  refreshGridTakenStatus();
-  document.getElementById('taken-cards-badge').innerText = '0';
-  document.getElementById('current-call-display').innerText = '--';
-  document.getElementById('call-count').innerText = '0';
-  document.getElementById('derash-val').innerText = '0';
-  document.getElementById('players-val').innerText = '0';
-  document.getElementById('recent-calls-container').innerHTML = '';
-  document.getElementById('live-cards-container').innerHTML = '';
-  document.getElementById('game-over-overlay').classList.add('hidden');
-  for (let i = 1; i <= 75; i++) {
-    let cell = document.getElementById('cell-' + i);
-    if (cell) cell.classList.remove('marked');
-  }
+    selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
+    initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
+    document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0';
+    document.getElementById('recent-calls-container').innerHTML = '';
+    updatePreviewUI(); 
+    loadWallet();
 });
 
-function updateCalledNumbersUI(allCalled) {
-  if (!allCalled || allCalled.length === 0) return;
-  let lastCalled = allCalled[allCalled.length - 1];
-  let prefix = lastCalled <= 15 ? 'B' : lastCalled <= 30 ? 'I' : lastCalled <= 45 ? 'N' : lastCalled <= 60 ? 'G' : 'O';
-  document.getElementById('current-call-display').innerText = prefix + '-' + lastCalled;
-  document.getElementById('call-count').innerText = allCalled.length;
-  let recentContainer = document.getElementById('recent-calls-container');
-  recentContainer.innerHTML = '';
-  let startIdx = Math.max(0, allCalled.length - 4);
-  let recentSlice = allCalled.slice(startIdx, allCalled.length - 1);
-  let circleClasses = ['recent-circle-1', 'recent-circle-2', 'recent-circle-3'];
-  recentSlice.forEach((n, idx) => {
-    let pfx = n <= 15 ? 'B' : n <= 30 ? 'I' : n <= 45 ? 'N' : n <= 60 ? 'G' : 'O';
-    let circle = document.createElement('div');
-    circle.className = circleClasses[idx] || 'recent-circle-3';
-    circle.innerText = pfx + '-' + n;
-    recentContainer.appendChild(circle);
-  });
-  allCalled.forEach(num => { let cell = document.getElementById('cell-' + num); if (cell) cell.classList.add('marked'); });
-}
+// ✅ 4ኛ ጥያቄ፡ የ Bingo ማሳያ (5x5 + Blinking + Called Numbers)
+socket.on('game_over', (data) => { 
+    if (isModalShown) return; isModalShown = true;
+    document.getElementById('winner-text').innerHTML = data.winners.some(w => String(w.id) === String(userProfile.id)) ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 Cartela ${data.winningCard} አሸንፏል`;
+    document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
+    document.getElementById('board-number-text').innerText = `BOARD ${data.winningCard}`;
+    
+    const container = document.getElementById('winning-card-container');
+    const winningCard = data.winningCard;
+    const cols = generateCardLayout(winningCard);
+    const winInfo = data.winners[0]; 
+    const calledNumbersArray = data.calledNumbers || [];
+    
+    let html = `<div class="winning-matrix">`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
 
-updateWalletDisplay();
-refreshGridTakenStatus();
-updatePreview();
-setInterval(refreshGridTakenStatus, 500);
+    for(let r = 0; r < 5; r++) {
+        for(let c = 0; c < 5; c++) {
+            const v = cols[c][r];
+            const isFree = v === 'FREE';
+            const isCalled = !isFree && calledNumbersArray.includes(v); 
+            const isWin = winInfo?.allLines?.some(line => {
+                if(line.type === 'row') return line.index === r;
+                if(line.type === 'col') return line.index === c;
+                if(line.type === 'diag1') return r === c;
+                if(line.type === 'diag2') return r === (4 - c);
+                if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
+                return false;
+            });
+            const isLastCall = (v === data.lastCall);
+            
+            let cls = 'winning-cell';
+            if (isWin) cls += ' highlight';
+            else if (isCalled) cls += ' called-cell';
+            if (isLastCall && isWin && !isFree) cls += ' last-call-blink';
+            
+            html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+        }
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+
+    const overlay = document.getElementById('game-over-overlay'); overlay.classList.remove('hidden');
+    let cd = 10; const cdEl = document.getElementById('modal-countdown'); cdEl.innerText = cd;
+    const ci = setInterval(() => { cd--; cdEl.innerText = cd; if (cd <= 0) { clearInterval(ci); overlay.classList.add('hidden'); isModalShown = false; } }, 1000);
+});
+
+function toggleVoice() { isVoiceOn = !isVoiceOn; document.getElementById('voice-toggle').innerText = isVoiceOn ? '🔊' : '🔇'; }
+function showFooterNotification(msg) { const n = document.getElementById('footer-notification'); n.innerText = msg; clearTimeout(notificationTimeout); notificationTimeout = setTimeout(() => { n.innerText = ''; }, 3000); }
+
+setTimeout(hideLoadingScreen, 3000);
+
+document.addEventListener('DOMContentLoaded', () => { 
+    initGrid(); 
+    setTimeout(hideLoadingScreen, 1000);
+});
+window.addEventListener('load', () => { 
+    loadWallet(); 
+    loadSettings(); 
+    setTimeout(hideLoadingScreen, 500);
+});
 </script>
 </body>
 </html>
