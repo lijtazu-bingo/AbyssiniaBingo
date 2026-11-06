@@ -126,41 +126,66 @@ function getCardCols(cardNum) {
     cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
 }
 
-// Accurate Winning Line check
+// 🔥 የተስተካከለው የማሸነፊያ ስሌት (Accurate Winning Logic) 🔥
 function checkWinningLine(cardNum, calledNumbers) {
-    const n = Number(cardNum); if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
-    const latestCall = calledNumbers[calledNumbers.length - 1];
-    const cols = getCardCols(n); const calledSet = new Set(calledNumbers); const m = [];
-    for (let r = 0; r < 5; r++) { const row = []; for (let c = 0; c < 5; c++) row.push(cols[c][r] === 'FREE' || calledSet.has(cols[c][r])); m.push(row); }
+    const n = Number(cardNum); 
+    if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
     
-    // Rows
+    const latestCall = calledNumbers[calledNumbers.length - 1];
+    const cols = getCardCols(n); 
+    const calledSet = new Set(calledNumbers); 
+    const m = [];
+    
+    // ማትሪክስ መፍጠር (Marked or Not)
+    for (let r = 0; r < 5; r++) { 
+        const row = []; 
+        for (let c = 0; c < 5; c++) {
+            row.push(cols[c][r] === 'FREE' || calledSet.has(cols[c][r])); 
+        }
+        m.push(row); 
+    }
+    
+    // 1. Horizontal (Rows)
     for (let r = 0; r < 5; r++) { 
         if (m[r][0] && m[r][1] && m[r][2] && m[r][3] && m[r][4]) { 
-            let hasL = false; for (let c = 0; c < 5; c++) if (cols[c][r] === latestCall) hasL = true; 
+            let hasL = false; 
+            for (let c = 0; c < 5; c++) if (cols[c][r] === latestCall) hasL = true; 
             if (hasL) return { type: 'row', index: r, desc: 'Row ' + (r + 1) }; 
         } 
     }
-    // Cols
+    
+    // 2. Vertical (Columns)
     for (let c = 0; c < 5; c++) { 
         if (m[0][c] && m[1][c] && m[2][c] && m[3][c] && m[4][c]) { 
-            let hasL = false; for (let r = 0; r < 5; r++) if (cols[c][r] === latestCall) hasL = true; 
+            let hasL = false; 
+            for (let r = 0; r < 5; r++) if (cols[c][r] === latestCall) hasL = true; 
             if (hasL) return { type: 'col', index: c, desc: 'Col ' + (c + 1) }; 
         } 
     }
-    // Diagonals
+    
+    // 3. Diagonals
     if (m[0][0] && m[1][1] && m[2][2] && m[3][3] && m[4][4]) { 
-        let hasL = false; for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; 
+        let hasL = false; 
+        for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; 
         if (hasL) return { type: 'diag1', desc: 'Diag 1' }; 
     }
     if (m[0][4] && m[1][3] && m[2][2] && m[3][1] && m[4][0]) { 
-        let hasL = false; for (let i = 0; i < 5; i++) if (cols[4 - i][i] === latestCall) hasL = true; 
+        let hasL = false; 
+        for (let i = 0; i < 5; i++) if (cols[4 - i][i] === latestCall) hasL = true; 
         if (hasL) return { type: 'diag2', desc: 'Diag 2' }; 
     }
-    // 4 Corners
+    
+    // 4. Four Corners (4 ማዕዘኖች)
+    // ማዕዘኖቹ በሙሉ መጠራታቸውን እና ከመካከላቸው አንዱ የመጨረሻው ጥሪ መሆኑን ማረጋገጥ
     if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { 
-        let hasL = false; if (cols[0][0] === latestCall) hasL = true; if (cols[4][0] === latestCall) hasL = true; if (cols[0][4] === latestCall) hasL = true; if (cols[4][4] === latestCall) hasL = true; 
+        let hasL = false; 
+        if (cols[0][0] === latestCall) hasL = true; 
+        if (cols[4][0] === latestCall) hasL = true; 
+        if (cols[0][4] === latestCall) hasL = true; 
+        if (cols[4][4] === latestCall) hasL = true; 
         if (hasL) return { type: 'corners', desc: '4 Corners' }; 
     }
+    
     return null;
 }
 
