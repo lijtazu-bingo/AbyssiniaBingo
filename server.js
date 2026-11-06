@@ -43,7 +43,6 @@ app.use(express.static('public', { maxAge: '1d' }));
 mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20, dbName: 'abisinya' })
 .then(async () => {
     console.log('✅ MongoDB connected');
-    // Load settings on startup
     const s = await Settings.findOne({ key: 'payment_accounts' }).lean();
     if (s && s.maxCards) gameState.settings.maxCards = s.maxCards;
 })
@@ -615,7 +614,6 @@ async function endRound(winnersData) {
         winnersData[0].prize = basePrize + remainder;
         for(let i=1; i<winnersData.length; i++) winnersData[i].prize = basePrize;
 
-        // Note: To update different amounts, we need a loop or bulkWrite
         const bulkOps = winnersData.map(w => ({
             updateOne: { filter: { id: String(w.id) }, update: { $inc: { win_balance: w.prize, total_wins: 1 } } }
         }));
@@ -630,7 +628,7 @@ async function endRound(winnersData) {
         
         io.emit('game_over', { 
             reason: 'bingo', 
-            winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, winDesc: w.winDesc, winType: w.winType, winIndex: w.winIndex, allLines: w.allLines || [] })), 
+            winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: w.prize, winDesc: w.winDesc, winType: w.winType, winIndex: w.winIndex, allLines: w.allLines || [] })), 
             totalPrize, 
             prizePerWinner: basePrize, 
             winningCard: firstWinner.cardNum, 
