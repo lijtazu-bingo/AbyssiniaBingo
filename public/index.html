@@ -65,14 +65,15 @@ body {
 .main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px; }
 #page-ticket { display: flex; flex-direction: column; height: 100%; }
 
-.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
-.dash-card { padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-.dash-label { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-.dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
-.dash-value.wallet { color: var(--gold); }
-.dash-value.derash { color: #10b981; }
-.dash-value.selected { color: var(--blue); }
-.dash-value.timer { color: #f87171; }
+/* Top Dashboard - Enhanced Visibility */
+.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.dash-card { padding: 12px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: rgba(30, 41, 59, 0.95); border: 1px solid var(--glass-border); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+.dash-label { font-size: 10px; color: var(--text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.dash-value { font-size: 18px; font-weight: 900; margin-top: 4px; font-family: 'Courier New', Courier, monospace; }
+.dash-value.wallet { color: var(--gold); text-shadow: 0 0 10px rgba(250, 204, 21, 0.4); }
+.dash-value.derash { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.dash-value.selected { color: #60a5fa; text-shadow: 0 0 10px rgba(96, 165, 250, 0.4); }
+.dash-value.timer { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.4); }
 
 .instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
 
@@ -129,10 +130,10 @@ body {
 
 /* Live Page */
 #page-live { display: flex; flex-direction: column; height: 100%; }
-.stats-header { display: flex; justify-content: space-around; padding: 8px; margin-bottom: 8px; border: 1px solid var(--blue); }
+.stats-header { display: flex; justify-content: space-around; padding: 10px; margin-bottom: 10px; border: 1px solid var(--blue); background: rgba(15, 23, 42, 0.8); }
 .stat-item { text-align: center; }
-.stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
-.stat-value { font-size: 18px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
+.stat-label { font-size: 11px; color: var(--text-muted); font-weight:800; letter-spacing: 1px; }
+.stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
 .game-main-layout { display: flex; gap: 8px; flex: 1; overflow: hidden; }
 
 /* Dark Bingo Board */
@@ -198,7 +199,6 @@ body {
 }
 .winning-cell.last-call-blink { animation: pulseLastNum 1s infinite; border: 2px solid #fff; z-index: 10; position: relative; }
 
-/* Multiple Winners List */
 .multi-winners-list { width: 100%; max-width: 320px; margin-bottom: 15px; max-height: 200px; overflow-y: auto;}
 .winner-row { background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between; font-size: 13px;}
 .winner-row span.name { color: var(--gold); font-weight: bold; }
@@ -216,13 +216,10 @@ body {
   <!-- TICKET PAGE -->
   <div id="page-ticket">
     <div class="top-dashboard">
-      <div class="dash-card glass-panel"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
-      <div class="dash-card glass-panel"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
-      <div class="dash-card glass-panel"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
-      <div class="dash-card glass-panel">
-        <span class="dash-label">Time Left</span>
-        <span class="dash-value timer" id="timer-val">50ሰ</span>
-      </div>
+      <div class="dash-card"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
+      <div class="dash-card"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
+      <div class="dash-card"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
+      <div class="dash-card"><span class="dash-label">Call</span><span class="dash-value timer" id="call-count-top">0/75</span></div>
     </div>
     <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
     
@@ -241,7 +238,7 @@ body {
     <div class="stats-header glass-panel">
       <div class="stat-item"><span class="stat-label">DERASH</span><div class="stat-value" id="derash-val">0</div></div>
       <div class="stat-item"><span class="stat-label">PLAYERS</span><div class="stat-value" id="players-val">0</div></div>
-      <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0</div></div>
+      <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0/75</div></div>
     </div>
     <div class="game-main-layout">
       <div class="bingo-board" id="bingo-board"></div>
@@ -350,7 +347,6 @@ body {
   <div class="game-over-title">🏆 BINGO! 🏆</div>
   <div class="winner-text" id="winner-text">--</div>
   
-  <!-- Multi-Winner List -->
   <div class="multi-winners-list" id="multi-winners-list"></div>
 
   <div class="prize-text" id="prize-text">0 ETB</div>
@@ -496,7 +492,6 @@ window.toggleCard = function(num) {
         return; 
     }
 
-    // Check balance before allowing selection
     const totalBalance = currentWallet + currentWinWallet;
     if (totalBalance < 10) {
         return showFooterNotification("❌ ባላንስ በቂ አይደለም! እባክዎ መጀመሪያ ገንዘብ ያስገቡ።");
@@ -654,7 +649,6 @@ async function submitWithdrawRequest(event) {
 function buildBingoBoard() { 
     const b = document.getElementById('bingo-board'); b.innerHTML = ''; const frag = document.createDocumentFragment(); 
     
-    // Distinct colors for BINGO headers
     const headers = [
         {t:'B', c:'#3b82f6'}, // Blue
         {t:'I', c:'#ef4444'}, // Red
@@ -715,7 +709,6 @@ function updateLiveCardsContainer() {
         if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn); 
         const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn; 
         
-        // Use distinct colors for BINGO headers inside the card too
         d.innerHTML = `
             <div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div>
             <div class="card-header-letters">
@@ -766,12 +759,11 @@ function updateCalledNumbersUI(allCalled) {
     const displayEl = document.getElementById('current-call-display');
     displayEl.innerText = last; 
     
-    // Change ball color based on B, I, N, G, O
-    if (last <= 15) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #60a5fa, #2563eb)'; // B: Blue
-    else if (last <= 30) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #f87171, #dc2626)'; // I: Red
-    else if (last <= 45) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #34d399, #059669)'; // N: Green
-    else if (last <= 60) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #fbbf24, #d97706)'; // G: Orange
-    else displayEl.style.background = 'radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed)'; // O: Purple
+    if (last <= 15) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #60a5fa, #2563eb)'; // B
+    else if (last <= 30) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #f87171, #dc2626)'; // I
+    else if (last <= 45) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #34d399, #059669)'; // N
+    else if (last <= 60) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #fbbf24, #d97706)'; // G
+    else displayEl.style.background = 'radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed)'; // O
     
     let rc = document.getElementById('recent-calls-container'); 
     rc.innerHTML = ''; 
@@ -781,7 +773,6 @@ function updateCalledNumbersUI(allCalled) {
         c.className = 'recent-ball'; 
         c.innerText = n; 
         
-        // Match recent ball colors
         if (n <= 15) c.style.background = '#2563eb'; 
         else if (n <= 30) c.style.background = '#dc2626';
         else if (n <= 45) c.style.background = '#059669';
@@ -791,7 +782,8 @@ function updateCalledNumbersUI(allCalled) {
         rc.appendChild(c); 
     }); 
 
-    document.getElementById('call-count').innerText = allCalled.length; 
+    document.getElementById('call-count').innerText = allCalled.length + '/75'; 
+    document.getElementById('call-count-top').innerText = allCalled.length + '/75'; 
     allCalled.forEach(n => { let cell = document.getElementById('cell-' + n); if (cell) cell.classList.add('marked'); }); 
 }
 
@@ -813,7 +805,7 @@ socket.on('init_state', (state) => {
         calledNumbersSet = new Set(state.calledNumbers); 
         updateCalledNumbersUI(state.calledNumbers); 
     }
-    if (state.remainingTime !== undefined) document.getElementById('timer-val').innerText = state.remainingTime + 'ሰ';
+    if (state.remainingTime !== undefined) document.getElementById('call-count-top').innerText = state.calledNumbers?.length + '/75';
     
     loadWallet();
     if (state.phase === 'calling' || state.phase === 'gameover') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
@@ -842,7 +834,7 @@ socket.on('settings_updated', (data) => {
 
 socket.on('wallet_updated', () => loadWallet(true));
 socket.on('card_error', (data) => { showFooterNotification(data.message); });
-socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
+socket.on('timer_tick', (data) => { document.getElementById('call-count-top').innerText = data.remaining + 'ሰ'; });
 socket.on('phase_change', (data) => { 
     gamePhase = data.phase; 
     if(data.phase === 'calling') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
@@ -857,7 +849,9 @@ socket.on('new_number_called', (data) => {
 socket.on('reset_game', () => {
     selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
     initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
-    document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0';
+    document.getElementById('current-call-display').innerText = '--'; 
+    document.getElementById('call-count').innerText = '0/75';
+    document.getElementById('call-count-top').innerText = '0/75';
     document.getElementById('recent-calls-container').innerHTML = '';
     updatePreviewUI(); 
     loadWallet(true);
@@ -904,7 +898,6 @@ socket.on('game_over', (data) => {
         const calledNumbersArray = data.calledNumbers || [];
         
         let html = `<div class="winning-matrix">`;
-        // Distinct BINGO colors
         html += `<div style="background:#3b82f6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
         html += `<div style="background:#ef4444;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
         html += `<div style="background:#10b981;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;

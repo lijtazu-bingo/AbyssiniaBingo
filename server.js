@@ -26,20 +26,17 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 
 if (!BOT_TOKEN || !MONGODB_URI) { console.error('Missing env'); process.exit(1); }
 
-// Security & Middleware
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression({ level: 6, threshold: 1024 }));
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use(morgan('combined'));
 
-// Rate Limiting
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
 app.use('/api/', apiLimiter);
 
 app.use(express.static('public', { maxAge: '1d' }));
 
-/* ─── MONGODB ─── */
 mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20, dbName: 'abisinya' })
 .then(async () => {
     console.log('✅ MongoDB connected');
@@ -48,55 +45,32 @@ mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20
 })
 .catch(err => { console.error('❌ DB Error:', err.message); process.exit(1); });
 
-/* ─── SCHEMAS ─── */
 const UserSchema = new mongoose.Schema({
-    id: { type: String, index: true, unique: true }, 
-    name: String, 
-    username: String, 
-    phone: String,
-    play_balance: { type: Number, default: 20, index: true }, 
-    win_balance: { type: Number, default: 0, index: true },
-    total_games: { type: Number, default: 0 }, 
-    total_wins: { type: Number, default: 0 },
-    referral_code: String, 
-    referred_by: { type: String, default: null, index: true },
-    pending_referrer: { type: String, default: null }, 
-    registered: { type: Boolean, default: false, index: true },
-    lang: String, 
-    registered_at: { type: String, default: () => new Date().toISOString(), index: true }
+    id: { type: String, index: true, unique: true }, name: String, username: String, phone: String,
+    play_balance: { type: Number, default: 20, index: true }, win_balance: { type: Number, default: 0, index: true },
+    total_games: { type: Number, default: 0 }, total_wins: { type: Number, default: 0 },
+    referral_code: String, referred_by: { type: String, default: null, index: true },
+    pending_referrer: { type: String, default: null }, registered: { type: Boolean, default: false, index: true },
+    lang: String, registered_at: { type: String, default: () => new Date().toISOString(), index: true }
 }, { collection: 'users' });
 
 const TransactionSchema = new mongoose.Schema({
-    id: { type: String, index: true, unique: true }, 
-    type: { type: String, index: true },
-    user_id: { type: String, index: true }, 
-    user_name: String, 
-    amount: Number,
-    method: String, 
-    reference: { type: String, index: true }, 
-    phone: String,
-    status: { type: String, index: true }, 
-    created: { type: String, index: true }, 
-    notified: Boolean
+    id: { type: String, index: true, unique: true }, type: { type: String, index: true },
+    user_id: { type: String, index: true }, user_name: String, amount: Number,
+    method: String, reference: { type: String, index: true }, phone: String,
+    status: { type: String, index: true }, created: { type: String, index: true }, notified: Boolean
 }, { collection: 'transactions' });
 
 const GameHistorySchema = new mongoose.Schema({
-    gameId: { type: String, index: true }, 
-    winners: [{ id: String, name: String, cardNum: Number, prize: Number }],
-    totalPrize: Number, 
-    totalPlayers: Number, 
-    calledNumbers: [Number], 
-    createdAt: { type: Date, default: Date.now }
+    gameId: { type: String, index: true }, winners: [{ id: String, name: String, cardNum: Number, prize: Number }],
+    totalPrize: Number, totalPlayers: Number, calledNumbers: [Number], createdAt: { type: Date, default: Date.now }
 }, { collection: 'game_history' });
 
 const SettingsSchema = new mongoose.Schema({
     key: { type: String, default: 'payment_accounts', unique: true },
-    telebirr_number: { type: String, default: '0968940123' },
-    telebirr_name: { type: String, default: 'tazebew' },
-    cbe_number: { type: String, default: '1000390803005' },
-    cbe_name: { type: String, default: 'tazebew' },
-    enable_cbe: { type: Boolean, default: true },
-    maxCards: { type: Number, default: 1000 }
+    telebirr_number: { type: String, default: '0968940123' }, telebirr_name: { type: String, default: 'tazebew' },
+    cbe_number: { type: String, default: '1000390803005' }, cbe_name: { type: String, default: 'tazebew' },
+    enable_cbe: { type: Boolean, default: true }, maxCards: { type: Number, default: 1000 }
 }, { collection: 'settings' });
 
 const User = mongoose.model('User', UserSchema);
@@ -104,7 +78,6 @@ const Transaction = mongoose.model('Transaction', TransactionSchema);
 const GameHistory = mongoose.model('GameHistory', GameHistorySchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
 
-/* ─── AUTH ─── */
 function verifyTelegramInitData(initData, botToken) {
     try {
         if (!initData) return null;
@@ -138,7 +111,6 @@ function adminAuth(req, res, next) {
 
 function authFromHeaders(req) { return verifyTelegramInitData(req.headers['x-telegram-init-data'], BOT_TOKEN); }
 
-/* ─── GAME LOGIC ─── */
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
 const cardCache = new Map();
 function getCardCols(cardNum) {
@@ -154,16 +126,41 @@ function getCardCols(cardNum) {
     cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
 }
 
+// Accurate Winning Line check
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum); if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
     const latestCall = calledNumbers[calledNumbers.length - 1];
     const cols = getCardCols(n); const calledSet = new Set(calledNumbers); const m = [];
     for (let r = 0; r < 5; r++) { const row = []; for (let c = 0; c < 5; c++) row.push(cols[c][r] === 'FREE' || calledSet.has(cols[c][r])); m.push(row); }
-    for (let r = 0; r < 5; r++) { if (m[r][0] && m[r][1] && m[r][2] && m[r][3] && m[r][4]) { let hasL = false; for (let c = 0; c < 5; c++) if (cols[c][r] === latestCall) hasL = true; if (hasL) return { type: 'row', index: r, desc: 'Row ' + (r + 1) }; } }
-    for (let c = 0; c < 5; c++) { if (m[0][c] && m[1][c] && m[2][c] && m[3][c] && m[4][c]) { let hasL = false; for (let r = 0; r < 5; r++) if (cols[c][r] === latestCall) hasL = true; if (hasL) return { type: 'col', index: c, desc: 'Col ' + (c + 1) }; } }
-    if (m[0][0] && m[1][1] && m[2][2] && m[3][3] && m[4][4]) { let hasL = false; for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; if (hasL) return { type: 'diag1', desc: 'Diag 1' }; }
-    if (m[0][4] && m[1][3] && m[2][2] && m[3][1] && m[4][0]) { let hasL = false; for (let i = 0; i < 5; i++) if (cols[4 - i][i] === latestCall) hasL = true; if (hasL) return { type: 'diag2', desc: 'Diag 2' }; }
-    if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { let hasL = false; if (cols[0][0] === latestCall) hasL = true; if (cols[4][0] === latestCall) hasL = true; if (cols[0][4] === latestCall) hasL = true; if (cols[4][4] === latestCall) hasL = true; if (hasL) return { type: 'corners', desc: '4 Corners' }; }
+    
+    // Rows
+    for (let r = 0; r < 5; r++) { 
+        if (m[r][0] && m[r][1] && m[r][2] && m[r][3] && m[r][4]) { 
+            let hasL = false; for (let c = 0; c < 5; c++) if (cols[c][r] === latestCall) hasL = true; 
+            if (hasL) return { type: 'row', index: r, desc: 'Row ' + (r + 1) }; 
+        } 
+    }
+    // Cols
+    for (let c = 0; c < 5; c++) { 
+        if (m[0][c] && m[1][c] && m[2][c] && m[3][c] && m[4][c]) { 
+            let hasL = false; for (let r = 0; r < 5; r++) if (cols[c][r] === latestCall) hasL = true; 
+            if (hasL) return { type: 'col', index: c, desc: 'Col ' + (c + 1) }; 
+        } 
+    }
+    // Diagonals
+    if (m[0][0] && m[1][1] && m[2][2] && m[3][3] && m[4][4]) { 
+        let hasL = false; for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; 
+        if (hasL) return { type: 'diag1', desc: 'Diag 1' }; 
+    }
+    if (m[0][4] && m[1][3] && m[2][2] && m[3][1] && m[4][0]) { 
+        let hasL = false; for (let i = 0; i < 5; i++) if (cols[4 - i][i] === latestCall) hasL = true; 
+        if (hasL) return { type: 'diag2', desc: 'Diag 2' }; 
+    }
+    // 4 Corners
+    if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { 
+        let hasL = false; if (cols[0][0] === latestCall) hasL = true; if (cols[4][0] === latestCall) hasL = true; if (cols[0][4] === latestCall) hasL = true; if (cols[4][4] === latestCall) hasL = true; 
+        if (hasL) return { type: 'corners', desc: '4 Corners' }; 
+    }
     return null;
 }
 
@@ -180,7 +177,6 @@ function checkSocketRate(socketId, action, cooldownMs = 500) {
     socketCooldowns.set(key, now); return true;
 }
 
-/* ─── API ROUTES ─── */
 app.get('/api/settings', async (req, res) => {
     try {
         let settings = await Settings.findOne({ key: 'payment_accounts' }).lean();
@@ -197,13 +193,7 @@ app.get('/api/wallet/me', async (req, res) => {
         let dbUser = await User.findOne({ id: String(user.id) }).lean();
         
         if (!dbUser) {
-            const newUser = new User({ 
-                id: String(user.id), 
-                name: ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Player', 
-                username: user.username || '',
-                play_balance: 20,
-                win_balance: 0 
-            });
+            const newUser = new User({ id: String(user.id), name: ((user.first_name || '') + ' ' + (user.last_name || '')).trim() || 'Player', username: user.username || '', play_balance: 20, win_balance: 0 });
             await newUser.save();
             dbUser = newUser.toObject();
         }
@@ -239,7 +229,6 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => { try { const top = await User.find().sort({ win_balance: -1 }).limit(10).select({ name: 1, win_balance: 1, _id: 0 }).lean(); res.json({ success: true, data: top }); } catch (e) { res.status(500).json({ success: false }); } });
 
-/* ─── GAME SOCKET ─── */
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {
         socket.join('abisinya_global_room');
@@ -264,15 +253,9 @@ io.on('connection', (socket) => {
         const totalCards = Object.keys(gameState.takenCards).length;
         
         socket.emit('init_state', { 
-            phase: gameState.phase, 
-            takenCards: Object.keys(gameState.takenCards).map(Number), 
-            myCards, 
-            calledNumbers: gameState.calledNumbers, 
-            remainingTime, 
-            currentCall: gameState.currentCall, 
-            maxCards: gameState.settings.maxCards,
-            totalPlayers: totalCards,
-            totalCards: totalCards
+            phase: gameState.phase, takenCards: Object.keys(gameState.takenCards).map(Number), myCards, 
+            calledNumbers: gameState.calledNumbers, remainingTime, currentCall: gameState.currentCall, 
+            maxCards: gameState.settings.maxCards, totalPlayers: totalCards, totalCards: totalCards
         });
     });
 
@@ -312,16 +295,11 @@ io.on('connection', (socket) => {
             }
             
             const totalCards = Object.keys(gameState.takenCards).length;
-            io.emit('sync_taken_cards', { 
-                takenCards: Object.keys(gameState.takenCards).map(Number),
-                totalPlayers: totalCards,
-                totalCards: totalCards
-            });
+            io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: totalCards, totalCards: totalCards });
         } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
     });
 });
 
-/* ─── ADMIN API ─── */
 app.post('/api/admin/settings', adminAuth, async (req, res) => {
     try {
         const { telebirr_number, telebirr_name, cbe_number, cbe_name, enable_cbe, maxCards } = req.body;
@@ -610,7 +588,6 @@ async function endRound(winnersData) {
         const remainder = totalPrize - (basePrize * winnersData.length);
         const winnerIds = winnersData.map(w => String(w.id));
         
-        // Give remainder to first winner
         winnersData[0].prize = basePrize + remainder;
         for(let i=1; i<winnersData.length; i++) winnersData[i].prize = basePrize;
 
