@@ -70,8 +70,9 @@ def get_user_data(user_id):
 TEXTS = {
     'am': {
         'welcome': "🎉 <b>እንኳን ወደ Abisinya Bingo በደህና መጡ!</b>\n\n👤 ስም፦ {name}\n🆔 መለያ፦ <code>{id}</code>\n💵 ባላንስ፦ <b>{balance} ETB</b>\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን በተን ይጫኑ",
-        'play_btn': "🎯 Play Bingo",
-        'menu_play': "🎯 Play Bingo",
+        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
+        'play_inline_btn': "🎮 Play Bingo",
+        'menu_play': "🎮 Play Abyssinia Bingo",
         'menu_deposit': "💰 Deposit",
         'menu_withdraw': "💸 Withdraw",
         'menu_balance': "🏦 Balance",
@@ -109,8 +110,9 @@ TEXTS = {
     },
     'en': {
         'welcome': "🎉 <b>Welcome to Abisinya Bingo!</b>\n\n👤 Name: {name}\n🆔 ID: <code>{id}</code>\n💵 Balance: <b>{balance} ETB</b>\n\n👇 Tap the Menu below to start playing",
-        'play_btn': "🎯 Play Bingo",
-        'menu_play': "🎯 Play Bingo",
+        'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
+        'play_inline_btn': "🎮 Play Bingo",
+        'menu_play': "🎮 Play Abyssinia Bingo",
         'menu_deposit': "💰 Deposit",
         'menu_withdraw': "💸 Withdraw",
         'menu_balance': "🏦 Balance",
@@ -148,7 +150,6 @@ TEXTS = {
     }
 }
 
-# (ለ ትግርኛ እና ኦሮምኛ በተመሳሳይ መልኩ መጨመር ይችላሉ - እዚህ ግን ቦታ ለመቆጠብ 'am' እና 'en' ብቻ አስቀምጫለሁ)
 TEXTS['ti'] = TEXTS['am']
 TEXTS['om'] = TEXTS['am']
 
@@ -162,8 +163,9 @@ def get_main_menu(user_id):
     _, lang = get_user_data(user_id)
     if lang not in TEXTS: lang = 'am'
     t = TEXTS[lang]
+    # ✅ "Play Abyssinia Bingo" አሁን እንደ መደበኛ የፅሁፍ ቁልፍ ሆኖ ተቀይሯል (web_app የለውም)
     keyboard = [
-        [KeyboardButton(text="🎯 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))],
+        [KeyboardButton(text=t['menu_play'])],
         [KeyboardButton(text=t['menu_deposit']), KeyboardButton(text=t['menu_withdraw'])],
         [KeyboardButton(text=t['menu_balance']), KeyboardButton(text=t['menu_invite'])],
         [KeyboardButton(text=t['menu_history']), KeyboardButton(text=t['menu_support'])],
@@ -171,8 +173,6 @@ def get_main_menu(user_id):
         [KeyboardButton(text=t['menu_help']), KeyboardButton(text=t['menu_rank'])]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
-
-MENU_TEXTS = ["💰 Deposit", "📥 ገቢ (Deposit)", "💸 Withdraw", "📤 ወጪ (Withdraw)", "🏦 Balance", "💵 ሂሳብ", "👥 Invite", "🔗 ግብዣ እና አጋር", "📜 History", "💬 Support", "🆘 እርዳታ", "🔢 Register", "🌐 Language", "🌐 ቋንቋ (Language)", "ℹ️ Help", "🏆 Rank"]
 
 # ─── Commands ───
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -184,7 +184,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if args and len(args) > 0 and not user.is_bot:
         referrer_id = args[0]
         if referrer_id != str(user.id):
-            # Referral API ጥሪ ማድረግ (ከሰርቨር ጋር)
             try:
                 requests.post(f"{SERVER_API_URL}/api/user/referral", json={"new_user_id": str(user.id), "referrer_id": referrer_id}, timeout=5)
             except: pass
@@ -198,11 +197,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except: pass
 
     welcome_text = get_text(user.id, 'welcome', name=user.first_name, id=user.id, balance=balance)
-    
-    web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
-    
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu(user.id))
-    await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
 # ─── Register ───
 async def register_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -236,7 +231,7 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['deposit_method'] = "Telebirr"
     
     await query.edit_message_text(get_text(user.id, 'dep_enter_amt'), parse_mode='HTML')
-    return DEPOSIT_TXN_ID # መጀመሪያ መጠን እንጠይቅ
+    return DEPOSIT_TXN_ID
 
 async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -251,7 +246,6 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
 
     context.user_data['deposit_amount'] = amount
     
-    # Bank መረጃ ማምጣት
     try:
         res = requests.get(f"{SERVER_API_URL}/api/settings", timeout=5)
         settings = res.json().get("data", {})
@@ -261,7 +255,7 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
     name = settings.get("telebirr_name", "tazebew")
     
     await update.message.reply_text(get_text(user.id, 'dep_instructions', name=name, acc=acc), parse_mode='HTML')
-    return DEPOSIT_AMOUNT # አሁን SMS (Txn ID) እንጠይቅ
+    return DEPOSIT_AMOUNT
 
 async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -382,8 +376,15 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     text = update.message.text.strip()
     user = update.effective_user
     t = lambda key: get_text(user.id, key)
+    _, current_lang = get_user_data(user.id)
 
-    if text in ["🏦 Balance", "💵 ሂሳብ"]:
+    # ✅ "Play Abyssinia Bingo" ሲጫን የፅሁፍ መግለጫ እና Inline Button ማሳየት
+    if text in ["🎮 Play Abyssinia Bingo", "🎯 Play Bingo"]:
+        play_text = t('play_prompt')
+        web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
+        await update.message.reply_text(play_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+
+    elif text in ["🏦 Balance", "💵 ሂሳብ"]:
         await update.message.reply_text("⏳ Loading balance...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=10)
@@ -406,7 +407,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
 
     elif text in ["📜 History"]:
         await update.message.reply_text(t('history_msg'))
-        # ሊንክ ወደ webapp history
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
