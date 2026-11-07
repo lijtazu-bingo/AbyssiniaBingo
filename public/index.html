@@ -153,12 +153,9 @@ body {
     font-size: 16px; font-weight: 800; color: #fff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-.recent-ball:nth-child(1) { background: #10b981; }
-.recent-ball:nth-child(2) { background: #eab308; color: #000; }
-.recent-ball:nth-child(3) { background: #ef4444; }
 
-.live-cards-container { flex: 1; overflow-y: auto; padding: 10px; }
-.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+.live-cards-container { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; border: 1px solid var(--glass-border); }
 .card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
 .card-header-letters div { text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; color: #fff; }
 .card-header-letters .h-B { background: #3b82f6; }
@@ -180,13 +177,15 @@ body {
 .nav-icon { font-size: 20px; }
 
 /* Game Over */
-#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; overflow-y: auto; padding: 20px; }
 .game-over-title { font-size: 40px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px rgba(250,204,21,0.6); font-family: 'Courier New', Courier, monospace;}
-.winner-text { font-size: 22px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
-.prize-text { font-size: 32px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(16,185,129,0.5); }
-.winning-card-container { padding: 15px; width: 90%; max-width: 350px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); }
+.winner-text { font-size: 20px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
+.prize-text { font-size: 30px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(16,185,129,0.5); }
+.winners-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; width: 100%; }
+.winning-card-wrapper { width: 100%; max-width: 300px; padding: 15px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); }
+.winning-card-wrapper .winner-name { text-align: center; color: var(--gold); font-weight: bold; margin-bottom: 8px; font-size: 14px; }
 .winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
-.winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 12px 0; font-size: 16px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
+.winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 8px 0; font-size: 14px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
 .winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
 .winning-cell.highlight { background: var(--gold) !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
 
@@ -244,7 +243,6 @@ body {
         <div id="wait-message-box" class="wait-in-live glass-panel hidden">
           <div style="font-size:32px; margin-bottom:10px;">⏳</div>
           <div style="font-size:14px; font-weight:900; color:var(--gold);">እባክዎ ይጠብቁ</div>
-          <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">ይሄ ዙር ጨዋታ እስኪጠናቀቅ ይጠብቁ</div>
         </div>
         <div class="live-cards-container glass-panel" id="live-cards-container"></div>
       </div>
@@ -333,8 +331,7 @@ body {
   <div class="game-over-title">🏆 BINGO! 🏆</div>
   <div class="winner-text" id="winner-text">--</div>
   <div class="prize-text" id="prize-text">0 ETB</div>
-  <div class="winning-card-container glass-panel" id="winning-card-container"></div>
-  <div style="font-size: 28px; color: #3b82f6; font-weight: 900; margin-top: 15px; font-family:'Courier New', Courier, monospace;" id="board-number-text">BOARD --</div>
+  <div class="winners-cards-container" id="winning-card-container"></div>
   <div style="margin-top: 20px; text-align: center;">
     <div style="font-size: 14px; color: #cbd5e1;">አዲስ ጨዋታ በ...</div>
     <div style="font-size: 40px; color: var(--gold); font-weight: 900;" id="modal-countdown">10</div>
@@ -374,7 +371,7 @@ try {
 
 const TG_INIT_DATA = tg?.initData || '';
 const urlParams = new URLSearchParams(window.location.search);
-const urlLang = urlParams.get('lang') || 'en'; // Default to English if no lang param
+const urlLang = urlParams.get('lang') || 'en';
 
 const originalFetch = window.fetch;
 window.fetch = function(url, opts = {}) {
@@ -382,12 +379,12 @@ window.fetch = function(url, opts = {}) {
         opts.headers = opts.headers || {};
         opts.headers['X-Telegram-Init-Data'] = TG_INIT_DATA;
         opts.headers['X-User-Id'] = String(userProfile.id);
-        opts.headers['Accept-Language'] = urlLang; // Pass language to server if needed
+        opts.headers['Accept-Language'] = urlLang;
     }
     return originalFetch(url, opts);
 };
 
-let currentWallet = 0, currentWinWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
+let currentWallet = 0, currentWinWallet = 0, currentReferralWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
 let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', cbe_number: '1000390803005', cbe_name: 'Tazebew', enable_cbe: true };
 let selectedCards = new Set(), calledNumbersSet = new Set();
 let notificationTimeout = null;
@@ -434,12 +431,12 @@ function initGrid() {
         frag.appendChild(btn); numberButtons[i] = btn; 
     }
     grid.appendChild(frag);
-    updateCardClickability(); // Apply state on load
+    updateCardClickability();
 }
 
 function updateCardClickability() {
-    // ✅ Disable all cards if user has no balance and hasn't selected any yet
-    if (currentWallet < 10 && selectedCards.size === 0) {
+    const totalBalance = currentWallet + currentWinWallet + currentReferralWallet;
+    if (totalBalance < 10 && selectedCards.size === 0) {
         for (let i = 1; i <= maxCards; i++) {
             if (numberButtons[i] && !numberButtons[i].classList.contains('taken-by-other')) {
                 numberButtons[i].style.opacity = '0.5';
@@ -486,6 +483,7 @@ async function loadWallet() {
         if (data.success && data.data) { 
             currentWallet = Number(data.data.play_balance) || 0; 
             currentWinWallet = Number(data.data.win_balance) || 0; 
+            currentReferralWallet = Number(data.data.referral_balance) || 0; 
             userTotalGames = Number(data.data.total_games) || 0; 
             userTotalWins = Number(data.data.total_wins) || 0; 
             userPhone = data.data.phone || ""; 
@@ -510,8 +508,8 @@ async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) re
 window.toggleCard = function(num) {
     if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
     
-    // ✅ Prevent selection if balance is 0 and no card is selected yet
-    if (currentWallet < 10 && selectedCards.size === 0 && !selectedCards.has(num)) {
+    const totalBalance = currentWallet + currentWinWallet + currentReferralWallet;
+    if (totalBalance < 10 && selectedCards.size === 0 && !selectedCards.has(num)) {
         return showFooterNotification("❌ ካርቴላ ለመግዛት በቂ ባላንስ የለዎትም! (ዝቅተኛ 10 ብር)");
     }
     
@@ -736,7 +734,6 @@ function updateCalledNumbersUI(allCalled) {
     const prefix = getColumnLetter(lastNum);
     const color = getColumnColor(lastNum);
 
-    // ✅ Show B-12, O-75 format and change color dynamically
     const displayEl = document.getElementById('current-call-display');
     displayEl.innerText = `${prefix}-${lastNum}`;
     displayEl.style.background = `radial-gradient(circle at 30% 30%, ${color}cc, ${color})`;
@@ -769,7 +766,6 @@ socket.on('init_state', (state) => {
     updateLiveStats(state.totalCards);
     state.myCards.forEach(n => { if(numberButtons[n]) numberButtons[n].className = 'number-btn selected'; });
     
-    // ✅ Mark taken cards immediately on load
     for(let i=1; i<=maxCards; i++) {
         if(!numberButtons[i]) continue;
         if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
@@ -833,7 +829,7 @@ socket.on('reset_game', () => {
     selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
     initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
     document.getElementById('current-call-display').innerText = '--'; 
-    document.getElementById('current-call-display').style.background = ''; // reset color
+    document.getElementById('current-call-display').style.background = '';
     document.getElementById('call-count').innerText = '0';
     document.getElementById('recent-calls-container').innerHTML = '';
     updatePreviewUI(); 
@@ -842,46 +838,59 @@ socket.on('reset_game', () => {
 
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
-    document.getElementById('winner-text').innerHTML = data.winners.some(w => String(w.id) === String(userProfile.id)) ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 Cartela ${data.winningCard} አሸንፏል`;
+    
+    // ✅ Support for Multiple Winners
+    const totalWinners = data.winners.length;
+    const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
+    
+    document.getElementById('winner-text').innerHTML = isMeWinner 
+        ? '🎉 አንተ አሸንፈሃል! 🎉' 
+        : `🏆 ${totalWinners} ተጫዋቾች አሸንፈዋል!`;
+        
     document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
-    document.getElementById('board-number-text').innerText = `BOARD ${data.winningCard}`;
-    
-    const container = document.getElementById('winning-card-container');
-    const winningCard = data.winningCard;
-    const cols = generateCardLayout(winningCard);
-    const winInfo = data.winners[0]; 
-    const calledNumbersArray = data.calledNumbers || [];
-    
-    let html = `<div class="winning-matrix">`;
-    html += `<div style="background:#3b82f6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
-    html += `<div style="background:#ef4444;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
-    html += `<div style="background:#10b981;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
-    html += `<div style="background:#f59e0b;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
-    html += `<div style="background:#8b5cf6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
 
-    for(let r = 0; r < 5; r++) {
-        for(let c = 0; c < 5; c++) {
-            const v = cols[c][r];
-            const isFree = v === 'FREE';
-            const isCalled = !isFree && calledNumbersArray.includes(v); 
-            const isWin = winInfo?.allLines?.some(line => {
-                if(line.type === 'row') return line.index === r;
-                if(line.type === 'col') return line.index === c;
-                if(line.type === 'diag1') return r === c;
-                if(line.type === 'diag2') return r === (4 - c);
-                if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
-                return false;
-            });
-            const isLastCall = (v === data.lastCall);
-            let cls = 'winning-cell';
-            if (isWin) cls += ' highlight';
-            else if (isCalled) cls += ' called-cell';
-            if (isLastCall && isWin && !isFree) cls += ' last-call-blink';
-            html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+    const container = document.getElementById('winning-card-container');
+    container.innerHTML = ''; // Clear previous
+
+    data.winners.forEach(winInfo => {
+        const winningCard = winInfo.cardNum;
+        const cols = generateCardLayout(winningCard);
+        const calledNumbersArray = data.calledNumbers || [];
+        
+        let html = `<div class="winning-card-wrapper">
+            <div class="winner-name">BOARD ${winningCard} - ${winInfo.prize} ETB</div>
+            <div class="winning-matrix">`;
+            
+        html += `<div style="background:#3b82f6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
+        html += `<div style="background:#ef4444;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
+        html += `<div style="background:#10b981;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
+        html += `<div style="background:#f59e0b;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
+        html += `<div style="background:#8b5cf6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
+
+        for(let r = 0; r < 5; r++) {
+            for(let c = 0; c < 5; c++) {
+                const v = cols[c][r];
+                const isFree = v === 'FREE';
+                const isCalled = !isFree && calledNumbersArray.includes(v); 
+                const isWin = winInfo?.allLines?.some(line => {
+                    if(line.type === 'row') return line.index === r;
+                    if(line.type === 'col') return line.index === c;
+                    if(line.type === 'diag1') return r === c;
+                    if(line.type === 'diag2') return r === (4 - c);
+                    if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
+                    return false;
+                });
+                const isLastCall = (v === data.lastCall);
+                let cls = 'winning-cell';
+                if (isWin) cls += ' highlight';
+                else if (isCalled) cls += ' called-cell';
+                if (isLastCall && isWin && !isFree) cls += ' last-call-blink';
+                html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+            }
         }
-    }
-    html += `</div>`;
-    container.innerHTML = html;
+        html += `</div></div>`;
+        container.innerHTML += html;
+    });
 
     const overlay = document.getElementById('game-over-overlay'); overlay.classList.remove('hidden');
     let cd = 10; const cdEl = document.getElementById('modal-countdown'); cdEl.innerText = cd;

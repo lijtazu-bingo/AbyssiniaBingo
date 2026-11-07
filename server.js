@@ -246,7 +246,6 @@ app.get('/api/admin/transactions', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Approved API (Added Notification)
 app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'approved' } }, { new: true });
@@ -256,9 +255,9 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         if (txn.type === 'deposit') { 
             await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: txn.amount } }); 
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); 
-            msgText = `✅ <b>Deposit Approved!</b>\n\nYour deposit of ${txn.amount} ETB has been approved and added to your Play Wallet.`;
+            msgText = `✅ <b>Deposit Approved!</b>\n\nYour deposit of ${txn.amount} ETB has been approved.`;
         } else if (txn.type === 'withdrawal') {
-            msgText = `✅ <b>Withdrawal Approved!</b>\n\nYour withdrawal of ${txn.amount} ETB has been approved and is on its way to your account.`;
+            msgText = `✅ <b>Withdrawal Approved!</b>\n\nYour withdrawal of ${txn.amount} ETB has been approved.`;
         }
 
         if (msgText) {
@@ -273,7 +272,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Reject API (Added Notification & Balance Refund for Withdraw)
 app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'rejected' } }, { new: true });
@@ -283,9 +281,9 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
         if (txn.type === 'withdrawal') { 
             await User.updateOne({ id: String(txn.user_id) }, { $inc: { win_balance: txn.amount } }); 
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); 
-            msgText = `❌ <b>Withdrawal Rejected!</b>\n\nYour withdrawal request of ${txn.amount} ETB was rejected. The amount has been refunded to your Win Wallet.`;
+            msgText = `❌ <b>Withdrawal Rejected!</b>\n\nYour withdrawal of ${txn.amount} ETB was rejected. Funds refunded.`;
         } else if (txn.type === 'deposit') {
-            msgText = `❌ <b>Deposit Rejected!</b>\n\nYour deposit request of ${txn.amount} ETB was rejected. Please contact support if you believe this is an error.`;
+            msgText = `❌ <b>Deposit Rejected!</b>\n\nYour deposit of ${txn.amount} ETB was rejected.`;
         }
 
         if (msgText) {
@@ -562,9 +560,11 @@ io.on('connection', (socket) => {
                     if (gameState.takenCards[cardNum].userId === socket.verifiedId) return;
                     return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 }
+                // Try Play Wallet first, then Win Wallet, then Referral Wallet
                 let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
+                
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
                 
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
@@ -582,30 +582,35 @@ io.on('connection', (socket) => {
     });
 });
 
+// ✅ Check for Multiple Winners
 async function checkForAutoWinner() {
     if (isEndingRound || gameState.phase !== 'calling') return false;
     const entries = Object.entries(gameState.takenCards); 
     if (entries.length === 0) return false;
     
-    let firstWinner = null;
+    let potentialWinners = [];
     for (const [cardNum, data] of entries) {
         const win = checkWinningLine(cardNum, gameState.calledNumbers);
         if (win) {
-            firstWinner = { cardNum: Number(cardNum), userId: data.userId, win };
-            break;
+            potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win });
         }
     }
     
-    if (!firstWinner) return false;
+    if (potentialWinners.length === 0) return false;
     
-    const user = await User.findOne({ id: firstWinner.userId }, { id: 1, name: 1 }).lean();
-    const winnerName = user?.name || 'Player';
+    const userIds = [...new Set(potentialWinners.map(p => p.userId))];
+    const users = await User.find({ id: { $in: userIds } }, { id: 1, name: 1 }).lean();
+    const userMap = new Map(users.map(u => [u.id, u.name]));
     
-    roundWinners = [{ 
-        id: firstWinner.userId, name: winnerName, cardNum: firstWinner.cardNum, 
-        winDesc: firstWinner.win.desc, winType: firstWinner.win.type, winIndex: firstWinner.win.index, 
-        allLines: [firstWinner.win] 
-    }];
+    roundWinners = potentialWinners.map(p => ({
+        id: p.userId,
+        name: userMap.get(p.userId) || 'Player',
+        cardNum: p.cardNum,
+        winDesc: p.win.desc,
+        winType: p.win.type,
+        winIndex: p.win.index,
+        allLines: [p.win]
+    }));
     
     isEndingRound = true; 
     gameState.phase = 'claiming';
@@ -686,6 +691,7 @@ async function endRound(winnersData) {
             return;
         }
         
+        // ✅ Split prize evenly among all winners
         const prizePerWinner = Math.floor(totalPrize / winnersData.length); 
         const winnerIds = winnersData.map(w => String(w.id));
         
@@ -702,11 +708,14 @@ async function endRound(winnersData) {
         for (const w of winnersData) io.to(`user_${w.id}`).emit('wallet_updated', {});
         
         const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1]; 
-        const firstWinner = winnersData[0];
         
         io.emit('game_over', { 
-            reason: 'bingo', winners: winnersData, totalPrize, prizePerWinner, 
-            winningCard: firstWinner.cardNum, lastCall, calledNumbers: gameState.calledNumbers 
+            reason: 'bingo', 
+            winners: winnersData, 
+            totalPrize, 
+            prizePerWinner, 
+            lastCall, 
+            calledNumbers: gameState.calledNumbers 
         });
         
         autoRestartTimer = setTimeout(() => {
