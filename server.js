@@ -66,23 +66,21 @@ const SettingsSchema = new mongoose.Schema({
     maxCards: { type: Number, default: 1000 }
 }, { collection: 'settings' });
 
-// ✅ New Schema for Giveaways
 const GiveawaySchema = new mongoose.Schema({
     id: String,
     amount: Number,
     totalUsers: Number,
-    claimedBy: [String], // Array of User IDs who claimed
-    status: { type: String, default: 'active' }, // active, completed, expired
+    claimedBy: [String],
+    status: { type: String, default: 'active' },
     createdAt: { type: Date, default: Date.now },
     expiresAt: Date
 }, { collection: 'giveaways' });
 
-// ✅ New Schema for Broadcasts
 const BroadcastSchema = new mongoose.Schema({
     id: String,
     message: String,
     sentAt: { type: Date, default: Date.now },
-    status: { type: String, default: 'active' } // active, deleted
+    status: { type: String, default: 'active' }
 }, { collection: 'broadcasts' });
 
 const User = mongoose.model('User', UserSchema);
@@ -319,7 +317,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ New Giveaway Logic (Create & Send Claim Button)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message } = req.body;
@@ -334,13 +331,12 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
             id: 'gw_' + Date.now(),
             amount: amt,
             totalUsers: limit,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours expiry
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
         });
 
         const users = await User.find({}, { id: 1 }).lean();
         let sentCount = 0;
         
-        // Send Telegram Message with Inline Claim Button
         const text = message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ። ለማግኘት ከታች ያለውን ቁልፍ ይጫኑ!`;
         
         users.forEach(async (u) => {
@@ -365,7 +361,6 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ New Broadcast History API
 app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
     try {
         const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean();
@@ -384,7 +379,7 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
         });
 
         const users = await User.find({}, { id: 1 }).lean();
-        let sentMessages = []; // To store message IDs for editing/deleting later
+        let sentMessages = []; 
         
         for (const u of users) {
             try {
@@ -407,13 +402,11 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Edit / Delete Broadcast
 app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
     try {
         const broadcast = await Broadcast.findOne({ id: req.params.id });
         if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
 
-        // Delete from Telegram for all users
         broadcast.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
@@ -428,6 +421,25 @@ app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
         await broadcast.save();
 
         res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.get('/api/admin/referrals', adminAuth, async (req, res) => {
+    try {
+        const referredUsers = await User.find({ referred_by: { $ne: null } }).lean();
+        const referrerIds = [...new Set(referredUsers.map(u => u.referred_by))];
+        const referrers = await User.find({ id: { $in: referrerIds } }, { id: 1, name: 1 }).lean();
+        const referrerMap = new Map(referrers.map(r => [r.id, r.name]));
+
+        const data = referredUsers.map(u => ({
+            referrer_id: u.referred_by,
+            referrer_name: referrerMap.get(u.referred_by) || 'Unknown',
+            new_user_id: u.id,
+            new_user_name: u.name || 'Player',
+            created_at: u.registered_at
+        }));
+
+        res.json({ success: true, data });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -446,6 +458,15 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ Admin History Clear API
+app.delete('/api/admin/wallet/history/:userId', adminAuth, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        await Transaction.deleteMany({ user_id: String(userId) });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.get('/api/wallet/history', async (req, res) => {
     try {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
@@ -459,8 +480,15 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
         if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
+        
+        // ✅ Fix 1: Deduct balance immediately and check
+        const result = await User.findOneAndUpdate(
+            { id: String(user.id), win_balance: { $gte: amt } }, 
+            { $inc: { win_balance: -amt } }, 
+            { new: true }
+        );
         if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
+        
         const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
         io.to(`user_${user.id}`).emit('wallet_updated', {});
@@ -598,6 +626,36 @@ app.post('/api/bot/create-txn', async (req, res) => {
         io.to(`user_${user_id}`).emit('wallet_updated', {});
         res.json({ success: true, txnId });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+app.post('/api/bot/giveaway-claim', async (req, res) => {
+    try {
+        const { giveaway_id, user_id } = req.body;
+        
+        const giveaway = await Giveaway.findOne({ id: giveaway_id, status: 'active' });
+        if (!giveaway) return res.status(400).json({ success: false, error: 'Giveaway expired or invalid' });
+        
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
+            return res.status(400).json({ success: false, error: 'All bonuses have been claimed' });
+        }
+        
+        if (giveaway.claimedBy.includes(String(user_id))) {
+            return res.status(400).json({ success: false, error: 'You already claimed this bonus' });
+        }
+        
+        giveaway.claimedBy.push(String(user_id));
+        await giveaway.save();
+        
+        await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: giveaway.amount } });
+        io.to(`user_${user_id}`).emit('wallet_updated', {});
+        
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
+            giveaway.status = 'completed';
+            await giveaway.save();
+        }
+        
+        res.json({ success: true, amount: giveaway.amount });
+    } catch (e) { res.status(500).json({ success: false }); }
 });
 
 io.on('connection', (socket) => {
@@ -763,6 +821,7 @@ async function endRound(winnersData) {
             return;
         }
         
+        // ✅ Fix 6: Multiple Winners Prize Allocation
         const prizePerWinner = Math.floor(totalPrize / winnersData.length); 
         const winnerIds = winnersData.map(w => String(w.id));
         
@@ -797,40 +856,5 @@ async function endRound(winnersData) {
         }, 10000);
     } catch (err) { console.error('❌ endRound error:', err); }
 }
-
-// ✅ Handle Giveaway Claim from Telegram Webhook (if needed) or Bot Polling
-// We'll expose an API for the bot to trigger the claim check
-app.post('/api/bot/giveaway-claim', async (req, res) => {
-    try {
-        const { giveaway_id, user_id } = req.body;
-        
-        const giveaway = await Giveaway.findOne({ id: giveaway_id, status: 'active' });
-        if (!giveaway) return res.status(400).json({ success: false, error: 'Giveaway expired or invalid' });
-        
-        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
-            return res.status(400).json({ success: false, error: 'All bonuses have been claimed' });
-        }
-        
-        if (giveaway.claimedBy.includes(String(user_id))) {
-            return res.status(400).json({ success: false, error: 'You already claimed this bonus' });
-        }
-        
-        // Add to claimed list
-        giveaway.claimedBy.push(String(user_id));
-        await giveaway.save();
-        
-        // Add to balance
-        await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: giveaway.amount } });
-        io.to(`user_${user_id}`).emit('wallet_updated', {});
-        
-        // Check if fully claimed
-        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
-            giveaway.status = 'completed';
-            await giveaway.save();
-        }
-        
-        res.json({ success: true, amount: giveaway.amount });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
 
 server.listen(PORT, () => { console.log(`🚀 Server running on port ${PORT}`); });

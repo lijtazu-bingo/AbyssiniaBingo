@@ -66,10 +66,15 @@ body {
 
 .instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
 
+/* ✅ Fix 5: Disable Overlay for Card Selection */
+.grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 .grid-container {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
     flex: 1; overflow-y: auto; padding: 8px; align-content: start;
 }
+.grid-container.disabled { opacity: 0.3; pointer-events: none; }
+.disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
+
 .number-btn { 
     background: var(--btn-bg); border: 1px solid var(--btn-border);
     color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 700; 
@@ -81,13 +86,13 @@ body {
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 
-/* Preview Section */
-.preview-section { height: 110px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 5px; margin-bottom: 5px; }
-.preview-card { display: inline-block; background: #fff; border-radius: 8px; padding: 6px; margin-right: 8px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); vertical-align: top; }
-.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 3px; border-radius: 4px; margin-bottom: 4px; }
-.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 10px; font-weight: 800; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
-.preview-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
+/* ✅ Fix 2: Remove Empty Space from Preview */
+.preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; min-height: 110px; align-items: center; }
+.preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 9px; font-weight: 900; text-align: center; padding: 2px; border-radius: 4px; margin-bottom: 2px; }
+.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
+.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 9px; font-weight: 800; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+.preview-cell.free { background: var(--blue); color: #fff; font-size: 7px; }
 
 .page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
 .sec-title { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
@@ -123,23 +128,23 @@ body {
 .stat-item { text-align: center; }
 .stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
 .stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
-.game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
 
-/* Dark Bingo Board */
-.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 45%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
+/* ✅ Fix 3: Expand Live Cards Area */
+.game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
+.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 40%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
 .board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
 .board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
 
-.right-panel { width: 55%; display: flex; flex-direction: column; gap: 10px; }
-.current-call-container { text-align: center; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+.right-panel { width: 60%; display: flex; flex-direction: column; gap: 10px; }
+.current-call-container { text-align: center; padding: 10px; display: flex; flex-direction: column; align-items: center; }
 .current-call-ball {
-    width: 100px; height: 100px; border-radius: 50%;
+    width: 80px; height: 80px; border-radius: 50%;
     background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
-    color: white; font-size: 38px; font-weight: 900;
+    color: white; font-size: 32px; font-weight: 900;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 20px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3);
     animation: bounceBall 1.5s infinite ease-in-out;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 @keyframes bounceBall {
@@ -148,16 +153,16 @@ body {
 }
 .recent-calls { display: flex; gap: 8px; justify-content: center; }
 .recent-ball {
-    width: 40px; height: 40px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px; font-weight: 800; color: #fff;
+    font-size: 14px; font-weight: 800; color: #fff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-.live-cards-container { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; border: 1px solid var(--glass-border); }
+.live-cards-container { flex: 1; overflow-y: auto; padding: 5px; display: flex; flex-direction: column; gap: 8px; }
+.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 6px; border: 1px solid var(--glass-border); }
 .card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
-.card-header-letters div { text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; color: #fff; }
+.card-header-letters div { text-align: center; font-size: 11px; font-weight: 900; border-radius: 4px; padding: 2px 0; color: #fff; }
 .card-header-letters .h-B { background: #3b82f6; }
 .card-header-letters .h-I { background: #ef4444; }
 .card-header-letters .h-N { background: #10b981; }
@@ -165,8 +170,8 @@ body {
 .card-header-letters .h-O { background: #8b5cf6; }
 
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.interactive-cell { background: var(--btn-bg); text-align: center; padding: 8px 0; font-size: 15px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
-.interactive-cell.free { background: var(--blue); color: #fff; font-size: 12px; }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 6px 0; font-size: 14px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
+.interactive-cell.free { background: var(--blue); color: #fff; font-size: 11px; }
 .interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
 .wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
 
@@ -217,7 +222,10 @@ body {
     </div>
     <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
     
-    <div class="grid-container" id="number-grid"></div>
+    <div class="grid-wrapper">
+      <div class="grid-container" id="number-grid"></div>
+      <div class="disabled-msg hidden" id="no-balance-msg">በቂ ገንዘብ ስለሌለዎት እባክዎ ገንዘብ ያስገቡ!</div>
+    </div>
     
     <div class="footer-notification" id="footer-notification"></div>
     
@@ -291,7 +299,7 @@ body {
     <div id="deposit-options-section" class="deposit-options-box glass-panel hidden">
       <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የክፍያ አማራጭ ይምረጡ:</div>
       <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
-      <button class="sub-option-btn" onclick="selectDepositMethod('cbe')">🏦 CBE</button>
+      <!-- CBE Option Removed -->
       <div id="deposit-info-box" class="deposit-info-display hidden"></div>
     </div>
 
@@ -309,7 +317,10 @@ body {
   </div>
 
   <div id="page-history" class="page-inner-content hidden">
-    <div class="sec-title">የግብይት ታሪክ (History)</div>
+    <div class="sec-title" style="display:flex; justify-content:space-between;">
+      <span>የግብይት ታሪክ (History)</span>
+      <button onclick="clearMyHistory()" style="background:var(--danger); color:white; border:none; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;"><i class="fas fa-trash"></i> አጥፋ</button>
+    </div>
     <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
@@ -339,6 +350,7 @@ body {
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 <script>
 const savedTheme = localStorage.getItem('theme') || 'dark';
 if (savedTheme === 'light') document.body.classList.add('light-theme');
@@ -385,7 +397,7 @@ window.fetch = function(url, opts = {}) {
 };
 
 let currentWallet = 0, currentWinWallet = 0, currentReferralWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
-let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', cbe_number: '1000390803005', cbe_name: 'Tazebew', enable_cbe: true };
+let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', enable_cbe: false };
 let selectedCards = new Set(), calledNumbersSet = new Set();
 let notificationTimeout = null;
 let clientId = String(userProfile.id), gamePhase = 'waiting', isModalShown = false;
@@ -412,11 +424,11 @@ function getColumnLetter(num) {
 }
 
 function getColumnColor(num) {
-    if (num <= 15) return '#3b82f6'; // Blue
-    if (num <= 30) return '#ef4444'; // Red
-    if (num <= 45) return '#10b981'; // Green
-    if (num <= 60) return '#f59e0b'; // Orange
-    return '#8b5cf6'; // Purple
+    if (num <= 15) return '#3b82f6'; 
+    if (num <= 30) return '#ef4444'; 
+    if (num <= 45) return '#10b981'; 
+    if (num <= 60) return '#f59e0b'; 
+    return '#8b5cf6'; 
 }
 
 function initGrid() {
@@ -436,20 +448,15 @@ function initGrid() {
 
 function updateCardClickability() {
     const totalBalance = currentWallet + currentWinWallet + currentReferralWallet;
+    const grid = document.getElementById('number-grid');
+    const msg = document.getElementById('no-balance-msg');
+
     if (totalBalance < 10 && selectedCards.size === 0) {
-        for (let i = 1; i <= maxCards; i++) {
-            if (numberButtons[i] && !numberButtons[i].classList.contains('taken-by-other')) {
-                numberButtons[i].style.opacity = '0.5';
-                numberButtons[i].style.pointerEvents = 'none';
-            }
-        }
+        grid.classList.add('disabled');
+        msg.classList.remove('hidden');
     } else {
-        for (let i = 1; i <= maxCards; i++) {
-            if (numberButtons[i] && !numberButtons[i].classList.contains('taken-by-other')) {
-                numberButtons[i].style.opacity = '1';
-                numberButtons[i].style.pointerEvents = 'auto';
-            }
-        }
+        grid.classList.remove('disabled');
+        msg.classList.add('hidden');
     }
 }
 
@@ -581,6 +588,17 @@ async function loadHistory() {
     container.appendChild(frag);
 }
 
+// ✅ Clear History Function
+async function clearMyHistory() {
+    if (!confirm("ታሪክዎን ማጥፋት ይፈልጋሉ? ይህ ተግባር አይመለስም።")) return;
+    try {
+        const res = await fetch(`/api/admin/wallet/history/${userProfile.id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) { alert("ታሪክዎ በተሳካ ሁኔታ ጠፍቷል!"); loadHistory(); }
+        else alert("ስህተት ተከስቷል።");
+    } catch (e) { alert("ሰርቨር ላይ ችግር ተፈጥሯል።"); }
+}
+
 async function loadLeaderboard() {
     const container = document.getElementById('leaderboard-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
     const data = await apiGet('/api/leaderboard'); if (!data || !data.success) { container.innerHTML = 'Error loading rank.'; return; }
@@ -605,9 +623,7 @@ function selectDepositMethod(m) {
     const b = document.getElementById('deposit-info-box'); b.classList.remove('hidden'); 
     if (m === 'telebirr') { 
         b.innerHTML = `<div style="text-align:left; padding:10px;">📲 <b>Telebirr</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.telebirr_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.telebirr_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.telebirr_name || 'Tazebew'}</b></div></div>`; 
-    } else { 
-        b.innerHTML = `<div style="text-align:left; padding:10px;">🏦 <b>CBE</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.cbe_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.cbe_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.cbe_name || 'Tazebew'}</b></div></div>`; 
-    } 
+    }
 }
 function selectWithdrawMethod(t) { 
     document.getElementById('withdraw-form-box').classList.remove('hidden'); 
@@ -839,7 +855,6 @@ socket.on('reset_game', () => {
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
     
-    // ✅ Support for Multiple Winners
     const totalWinners = data.winners.length;
     const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
     
@@ -850,15 +865,17 @@ socket.on('game_over', (data) => {
     document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
 
     const container = document.getElementById('winning-card-container');
-    container.innerHTML = ''; // Clear previous
+    container.innerHTML = '';
 
+    // ✅ Fix 6: Display correct prize amount for each board (avoid undefined)
     data.winners.forEach(winInfo => {
         const winningCard = winInfo.cardNum;
         const cols = generateCardLayout(winningCard);
         const calledNumbersArray = data.calledNumbers || [];
+        const prizeAmount = winInfo.prize !== undefined ? winInfo.prize : data.prizePerWinner;
         
         let html = `<div class="winning-card-wrapper">
-            <div class="winner-name">BOARD ${winningCard} - ${winInfo.prize} ETB</div>
+            <div class="winner-name">BOARD ${winningCard} - ${prizeAmount} ETB</div>
             <div class="winning-matrix">`;
             
         html += `<div style="background:#3b82f6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
