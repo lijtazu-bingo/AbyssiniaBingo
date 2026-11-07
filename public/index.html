@@ -76,7 +76,7 @@ body {
     border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
 }
 .number-btn:active { transform: scale(0.95); }
-.number-btn.taken-by-other { background: rgba(100, 116, 139, 0.3) !important; border-color: #475569; color: #64748b !important; opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+.number-btn.taken-by-other { background: rgba(239, 68, 68, 0.3) !important; border-color: #ef4444; color: #fca5a5 !important; opacity: 0.6; cursor: not-allowed; text-decoration: line-through; }
 .number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
@@ -160,7 +160,13 @@ body {
 .live-cards-container { flex: 1; overflow-y: auto; padding: 10px; }
 .interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
 .card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
-.card-header-letters div { background: var(--gold); color: #000; text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; }
+.card-header-letters div { text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; color: #fff; }
+.card-header-letters .h-B { background: #3b82f6; }
+.card-header-letters .h-I { background: #ef4444; }
+.card-header-letters .h-N { background: #10b981; }
+.card-header-letters .h-G { background: #f59e0b; }
+.card-header-letters .h-O { background: #8b5cf6; }
+
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
 .interactive-cell { background: var(--btn-bg); text-align: center; padding: 8px 0; font-size: 15px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
 .interactive-cell.free { background: var(--blue); color: #fff; font-size: 12px; }
@@ -200,7 +206,6 @@ body {
 </div>
 
 <div class="main-content-area">
-  <!-- TICKET PAGE -->
   <div id="page-ticket">
     <div class="top-dashboard">
       <div class="dash-card glass-panel"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
@@ -217,11 +222,9 @@ body {
     
     <div class="footer-notification" id="footer-notification"></div>
     
-    <!-- Preview Section -->
     <div class="preview-section glass-panel" id="preview-container"></div>
   </div>
 
-  <!-- LIVE PAGE -->
   <div id="page-live" class="hidden">
     <div class="stats-header glass-panel">
       <div class="stat-item"><span class="stat-label">DERASH</span><div class="stat-value" id="derash-val">0</div></div>
@@ -248,7 +251,6 @@ body {
     </div>
   </div>
 
-  <!-- PROFILE PAGE -->
   <div id="page-profile" class="page-inner-content hidden">
     <div class="sec-title">የተጠቃሚ መገለጫ</div>
     <div class="profile-card glass-panel">
@@ -277,7 +279,6 @@ body {
     </div>
   </div>
 
-  <!-- WALLET PAGE -->
   <div id="page-wallet" class="page-inner-content hidden">
     <div class="sec-title">YOUR BALANCES</div>
     <div class="wallet-balances-grid">
@@ -309,20 +310,17 @@ body {
     </div>
   </div>
 
-  <!-- HISTORY PAGE -->
   <div id="page-history" class="page-inner-content hidden">
     <div class="sec-title">የግብይት ታሪክ (History)</div>
     <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
-  <!-- RANK PAGE -->
   <div id="page-rank" class="page-inner-content hidden">
     <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 10)</div>
     <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
 
-<!-- BOTTOM NAVIGATION -->
 <nav class="bottom-nav glass-panel">
   <button class="nav-item active" id="nav-btn-ticket" onclick="switchTab('ticket')"><span class="nav-icon">🎮</span><span>BINGO</span></button>
   <button class="nav-item" id="nav-btn-wallet" onclick="switchTab('wallet')"><span class="nav-icon">💳</span><span>WALLET</span></button>
@@ -331,7 +329,6 @@ body {
   <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
 </nav>
 
-<!-- GAME OVER OVERLAY -->
 <div id="game-over-overlay" class="hidden">
   <div class="game-over-title">🏆 BINGO! 🏆</div>
   <div class="winner-text" id="winner-text">--</div>
@@ -346,7 +343,6 @@ body {
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ✅ Theme Management
 const savedTheme = localStorage.getItem('theme') || 'dark';
 if (savedTheme === 'light') document.body.classList.add('light-theme');
 if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
@@ -377,12 +373,16 @@ try {
 } catch (e) {}
 
 const TG_INIT_DATA = tg?.initData || '';
+const urlParams = new URLSearchParams(window.location.search);
+const urlLang = urlParams.get('lang') || 'en'; // Default to English if no lang param
+
 const originalFetch = window.fetch;
 window.fetch = function(url, opts = {}) {
     if (typeof url === 'string' && url.includes('/api/')) {
         opts.headers = opts.headers || {};
         opts.headers['X-Telegram-Init-Data'] = TG_INIT_DATA;
         opts.headers['X-User-Id'] = String(userProfile.id);
+        opts.headers['Accept-Language'] = urlLang; // Pass language to server if needed
     }
     return originalFetch(url, opts);
 };
@@ -406,6 +406,22 @@ function hideLoadingScreen() {
     }
 }
 
+function getColumnLetter(num) {
+    if (num <= 15) return 'B';
+    if (num <= 30) return 'I';
+    if (num <= 45) return 'N';
+    if (num <= 60) return 'G';
+    return 'O';
+}
+
+function getColumnColor(num) {
+    if (num <= 15) return '#3b82f6'; // Blue
+    if (num <= 30) return '#ef4444'; // Red
+    if (num <= 45) return '#10b981'; // Green
+    if (num <= 60) return '#f59e0b'; // Orange
+    return '#8b5cf6'; // Purple
+}
+
 function initGrid() {
     const grid = document.getElementById('number-grid');
     if (!grid) return;
@@ -418,12 +434,33 @@ function initGrid() {
         frag.appendChild(btn); numberButtons[i] = btn; 
     }
     grid.appendChild(frag);
+    updateCardClickability(); // Apply state on load
+}
+
+function updateCardClickability() {
+    // ✅ Disable all cards if user has no balance and hasn't selected any yet
+    if (currentWallet < 10 && selectedCards.size === 0) {
+        for (let i = 1; i <= maxCards; i++) {
+            if (numberButtons[i] && !numberButtons[i].classList.contains('taken-by-other')) {
+                numberButtons[i].style.opacity = '0.5';
+                numberButtons[i].style.pointerEvents = 'none';
+            }
+        }
+    } else {
+        for (let i = 1; i <= maxCards; i++) {
+            if (numberButtons[i] && !numberButtons[i].classList.contains('taken-by-other')) {
+                numberButtons[i].style.opacity = '1';
+                numberButtons[i].style.pointerEvents = 'auto';
+            }
+        }
+    }
 }
 
 function updateWalletUI() { 
     document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); 
     document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); 
     document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); 
+    updateCardClickability();
 }
 function updateProfileUI() { 
     document.getElementById('profile-name-val').innerText = userProfile.name; 
@@ -431,7 +468,7 @@ function updateProfileUI() {
     document.getElementById('profile-games-val').innerText = userTotalGames; 
     document.getElementById('profile-wins-val').innerText = userTotalWins; 
     document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; 
-    document.getElementById('invite-link-input').value = 'https://t.me/Ethiobingo_bot?start=' + userProfile.id; 
+    document.getElementById('invite-link-input').value = 'https://t.me/Ethiobongo_bot?start=' + userProfile.id; 
 }
 
 function updateLiveStats(totalCards) {
@@ -472,6 +509,11 @@ async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) re
 
 window.toggleCard = function(num) {
     if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
+    
+    // ✅ Prevent selection if balance is 0 and no card is selected yet
+    if (currentWallet < 10 && selectedCards.size === 0 && !selectedCards.has(num)) {
+        return showFooterNotification("❌ ካርቴላ ለመግዛት በቂ ባላንስ የለዎትም! (ዝቅተኛ 10 ብር)");
+    }
     
     if (selectedCards.has(num)) { 
         selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
@@ -605,12 +647,11 @@ async function submitWithdrawRequest(event) {
 
 function buildBingoBoard() { 
     const b = document.getElementById('bingo-board'); b.innerHTML = ''; const frag = document.createDocumentFragment(); 
-    [{t:'B',c:'#2563eb'},{t:'I',c:'#0d9488'},{t:'N',c:'#4f46e5'},{t:'G',c:'#d97706'},{t:'O',c:'#dc2626'}].forEach(h => { const d = document.createElement('div'); d.style.cssText = `background:${h.c}; color:white; text-align:center; font-weight:bold; padding:4px; border-radius:4px; font-size:10px;`; d.innerText = h.t; frag.appendChild(d); }); 
+    [{t:'B',c:'#3b82f6'},{t:'I',c:'#ef4444'},{t:'N',c:'#10b981'},{t:'G',c:'#f59e0b'},{t:'O',c:'#8b5cf6'}].forEach(h => { const d = document.createElement('div'); d.style.cssText = `background:${h.c}; color:white; text-align:center; font-weight:bold; padding:4px; border-radius:4px; font-size:10px;`; d.innerText = h.t; frag.appendChild(d); }); 
     for (let row = 1; row <= 15; row++) for (let col = 0; col < 5; col++) { let num = col * 15 + row; const c = document.createElement('div'); c.className = 'board-cell'; c.id = 'cell-' + num; c.innerText = num; if (calledNumbersSet.has(num)) c.classList.add('marked'); frag.appendChild(c); } 
     b.appendChild(frag); 
 }
 
-// ✅ 100% የተመሳሰለ የካርቴላ ማመንጫ (ምንም sort የለም)
 function mulberry32(a) { 
     return function() { 
         a |= 0; a = a + 0x6D2B79F5 | 0; 
@@ -655,7 +696,9 @@ function updateLiveCardsContainer() {
         d.dataset.card = cn;
         d.innerHTML = `
             <div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div>
-            <div class="card-header-letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+            <div class="card-header-letters">
+                <div class="h-B">B</div><div class="h-I">I</div><div class="h-N">N</div><div class="h-G">G</div><div class="h-O">O</div>
+            </div>
             <div class="interactive-matrix" id="im-${cn}"></div>
         `;
         c.appendChild(d);
@@ -689,17 +732,27 @@ function updateLiveCardsContainer() {
 
 function updateCalledNumbersUI(allCalled) { 
     if (!allCalled?.length) return; 
-    let last = allCalled[allCalled.length - 1]; 
-    document.getElementById('current-call-display').innerText = last; 
+    let lastNum = allCalled[allCalled.length - 1]; 
+    const prefix = getColumnLetter(lastNum);
+    const color = getColumnColor(lastNum);
+
+    // ✅ Show B-12, O-75 format and change color dynamically
+    const displayEl = document.getElementById('current-call-display');
+    displayEl.innerText = `${prefix}-${lastNum}`;
+    displayEl.style.background = `radial-gradient(circle at 30% 30%, ${color}cc, ${color})`;
+    displayEl.style.boxShadow = `0 0 20px ${color}99, inset -5px -5px 15px rgba(0,0,0,0.3)`;
+    
     let rc = document.getElementById('recent-calls-container'); 
     rc.innerHTML = ''; 
     let recent = allCalled.slice(Math.max(0, allCalled.length - 4), allCalled.length - 1).reverse(); 
     recent.forEach((n) => {
         let c = document.createElement('div'); 
         c.className = 'recent-ball'; 
-        c.innerText = n; 
+        c.innerText = `${getColumnLetter(n)}-${n}`; 
+        c.style.background = getColumnColor(n);
         rc.appendChild(c); 
     }); 
+
     document.getElementById('call-count').innerText = allCalled.length; 
     allCalled.forEach(n => { let cell = document.getElementById('cell-' + n); if (cell) cell.classList.add('marked'); }); 
 }
@@ -715,6 +768,14 @@ socket.on('init_state', (state) => {
     updatePreviewUI(); 
     updateLiveStats(state.totalCards);
     state.myCards.forEach(n => { if(numberButtons[n]) numberButtons[n].className = 'number-btn selected'; });
+    
+    // ✅ Mark taken cards immediately on load
+    for(let i=1; i<=maxCards; i++) {
+        if(!numberButtons[i]) continue;
+        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
+        else if(state.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
+    }
+
     if (state.calledNumbers?.length) { 
         calledNumbersSet = new Set(state.calledNumbers); 
         updateCalledNumbersUI(state.calledNumbers); 
@@ -734,6 +795,7 @@ socket.on('sync_taken_cards', (data) => {
         else if(data.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
         else { numberButtons[i].className = 'number-btn'; }
     }
+    updateCardClickability();
 });
 
 socket.on('settings_updated', (data) => {
@@ -770,7 +832,9 @@ socket.on('bingo_result', (data) => {
 socket.on('reset_game', () => {
     selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
     initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
-    document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0';
+    document.getElementById('current-call-display').innerText = '--'; 
+    document.getElementById('current-call-display').style.background = ''; // reset color
+    document.getElementById('call-count').innerText = '0';
     document.getElementById('recent-calls-container').innerHTML = '';
     updatePreviewUI(); 
     loadWallet();
@@ -789,11 +853,11 @@ socket.on('game_over', (data) => {
     const calledNumbersArray = data.calledNumbers || [];
     
     let html = `<div class="winning-matrix">`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
-    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
+    html += `<div style="background:#3b82f6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
+    html += `<div style="background:#ef4444;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
+    html += `<div style="background:#10b981;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
+    html += `<div style="background:#f59e0b;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
+    html += `<div style="background:#8b5cf6;color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
 
     for(let r = 0; r < 5; r++) {
         for(let c = 0; c < 5; c++) {
@@ -827,16 +891,8 @@ socket.on('game_over', (data) => {
 function showFooterNotification(msg) { const n = document.getElementById('footer-notification'); n.innerText = msg; clearTimeout(notificationTimeout); notificationTimeout = setTimeout(() => { n.innerText = ''; }, 3000); }
 
 setTimeout(hideLoadingScreen, 3000);
-
-document.addEventListener('DOMContentLoaded', () => { 
-    initGrid(); 
-    setTimeout(hideLoadingScreen, 1000);
-});
-window.addEventListener('load', () => { 
-    loadWallet(); 
-    loadSettings(); 
-    setTimeout(hideLoadingScreen, 500);
-});
+document.addEventListener('DOMContentLoaded', () => { initGrid(); setTimeout(hideLoadingScreen, 1000); });
+window.addEventListener('load', () => { loadWallet(); loadSettings(); setTimeout(hideLoadingScreen, 500); });
 </script>
 </body>
 </html>

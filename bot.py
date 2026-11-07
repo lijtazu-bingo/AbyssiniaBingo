@@ -255,7 +255,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
+    _, lang = get_user_data(user.id)
+    # ✅ Add language parameter to WebApp URL
+    webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}" 
+    
+    web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=webapp_url_with_lang))
     await update.message.reply_text(get_text(user.id, 'play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -458,7 +462,8 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     texts = TEXTS.get(lang, TEXTS['en'])
 
     if text == texts.get('menu_play') or "Play Abyssinia Bingo" in text:
-        web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
+        webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}"
+        web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=webapp_url_with_lang))
         await update.message.reply_text(t('play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
     elif text == texts.get('menu_balance') or "Balance" in text:
