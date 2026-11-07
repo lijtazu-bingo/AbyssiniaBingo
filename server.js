@@ -126,7 +126,7 @@ function getCardCols(cardNum) {
     cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
 }
 
-// 🔥 የተስተካከለው የማሸነፊያ ስሌት (Accurate Winning Logic) 🔥
+// 🔥 የተስተካከለው የማሸነፊያ ስሌት 🔥
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum); 
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -136,7 +136,6 @@ function checkWinningLine(cardNum, calledNumbers) {
     const calledSet = new Set(calledNumbers); 
     const m = [];
     
-    // ማትሪክስ መፍጠር (Marked or Not)
     for (let r = 0; r < 5; r++) { 
         const row = []; 
         for (let c = 0; c < 5; c++) {
@@ -175,8 +174,7 @@ function checkWinningLine(cardNum, calledNumbers) {
         if (hasL) return { type: 'diag2', desc: 'Diag 2' }; 
     }
     
-    // 4. Four Corners (4 ማዕዘኖች)
-    // ማዕዘኖቹ በሙሉ መጠራታቸውን እና ከመካከላቸው አንዱ የመጨረሻው ጥሪ መሆኑን ማረጋገጥ
+    // 4. Four Corners
     if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { 
         let hasL = false; 
         if (cols[0][0] === latestCall) hasL = true; 

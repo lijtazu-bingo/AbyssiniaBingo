@@ -144,8 +144,8 @@ body {
 .right-panel { width: 58%; display: flex; flex-direction: column; gap: 8px; }
 .current-call-container { text-align: center; padding: 10px; display: flex; flex-direction: column; align-items: center; }
 .current-call-ball {
-    width: 75px; height: 75px; border-radius: 50%;
-    color: white; font-size: 32px; font-weight: 900;
+    width: 80px; height: 80px; border-radius: 50%;
+    color: white; font-size: 28px; font-weight: 900;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 15px rgba(0,0,0,0.5), inset -5px -5px 15px rgba(0,0,0,0.3);
     animation: bounceBall 1.5s infinite ease-in-out;
@@ -159,9 +159,9 @@ body {
 }
 .recent-calls { display: flex; gap: 6px; justify-content: center; }
 .recent-ball {
-    width: 32px; height: 32px; border-radius: 50%;
+    width: 35px; height: 35px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 800; color: #fff;
+    font-size: 13px; font-weight: 800; color: #fff;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
@@ -176,7 +176,7 @@ body {
 .wait-in-live { text-align: center; padding: 15px; margin-top: 10px; }
 
 /* Bottom Nav */
-.bottom-nav { height: 60px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); }
+.bottom-nav { height: 60px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); flex-shrink: 0; margin-top: auto;}
 .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 10px; font-weight: 700; gap: 4px; }
 .nav-item.active { color: var(--gold); }
 .nav-icon { font-size: 20px; }
@@ -219,7 +219,7 @@ body {
       <div class="dash-card"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
       <div class="dash-card"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
       <div class="dash-card"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
-      <div class="dash-card"><span class="dash-label">Call</span><span class="dash-value timer" id="call-count-top">0/75</span></div>
+      <div class="dash-card"><span class="dash-label">Time Left</span><span class="dash-value timer" id="timer-val">50ሰ</span></div>
     </div>
     <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
     
@@ -752,18 +752,32 @@ function updateLiveCardsContainer() {
     });
 }
 
+function getLetterForNum(num) {
+    if (num >= 1 && num <= 15) return 'B';
+    if (num >= 16 && num <= 30) return 'I';
+    if (num >= 31 && num <= 45) return 'N';
+    if (num >= 46 && num <= 60) return 'G';
+    if (num >= 61 && num <= 75) return 'O';
+    return '';
+}
+
+function getColorForNum(num) {
+    if (num >= 1 && num <= 15) return {bg: '#2563eb', grad: 'radial-gradient(circle at 30% 30%, #60a5fa, #2563eb)'}; // Blue
+    if (num >= 16 && num <= 30) return {bg: '#dc2626', grad: 'radial-gradient(circle at 30% 30%, #f87171, #dc2626)'}; // Red
+    if (num >= 31 && num <= 45) return {bg: '#059669', grad: 'radial-gradient(circle at 30% 30%, #34d399, #059669)'}; // Green
+    if (num >= 46 && num <= 60) return {bg: '#d97706', grad: 'radial-gradient(circle at 30% 30%, #fbbf24, #d97706)'}; // Orange
+    return {bg: '#7c3aed', grad: 'radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed)'}; // Purple
+}
+
 function updateCalledNumbersUI(allCalled) { 
     if (!allCalled?.length) return; 
     let last = allCalled[allCalled.length - 1]; 
+    let letter = getLetterForNum(last);
+    let color = getColorForNum(last);
     
     const displayEl = document.getElementById('current-call-display');
-    displayEl.innerText = last; 
-    
-    if (last <= 15) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #60a5fa, #2563eb)'; // B
-    else if (last <= 30) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #f87171, #dc2626)'; // I
-    else if (last <= 45) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #34d399, #059669)'; // N
-    else if (last <= 60) displayEl.style.background = 'radial-gradient(circle at 30% 30%, #fbbf24, #d97706)'; // G
-    else displayEl.style.background = 'radial-gradient(circle at 30% 30%, #a78bfa, #7c3aed)'; // O
+    displayEl.innerHTML = `<span style="font-size: 16px; opacity: 0.9; margin-right: 2px;">${letter}</span>-${last}`; 
+    displayEl.style.background = color.grad;
     
     let rc = document.getElementById('recent-calls-container'); 
     rc.innerHTML = ''; 
@@ -771,19 +785,13 @@ function updateCalledNumbersUI(allCalled) {
     recent.forEach((n) => {
         let c = document.createElement('div'); 
         c.className = 'recent-ball'; 
-        c.innerText = n; 
-        
-        if (n <= 15) c.style.background = '#2563eb'; 
-        else if (n <= 30) c.style.background = '#dc2626';
-        else if (n <= 45) c.style.background = '#059669';
-        else if (n <= 60) c.style.background = '#d97706';
-        else c.style.background = '#7c3aed';
-        
+        let l = getLetterForNum(n);
+        c.innerText = `${l}-${n}`; 
+        c.style.background = getColorForNum(n).bg;
         rc.appendChild(c); 
     }); 
 
     document.getElementById('call-count').innerText = allCalled.length + '/75'; 
-    document.getElementById('call-count-top').innerText = allCalled.length + '/75'; 
     allCalled.forEach(n => { let cell = document.getElementById('cell-' + n); if (cell) cell.classList.add('marked'); }); 
 }
 
@@ -805,7 +813,7 @@ socket.on('init_state', (state) => {
         calledNumbersSet = new Set(state.calledNumbers); 
         updateCalledNumbersUI(state.calledNumbers); 
     }
-    if (state.remainingTime !== undefined) document.getElementById('call-count-top').innerText = state.calledNumbers?.length + '/75';
+    if (state.remainingTime !== undefined) document.getElementById('timer-val').innerText = state.remainingTime + 'ሰ';
     
     loadWallet();
     if (state.phase === 'calling' || state.phase === 'gameover') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
@@ -834,7 +842,7 @@ socket.on('settings_updated', (data) => {
 
 socket.on('wallet_updated', () => loadWallet(true));
 socket.on('card_error', (data) => { showFooterNotification(data.message); });
-socket.on('timer_tick', (data) => { document.getElementById('call-count-top').innerText = data.remaining + 'ሰ'; });
+socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
 socket.on('phase_change', (data) => { 
     gamePhase = data.phase; 
     if(data.phase === 'calling') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
@@ -849,9 +857,8 @@ socket.on('new_number_called', (data) => {
 socket.on('reset_game', () => {
     selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
     initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
-    document.getElementById('current-call-display').innerText = '--'; 
-    document.getElementById('call-count').innerText = '0/75';
-    document.getElementById('call-count-top').innerText = '0/75';
+    document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0/75';
+    document.getElementById('timer-val').innerText = '50ሰ';
     document.getElementById('recent-calls-container').innerHTML = '';
     updatePreviewUI(); 
     loadWallet(true);
