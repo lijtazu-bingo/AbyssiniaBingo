@@ -63,15 +63,14 @@ def save_user(user_id, username, first_name, phone=None):
     conn.commit()
     conn.close()
 
-# ─── ዋናው ምናሌ (Main Menu) ───
+# ─── ዋናው ምናሌ (Main Menu) - ልክ እንደ Spark Bingo ───
 def get_main_menu():
     keyboard = [
-        [KeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))],
-        [KeyboardButton(text="💰 Deposit"), KeyboardButton(text="💸 Withdraw")],
-        [KeyboardButton(text="🏦 Balance"), KeyboardButton(text="👥 Invite")],
-        [KeyboardButton(text="📜 History"), KeyboardButton(text="💬 Support")],
-        [KeyboardButton(text="🔢 Register"), KeyboardButton(text="🌐 Language")],
-        [KeyboardButton(text="ℹ️ Help"), KeyboardButton(text="🏆 Rank")]
+        [KeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))],
+        [KeyboardButton(text="📥 ገቢ (Deposit)"), KeyboardButton(text="📤 ወጪ (Withdraw)")],
+        [KeyboardButton(text="💵 ሂሳብ"), KeyboardButton(text="👤 ትርፍዬል")],
+        [KeyboardButton(text="🔗 ግብዣ እና አጋር"), KeyboardButton(text="📢 ድርጅተኛ አስተዋዋቂ")],
+        [KeyboardButton(text="🌐 ቋንቋ (Language)"), KeyboardButton(text="🆘 እርዳታ")]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
@@ -84,7 +83,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         f"ሰላም {user.first_name}! 👋\n\n"
         "🎉 <b>እንኳን ወደ Abyssinia Bingo በደህና መጡ!</b> 🎉\n\n"
-        "ከታች ያለውን ምናሌ በመጠቀም ገንዘብ ማስገባት፣ ማውጣት ወይም ጨዋታ መጀመር ይችላሉ።"
+        "ከታች ያለውን ምናሌ በመጠቀም ጨዋታ መጫወት፣ ገንዘብ ማስገባት ወይም ማውጣት ይችላሉ።"
     )
     
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu())
@@ -101,14 +100,14 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_main_menu()
         )
 
-# ─── 1. DEPOSIT FLOW ───
+# ─── 1. DEPOSIT FLOW (ልክ እንደ ምስል 2) ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("📲 Telebirr", callback_data="dep_telebirr")],
-        [InlineKeyboardButton("🏦 CBE", callback_data="dep_cbe")]
+        [InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="dep_cbe")],
+        [InlineKeyboardButton("🟢 M-Pesa", callback_data="dep_mpesa")]
     ]
     await update.message.reply_text(
-        "💵 <b>ገንዘብ ማስገባት (Deposit)</b>\n\nእባክዎ የክፍያ አማራጭ ይምረጡ፦", 
+        "🏦 የትኛውን የባንክ አማራጭ መጠቀም ይፈልጋሉ?", 
         reply_markup=InlineKeyboardMarkup(keyboard), 
         parse_mode='HTML'
     )
@@ -118,7 +117,13 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
     
-    method = "Telebirr" if query.data == "dep_telebirr" else "CBE"
+    if query.data == "dep_telebirr":
+        method = "Telebirr"
+    elif query.data == "dep_cbe":
+        method = "CBEBirr"
+    else:
+        method = "M-Pesa"
+        
     context.user_data['deposit_method'] = method
     
     try:
@@ -129,13 +134,13 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
         
     if method == "Telebirr":
         acc = settings.get("telebirr_number", "0968940123")
-        name = settings.get("telebirr_name", "Tazebew")
+        name = settings.get("telebirr_name", "Lij Tazu")
     else:
-        acc = settings.get("cbe_number", "1000390803005")
-        name = settings.get("cbe_name", "Tazebew")
+        acc = "1000390803005"
+        name = "Lij Tazu"
 
     text = (
-        f"🏦 <b>{method} አካውንት</b>\n\n"
+        f"🏦 <b>{method} የክፍያ አካውንት</b>\n\n"
         f"ቁጥር: <code>{acc}</code>\n"
         f"ስም: <b>{name}</b>\n\n"
         f"👉 ከላይ ወደሚገኘው አካውንት ገንዘቡን ያስገቡ።\n"
@@ -181,9 +186,23 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
             
     return ConversationHandler.END
 
-# ─── 2. WITHDRAW FLOW ───
+# ─── 2. WITHDRAW FLOW (ልክ እንደ ምስል 2) ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን (Amount)</b> በቁጥር ያስገቡ (ቢያንስ 100 ETB):", parse_mode='HTML')
+    keyboard = [
+        [InlineKeyboardButton("📱 TeleBirr", callback_data="wd_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="wd_cbe")],
+        [InlineKeyboardButton("🟢 M-Pesa", callback_data="wd_mpesa")]
+    ]
+    await update.message.reply_text(
+        "🏦 የትኛውን የባንክ ወጪ ማድረግ ይፈልጋሉ?", 
+        reply_markup=InlineKeyboardMarkup(keyboard), 
+        parse_mode='HTML'
+    )
+    return 5 # WITHDRAW_METHOD
+
+async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text("💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን (Amount)</b> በቁጥር ያስገቡ (ቢያንስ 100 ETB):", parse_mode='HTML')
     return WITHDRAW_AMOUNT
 
 async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -231,70 +250,72 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── 3. OTHER MENU BUTTONS ───
+# ─── 3. OTHER MENU BUTTONS (ልክ እንደ ምስል 2) ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
 
-    if "Deposit" in text:
-        return await deposit_start(update, context)
-    
-    elif "Withdraw" in text:
-        return await withdraw_start(update, context)
-
-    elif "Balance" in text:
-        await update.message.reply_text("⏳ ባላንስዎን በመፈለግ ላይ...")
+    if "ሂሳብ" in text:
+        await update.message.reply_text("⏳ ሂሳብዎን በመፈለግ ላይ...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)})
             data = res.json()
             if data.get("success"):
                 bal = data.get("data", {})
                 msg = (
-                    f"🏦 <b>የእርስዎ ባላንስ</b>\n\n"
-                    f"🎮 Play: <b>{bal.get('play_balance', 0)} ETB</b>\n"
-                    f"🏆 Win: <b>{bal.get('win_balance', 0)} ETB</b>"
+                    f"💵 <b>የሂሳብ ማጠቃለያ፦</b>\n\n"
+                    f"🟢 መጫወቻ ሂሳብ (Play): <b>{bal.get('play_balance', 0)} ETB</b>\n"
+                    f"🟡 ዋና ሂሳብ (Main): <b>{bal.get('win_balance', 0)} ETB</b>"
                 )
                 await update.message.reply_text(msg, parse_mode='HTML')
             else:
-                await update.message.reply_text("⚠️ ባላንስ ማግኘት አልተቻለም።")
+                await update.message.reply_text("⚠️ ሂሳብ ማግኘት አልተቻለም።")
         except:
             await update.message.reply_text("❌ ሰርቨሩ ላይ ችግር ተፈጥሯል።")
             
-    elif "Invite" in text:
-        await update.message.reply_text(f"👥 የእርስዎ የግብዣ ሊንክ፦\nhttps://t.me/Ethiobingo_bot?start={user.id}")
-        
-    elif "History" in text:
-        await update.message.reply_text("📜 የግብይት ታሪክዎን ለማየት ወደ Bingo ገጽ ይግቡ ወይም /start ይጫኑ።")
-        
-    elif "Support" in text:
-        await update.message.reply_text("💬 ለድጋፍ እባክዎ @AbyssiniaSupport ያግኙ።")
-        
-    elif "Register" in text:
-        keyboard = [[KeyboardButton(text="📱 ስልክ ቁጥሬን አጋራ", request_contact=True)]]
-        await update.message.reply_text("እባክዎ ስልክ ቁጥርዎን ያጋሩ፦", reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True))
-        
-    elif "Language" in text:
-        await update.message.reply_text("🌐 ቋንቋን ለመቀየር በቅርቡ ይገኛል።")
-        
-    elif "Help" in text:
-        help_text = (
-            "ℹ️ <b>የእርዳታ ማዕከል</b>\n\n"
-            "/start - ቦቱን እንደገና ለመጀመር\n"
-            "/play - ወደ ጨዋታው ለመግባት\n\n"
-            "❓ ሌላ ጥያቄ ካለዎት የድጋፍ ሰሌዳችንን ያግኙን።"
+    elif "ትርፍዬል" in text:
+        msg = (
+            f"👤 <b>የእርስዎ ትርፍዬል</b>\n\n"
+            f"🔹 ስም: <b>{user.first_name}</b>\n"
+            f"🔹 ስልክ: <b>{context.user_data.get('phone', 'አልተመዘገበም')}</b>\n"
+            f"🔹 መጫወቻ ሂሳብ: <b>-- ETB</b>\n\n"
+            f"👉 ጨዋታ ለመጀመር ከታች ያለውን '🎮 ጨዋታ ይጫወቱ (PLAY)' የሚለውን ይጫኑ።"
         )
-        await update.message.reply_text(help_text, parse_mode='HTML')
+        await update.message.reply_text(msg, parse_mode='HTML')
         
-    elif "Rank" in text:
-        await update.message.reply_text("🏆 ከፍተኛ አሸናፊዎችን ለማየት ወደ Bingo ገጽ ይግቡ።")
+    elif "ግብዣ እና አጋር" in text:
+        msg = (
+            f"🔗 <b>ግብዣ እና አጋር</b>\n\n"
+            f"ይህንን የራስዎ የሆነ መጋበዣ ሊንክ ለወዳጆችዎ ይላኩ።\n"
+            f"ጋብዘው በእርስዎ ሊንክ ገብተው ሲመዘገቡ እርስዎም ሆነ እነሱ የመጫወቻ ቦነስ ያገኛሉ!\n\n"
+            f"👉 የግብዣ ሊንክ:\nhttps://t.me/AbyssiniaBingoBot?start={user.id}"
+        )
+        await update.message.reply_text(msg, parse_mode='HTML')
         
-    elif "Play Bingo" in text:
-        web_app_btn = InlineKeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))
-        markup = InlineKeyboardMarkup([[web_app_btn]])
-        await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ፦", reply_markup=markup)
+    elif "ድርጅተኛ አስተዋዋቂ" in text:
+        await update.message.reply_text("📢 ልዩ አስተዋዋቂ (Promoter) ይሁኑ!\n\nልዩ አስተዋዋቂ ለመሆን እና ኮሚሽን በየቀኑ ለመሰብሰብ እባክዎ አድሚንን ያግኙ፦\n@AbyssiniaSupport")
+        
+    elif "ቋንቋ" in text:
+        keyboard = [
+            [InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am"), InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")],
+            [InlineKeyboardButton("🌳 Afaan Oromoo", callback_data="lang_om"), InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="lang_ti")]
+        ]
+        await update.message.reply_text("🌐 እባክዎ ቋንቋ ይምረጡ (Choose Language):", reply_markup=InlineKeyboardMarkup(keyboard))
+        
+    elif "እርዳታ" in text:
+        msg = (
+            f"💬 ማንኛውም ጥያቄ ወይም አስተያየት ካለዎት አድሚኑን በቴሌግራም ቻት በ @AbyssiniaSupport ያግኙ።\n\n"
+            f"📞 በተጨማሪም በቀጥታ በስልክ መስመራችን፦\n<b>0968940123</b> ይደውሉልን።"
+        )
+        await update.message.reply_text(msg, parse_mode='HTML')
+
+async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text("✅ ቋንቋው ተቀይሯል!", reply_markup=get_main_menu())
 
 async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    web_app_btn = InlineKeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))
+    web_app_btn = InlineKeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))
     markup = InlineKeyboardMarkup([[web_app_btn]])
     await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ፦", reply_markup=markup)
 
@@ -312,7 +333,7 @@ def main():
 
     # ─── Conversation Handlers (Deposit & Withdraw) ───
     dep_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("^💰 Deposit$"), deposit_start)],
+        entry_points=[MessageHandler(filters.Regex("^📥 ገቢ \\(Deposit\\)$"), deposit_start)],
         states={
             DEPOSIT_METHOD: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_")],
             DEPOSIT_TXN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
@@ -322,24 +343,24 @@ def main():
     )
     
     wd_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex("^💸 Withdraw$"), withdraw_start)],
+        entry_points=[MessageHandler(filters.Regex("^📤 ወጪ \\(Withdraw\\)$"), withdraw_start)],
         states={
+            5: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")], # Withdraw Method
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    # ✅ ቅደም ተከተሉ በጣም አስፈላጊ ነው!
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("play", play_game))
     
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
     
-    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     
-    # ሌሎቹ አዝራሮች እዚህ ይያዛሉ
+    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     
     application.add_error_handler(error_handler)
