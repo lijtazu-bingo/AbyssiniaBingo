@@ -37,6 +37,7 @@ mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20
 const UserSchema = new mongoose.Schema({
     id: { type: String, index: true, unique: true }, name: String, username: String, phone: String,
     play_balance: { type: Number, default: 20, index: true }, win_balance: { type: Number, default: 0, index: true },
+    referral_balance: { type: Number, default: 0 },
     total_games: { type: Number, default: 0 }, total_wins: { type: Number, default: 0 },
     referral_code: String, referred_by: { type: String, default: null, index: true },
     pending_referrer: { type: String, default: null }, registered: { type: Boolean, default: false, index: true },
@@ -114,7 +115,6 @@ function mulberry32(a) {
 
 const cardCache = new Map();
 
-// ✅ 100% Synced with index.html — No sort!
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
     const cols = [[], [], [], [], []];
@@ -246,25 +246,60 @@ app.get('/api/admin/transactions', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ Approved API (Added Notification)
 app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'approved' } }, { new: true });
         if (!txn) return res.status(400).json({ success: false });
-        if (txn.type === 'deposit') { await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: txn.amount } }); io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); }
+        
+        let msgText = '';
+        if (txn.type === 'deposit') { 
+            await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: txn.amount } }); 
+            io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); 
+            msgText = `✅ <b>Deposit Approved!</b>\n\nYour deposit of ${txn.amount} ETB has been approved and added to your Play Wallet.`;
+        } else if (txn.type === 'withdrawal') {
+            msgText = `✅ <b>Withdrawal Approved!</b>\n\nYour withdrawal of ${txn.amount} ETB has been approved and is on its way to your account.`;
+        }
+
+        if (msgText) {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: txn.user_id, text: msgText, parse_mode: 'HTML' })
+            }).catch(err => console.error('TG notify error', err));
+        }
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ Reject API (Added Notification & Balance Refund for Withdraw)
 app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'rejected' } }, { new: true });
         if (!txn) return res.status(400).json({ success: false });
-        if (txn.type === 'withdrawal') { await User.updateOne({ id: String(txn.user_id) }, { $inc: { win_balance: txn.amount } }); io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); }
+        
+        let msgText = '';
+        if (txn.type === 'withdrawal') { 
+            await User.updateOne({ id: String(txn.user_id) }, { $inc: { win_balance: txn.amount } }); 
+            io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); 
+            msgText = `❌ <b>Withdrawal Rejected!</b>\n\nYour withdrawal request of ${txn.amount} ETB was rejected. The amount has been refunded to your Win Wallet.`;
+        } else if (txn.type === 'deposit') {
+            msgText = `❌ <b>Deposit Rejected!</b>\n\nYour deposit request of ${txn.amount} ETB was rejected. Please contact support if you believe this is an error.`;
+        }
+
+        if (msgText) {
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: txn.user_id, text: msgText, parse_mode: 'HTML' })
+            }).catch(err => console.error('TG notify error', err));
+        }
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: Giveaway / Bonus
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, target, userId } = req.body;
@@ -284,7 +319,6 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: Broadcast Message
 app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     try {
         const { message } = req.body;
@@ -292,7 +326,6 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
 
         const users = await User.find({}, { id: 1 }).lean();
         
-        // Send asynchronously to avoid blocking the response
         users.forEach(async (u) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -300,14 +333,13 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' })
                 });
-            } catch (err) { /* Ignore individual user failures */ }
+            } catch (err) { }
         });
 
         res.json({ success: true, count: users.length });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: Referrals List
 app.get('/api/admin/referrals', adminAuth, async (req, res) => {
     try {
         const referredUsers = await User.find({ referred_by: { $ne: null } }).lean();
@@ -334,7 +366,7 @@ app.get('/api/wallet/me', async (req, res) => {
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         
         const dbUser = await User.findOne({ id: userId }).lean();
-        if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "" } });
+        if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "", referral_balance: 0 } });
         dbUser.play_balance = Number(dbUser.play_balance) || 0; 
         dbUser.win_balance = Number(dbUser.win_balance) || 0;
         dbUser.referral_balance = Number(dbUser.referral_balance) || 0;
@@ -430,9 +462,6 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// ═══════════════════════════════════════════════════════════
-// BOT INTEGRATION APIs
-// ═══════════════════════════════════════════════════════════
 app.post('/api/user/phone', async (req, res) => {
     try {
         const { user_id, phone, name } = req.body;
@@ -499,9 +528,6 @@ app.post('/api/bot/create-txn', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-/* ═══════════════════════════════════════════════════════════
-   SOCKET.IO
-   ═══════════════════════════════════════════════════════════ */
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {
         socket.join('abisinya_global_room');
@@ -538,6 +564,7 @@ io.on('connection', (socket) => {
                 }
                 let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
+                if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
                 
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
@@ -555,9 +582,6 @@ io.on('connection', (socket) => {
     });
 });
 
-/* ═══════════════════════════════════════════════════════════
-   WINNER CHECK — Only takes the FIRST winner
-   ═══════════════════════════════════════════════════════════ */
 async function checkForAutoWinner() {
     if (isEndingRound || gameState.phase !== 'calling') return false;
     const entries = Object.entries(gameState.takenCards); 

@@ -212,7 +212,6 @@ def get_text(user_id, key, **kwargs):
 
 def get_main_menu(user_id):
     t = lambda k: get_text(user_id, k)
-    # ✅ Layout fix applied: Play button is isolated, rest are paired.
     keyboard = [
         [KeyboardButton(text=t('menu_play'))],
         [KeyboardButton(text=t('menu_deposit')), KeyboardButton(text=t('menu_withdraw'))],
@@ -256,7 +255,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     _, lang = get_user_data(user.id)
-    # ✅ Add language parameter to WebApp URL
     webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}" 
     
     web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=webapp_url_with_lang))
@@ -514,7 +512,6 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Strict filter to interrupt Deposit/Withdraw flow if user clicks a Menu Button
     menu_filter = filters.Regex(r"^(🎮 Play Abyssinia Bingo|💰 Deposit|💸 Withdraw|🏦 Balance|👥 Invite|📜 History|💬 Support|🔢 Register|🌐 Language|ℹ️ Help|🏆 Rank|💵 ሂሳብ|🔗 ግብዣ እና አጋር|🆘 እርዳታ|🌐 ቋንቋ \(Language\))$")
 
     dep_conv = ConversationHandler(
