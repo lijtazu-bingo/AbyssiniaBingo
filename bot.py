@@ -71,7 +71,7 @@ def get_user_phone(user_id):
     conn.close()
     return result[0] if result else None
 
-# ─── ዋናው ምናሌ (Persistent Main Menu) ───
+# ─── ዋናው ምናሌ (Persistent Menu) ───
 def get_main_menu():
     keyboard = [
         [KeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))],
@@ -81,8 +81,10 @@ def get_main_menu():
         [KeyboardButton(text="🌐 ቋንቋ (Language)"), KeyboardButton(text="🆘 እርዳታ")],
         [KeyboardButton(text="🔢 Register")]
     ]
-    # ✅ is_persistent=True ማድረጋችን ምናሌው እንዳይጠፋ ያደርገዋል
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
+
+# ─── የተለያዩ አዝራሮችን ለይቶ ማወቂያ (Regex) ───
+MENU_REGEX = r"^(🎮 ጨዋታ ይጫወቱ \(PLAY\)|📥 ገቢ \(Deposit\)|📤 ወጪ \(Withdraw\)|💵 ሂሳብ|👤 ትርፍዬል|🔗 ግብዣ እና አጋር|📢 ድርጅተኛ አስተዋዋቂ|🌐 ቋንቋ \(Language\)|🆘 እርዳታ|🔢 Register)$"
 
 # ─── የቦት ትዕዛዞች ───
 
@@ -97,10 +99,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu())
 
-# ─── REGISTER (Contact Sharing) ───
+# ─── REGISTER ───
 async def register_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [[KeyboardButton(text="📱 ስልክ ቁጥሬን አጋራ", request_contact=True)]]
-    # ለጊዜው ምናሌውን ወደ ጎን አድርገን የስልክ ቁጥር መጋሪያ ብቻ እንላክ
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("እባክዎ ለመመዝገብ የስልክ ቁጥርዎን ያጋሩ፦", reply_markup=reply_markup)
 
@@ -241,7 +242,20 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── OTHER BUTTONS ───
+# ─── ከሂደት መሃል ሌላ አዝራር ሲጫኑ የሚሰራ (Interrupt) ───
+async def interrupt_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text.strip()
+    
+    # ተጠቃሚው በሂደት ውስጥ ሳለ Deposit/Withdraw ን እንደገና ቢጫን
+    if text in ["📥 ገቢ (Deposit)", "📤 ወጪ (Withdraw)"]:
+        await update.message.reply_text("🔄 እባክዎ የመረጡትን ቁልፍ እንደገና ይጫኑ።", reply_markup=get_main_menu())
+    else:
+        # ሌላ አዝራር ከሆነ (ለምሳሌ Balance, Register) በቀጥታ አስፈጽም
+        await handle_menu_buttons(update, context)
+    
+    return ConversationHandler.END
+
+# ─── ሌሎች አዝራሮች (Balance, Register, etc.) ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -280,6 +294,13 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         msg = f"💬 ማንኛውም ጥያቄ ካለዎት በ @AbyssiniaSupport ያግኙን።\n📞 ስልክ፦ <b>0968940123</b>"
         await update.message.reply_text(msg, parse_mode='HTML')
 
+    elif "Register" in text:
+        await register_start(update, context)
+
+    elif "PLAY" in text:
+        web_app_btn = InlineKeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))
+        await update.message.reply_text("ጨዋታውን ለመጀመር ይህንን ቁልፍ ይጫኑ፦", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+
 async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -301,9 +322,18 @@ def main():
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📥 ገቢ \\(Deposit\\)$"), deposit_start)],
         states={
-            DEPOSIT_METHOD: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_")],
-            DEPOSIT_TXN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
-            DEPOSIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
+            DEPOSIT_METHOD: [
+                CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"),
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation)
+            ],
+            DEPOSIT_TXN_ID: [
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)
+            ],
+            DEPOSIT_AMOUNT: [
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)
+            ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
@@ -311,19 +341,24 @@ def main():
     wd_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📤 ወጪ \\(Withdraw\\)$"), withdraw_start)],
         states={
-            WITHDRAW_METHOD: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")],
-            WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
-            WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
+            WITHDRAW_METHOD: [
+                CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_"),
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation)
+            ],
+            WITHDRAW_AMOUNT: [
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)
+            ],
+            WITHDRAW_PHONE: [
+                MessageHandler(filters.Regex(MENU_REGEX), interrupt_conversation),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)
+            ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
     # Commands
     application.add_handler(CommandHandler("start", start))
-    
-    # Register & Contact
-    application.add_handler(MessageHandler(filters.Regex("^🔢 Register$"), register_start))
-    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     
     # Conversations
     application.add_handler(dep_conv)
@@ -332,7 +367,10 @@ def main():
     # Callbacks
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     
-    # Fallback for all other text
+    # Contact
+    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    
+    # General Menu Buttons
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     
     application.add_error_handler(error_handler)
