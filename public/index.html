@@ -357,36 +357,11 @@ body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 <script>
 // ==========================================
-// ✅ ENHANCED ENGLISH VOICE SYSTEM
+// ✅ GOOGLE TRANSLATE TTS (100% Mobile Compatible)
 // ==========================================
 let isVoiceEnabled = localStorage.getItem('abisinya_voice') !== 'off';
-let speechSynthesis = window.speechSynthesis;
-let voicesLoaded = false;
-let preferredVoice = null;
+let currentAudio = null;
 
-// Function to load and select the best voice
-function loadVoices() {
-    if (!speechSynthesis) return;
-    let voices = speechSynthesis.getVoices();
-    if (voices.length === 0) return; // Wait for voiceschanged event
-    
-    voicesLoaded = true;
-    // Priority: Google US English -> Any US English -> Any English -> Default
-    preferredVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) 
-                  || voices.find(v => v.lang.includes('en-US'))
-                  || voices.find(v => v.lang.includes('en-GB'))
-                  || voices.find(v => v.lang.startsWith('en'));
-    
-    console.log("Voice loaded:", preferredVoice ? preferredVoice.name : "Default System Voice");
-}
-
-// Trigger voice loading
-if (speechSynthesis) {
-    speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
-}
-
-// ✅ Toggle Voice with User Interaction (Crucial for Mobile)
 function toggleVoice() {
     isVoiceEnabled = !isVoiceEnabled;
     localStorage.setItem('abisinya_voice', isVoiceEnabled ? 'on' : 'off');
@@ -395,72 +370,47 @@ function toggleVoice() {
     if (isVoiceEnabled) {
         btn.innerText = '🔊';
         btn.style.background = 'var(--gold)';
-        
-        // Mobile Browsers require direct user interaction to unlock audio
-        try {
-            // 1. Resume Audio Context (for general mobile audio)
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            // 2. Test Speech
-            speakNumber(1); // Test with B-1
-        } catch (e) {
-            console.log("Audio unlock error:", e);
-        }
+        speakNumber(1); // Test with B-1
     } else {
         btn.innerText = '🔇';
         btn.style.background = '#475569';
-        if (speechSynthesis.speaking) speechSynthesis.cancel();
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     }
 }
 
 function speakNumber(num) {
     if (!isVoiceEnabled) return;
     
-    if (!speechSynthesis) {
-        showFooterNotification("❌ ይህ ብሮውዘር ድምፅ አይደግፍም።");
-        return;
-    }
+    // Determine BINGO letter
+    let prefix = '';
+    if (num <= 15) prefix = 'B';
+    else if (num <= 30) prefix = 'I';
+    else if (num <= 45) prefix = 'N';
+    else if (num <= 60) prefix = 'G';
+    else prefix = 'O';
     
-    // Check if voices are loaded, if not, try to force load
-    if (!voicesLoaded) {
-        loadVoices();
-        if (!voicesLoaded) {
-            showFooterNotification("⏳ ድምፅ በመጫን ላይ... እባክዎ እንደገና ይሞክሩ።");
-            return;
+    // Stop existing audio if playing
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    
+    // ✅ Use Google Translate TTS (Highly reliable on mobile)
+    const text = encodeURIComponent(`${prefix} ${num}`);
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${text}&tl=en&client=tw-ob`;
+    
+    currentAudio = new Audio(ttsUrl);
+    currentAudio.play().catch(e => {
+        console.log("TTS Audio Play Failed:", e);
+        // Fallback: Try Web Speech API if Google TTS fails
+        if (window.speechSynthesis) {
+            let utterance = new SpeechSynthesisUtterance(`${prefix} ${num}`);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            speechSynthesis.speak(utterance);
         }
-    }
-
-    let prefix = num <= 15 ? 'B' : num <= 30 ? 'I' : num <= 45 ? 'N' : num <= 60 ? 'G' : 'O';
-    
-    if (speechSynthesis.speaking) speechSynthesis.cancel();
-    
-    let utterance = new SpeechSynthesisUtterance(`${prefix} ${num}`);
-    utterance.lang = 'en-US';
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    if (preferredVoice) utterance.voice = preferredVoice;
-    
-    // Error handling for silent failures
-    utterance.onerror = (e) => {
-        console.log("Speech Error:", e);
-        // Fallback: Try without specific voice selection
-        if (preferredVoice) {
-            preferredVoice = null;
-            let fallbackUtterance = new SpeechSynthesisUtterance(`${prefix} ${num}`);
-            fallbackUtterance.lang = 'en-US';
-            speechSynthesis.speak(fallbackUtterance);
-        }
-    };
-    
-    speechSynthesis.speak(utterance);
+    });
 }
 
 // Initialize Voice state on load
 window.addEventListener('load', () => {
-    loadVoices();
     const btn = document.getElementById('voice-toggle-btn');
     if (btn) { 
         if (isVoiceEnabled) { btn.innerText = '🔊'; btn.style.background = 'var(--gold)'; } 
@@ -937,7 +887,7 @@ socket.on('new_number_called', (data) => {
     if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
     updateLiveCardsContainer(); 
     
-    // ✅ Speak the number using English TTS
+    // ✅ Use Google Translate TTS
     speakNumber(data.number); 
 });
 
@@ -968,7 +918,7 @@ socket.on('game_over', (data) => {
     
     document.getElementById('winner-text').innerHTML = isMeWinner 
         ? '🎉 አንተ አሸንፈሃል! 🎉' 
-        : `🏆 ${totalWinners} ተጫዋቸ/ቾች አሸንፈዋል!`;
+        : `🏆 ${totalWinners} ተጫዋቾች አሸንፈዋል!`;
         
     document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
 
