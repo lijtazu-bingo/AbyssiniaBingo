@@ -100,95 +100,110 @@ function adminAuth(req, res, next) {
 
 function authFromHeaders(req) { return verifyTelegramInitData(req.headers['x-telegram-init-data'], BOT_TOKEN); }
 
-/* ─── GAME LOGIC (MUST MATCH CLIENT EXACTLY) ─── */
-function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+/* ═══════════════════════════════════════════════════════════
+   GAME LOGIC — MUST MATCH CLIENT EXACTLY
+   ═══════════════════════════════════════════════════════════ */
+function mulberry32(a) {
+    return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
 const cardCache = new Map();
 
-// ✅ ይህ በ index.html ላይ ካለው generateCardLayout ጋር 100% አንድ አይነት መሆን አለበት
+// ✅ ልክ ከ index.html ጋር አንድ አይነት — seed = cardNum*100 + col, NO sort
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
     const cols = [[], [], [], [], []];
-    let seedBase = cardNum * 100;
-    
+    const seedBase = cardNum * 100;
     for (let c = 0; c < 5; c++) {
-        const min = c * 15 + 1, max = c * 15 + 15; const avail = [];
+        const min = c * 15 + 1, max = c * 15 + 15;
+        const avail = [];
         for (let n = min; n <= max; n++) avail.push(n);
-        
-        let seed = seedBase + c; 
-        let rand = mulberry32(seed);
-        
-        for (let i = avail.length - 1; i > 0; i--) { 
-            const j = Math.floor(rand() * (i + 1)); 
-            [avail[i], avail[j]] = [avail[j], avail[i]]; 
+        const seed = seedBase + c;
+        const rand = mulberry32(seed);
+        for (let i = avail.length - 1; i > 0; i--) {
+            const j = Math.floor(rand() * (i + 1));
+            [avail[i], avail[j]] = [avail[j], avail[i]];
         }
-        cols[c] = avail.slice(0, 5).sort((a, b) => a - b);
+        cols[c] = avail.slice(0, 5); // NO sort!
     }
-    cols[2][2] = 'FREE'; 
-    cardCache.set(cardNum, cols); 
+    cols[2][2] = 'FREE';
+    cardCache.set(cardNum, cols);
     return cols;
 }
 
+// ✅ የተስተካከለ checkWinningLine — latestCall አያስፈልግም
 function checkWinningLine(cardNum, calledNumbers) {
-    const n = Number(cardNum); 
+    const n = Number(cardNum);
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
-    const latestCall = calledNumbers[calledNumbers.length - 1];
-    const cols = getCardCols(n); 
-    const calledSet = new Set(calledNumbers); 
+    const cols = getCardCols(n);
+    const calledSet = new Set(calledNumbers);
     const m = [];
-    
-    for (let r = 0; r < 5; r++) { 
-        const row = []; 
+    for (let r = 0; r < 5; r++) {
+        const row = [];
         for (let c = 0; c < 5; c++) {
             const val = cols[c][r];
-            row.push(val === 'FREE' || calledSet.has(val)); 
+            row.push(val === 'FREE' || calledSet.has(val));
         }
-        m.push(row); 
+        m.push(row);
     }
-
     // 1. Horizontal
-    for (let r = 0; r < 5; r++) { 
-        if (m[r][0] && m[r][1] && m[r][2] && m[r][3] && m[r][4]) { 
-            let hasL = false; 
-            for (let c = 0; c < 5; c++) if (cols[c][r] === latestCall) hasL = true; 
-            if (hasL) return { type: 'row', index: r, desc: 'Row ' + (r + 1) }; 
-        } 
+    for (let r = 0; r < 5; r++) {
+        if (m[r].every(v => v)) return { type: 'row', index: r, desc: 'Row ' + (r + 1) };
     }
-
     // 2. Vertical
-    for (let c = 0; c < 5; c++) { 
-        if (m[0][c] && m[1][c] && m[2][c] && m[3][c] && m[4][c]) { 
-            let hasL = false; 
-            for (let r = 0; r < 5; r++) if (cols[c][r] === latestCall) hasL = true; 
-            if (hasL) return { type: 'col', index: c, desc: 'Col ' + (c + 1) }; 
-        } 
+    for (let c = 0; c < 5; c++) {
+        if (m.every(row => row[c])) return { type: 'col', index: c, desc: 'Col ' + (c + 1) };
     }
-
     // 3. Diagonals
-    if (m[0][0] && m[1][1] && m[2][2] && m[3][3] && m[4][4]) { 
-        let hasL = false; 
-        for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; 
-        if (hasL) return { type: 'diag1', desc: 'Diag 1' }; 
-    }
-    if (m[0][4] && m[1][3] && m[2][2] && m[3][1] && m[4][0]) { 
-        let hasL = false; 
-        for (let i = 0; i < 5; i++) if (cols[4 - i][i] === latestCall) hasL = true; 
-        if (hasL) return { type: 'diag2', desc: 'Diag 2' }; 
-    }
-
+    let d1 = true; for (let i = 0; i < 5; i++) if (!m[i][i]) { d1 = false; break; }
+    if (d1) return { type: 'diag1', desc: 'Diag 1' };
+    let d2 = true; for (let i = 0; i < 5; i++) if (!m[i][4 - i]) { d2 = false; break; }
+    if (d2) return { type: 'diag2', desc: 'Diag 2' };
     // 4. 4 Corners
-    if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { 
-        let hasL = false; 
-        if (cols[0][0] === latestCall) hasL = true; 
-        if (cols[4][0] === latestCall) hasL = true; 
-        if (cols[0][4] === latestCall) hasL = true; 
-        if (cols[4][4] === latestCall) hasL = true; 
-        if (hasL) return { type: 'corners', desc: '4 Corners' }; 
-    }
-
+    if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) return { type: 'corners', desc: '4 Corners' };
     return null;
 }
 
-const gameState = { phase: 'waiting', currentCall: null, calledNumbers: [], takenCards: {}, isAutoOn: true, isRunning: false, settings: { callInterval: 5, maxCards: 1000 } };
+// ✅ ሁሉንም መስመሮች ሰብስብ (ለማሳያ)
+function getAllWinningLines(cardNum, calledNumbers) {
+    const n = Number(cardNum);
+    if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return [];
+    const cols = getCardCols(n);
+    const calledSet = new Set(calledNumbers);
+    const m = [];
+    for (let r = 0; r < 5; r++) {
+        const row = [];
+        for (let c = 0; c < 5; c++) {
+            const val = cols[c][r];
+            row.push(val === 'FREE' || calledSet.has(val));
+        }
+        m.push(row);
+    }
+    const lines = [];
+    for (let r = 0; r < 5; r++) if (m[r].every(v => v)) lines.push({ type: 'row', index: r });
+    for (let c = 0; c < 5; c++) if (m.every(row => row[c])) lines.push({ type: 'col', index: c });
+    let d1 = true; for (let i = 0; i < 5; i++) if (!m[i][i]) { d1 = false; break; }
+    if (d1) lines.push({ type: 'diag1' });
+    let d2 = true; for (let i = 0; i < 5; i++) if (!m[i][4 - i]) { d2 = false; break; }
+    if (d2) lines.push({ type: 'diag2' });
+    if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) lines.push({ type: 'corners' });
+    return lines;
+}
+
+const gameState = {
+    phase: 'waiting',
+    currentCall: null,
+    calledNumbers: [],
+    takenCards: {},
+    isAutoOn: true,
+    isRunning: false,
+    settings: { callInterval: 5, maxCards: 1000 }
+};
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null, claimTimer = null, remainingTime = 50;
 let roundWinners = [], isEndingRound = false;
 const CARD_PRICE = 10, DERASH_PER_CARD = 8;
@@ -213,10 +228,8 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
         if (cbe_name) update.cbe_name = cbe_name;
         if (typeof enable_cbe === 'boolean') update.enable_cbe = enable_cbe;
         if (maxCards) { update.maxCards = Number(maxCards); gameState.settings.maxCards = Number(maxCards); io.emit('update_max_cards', { maxCards: Number(maxCards) }); }
-        
         const updatedSettings = await Settings.findOneAndUpdate({ key: 'payment_accounts' }, update, { upsert: true, new: true });
         io.emit('settings_updated', { settings: updatedSettings });
-        
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -224,7 +237,9 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
         const [totalPlayers, pendingDeposits, pendingWithdrawals, depAgg, wdAgg] = await Promise.all([
-            User.countDocuments(), Transaction.countDocuments({ type: 'deposit', status: 'pending' }), Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
+            User.countDocuments(),
+            Transaction.countDocuments({ type: 'deposit', status: 'pending' }),
+            Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
             Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
             Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
         ]);
@@ -232,21 +247,30 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.get('/api/admin/users', adminAuth, async (req, res) => { try { const users = await User.find({}).sort({ registered_at: -1 }).lean(); res.json({ success: true, data: users }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/admin/users', adminAuth, async (req, res) => {
+    try { const users = await User.find({}).sort({ registered_at: -1 }).lean(); res.json({ success: true, data: users }); }
+    catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
     try {
         const { id } = req.params; const { play_balance, win_balance } = req.body;
-        const update = {}; if (typeof play_balance === 'number') update.play_balance = play_balance; if (typeof win_balance === 'number') update.win_balance = win_balance;
+        const update = {};
+        if (typeof play_balance === 'number') update.play_balance = play_balance;
+        if (typeof win_balance === 'number') update.win_balance = win_balance;
         if (!Object.keys(update).length) return res.status(400).json({ success: false });
         const user = await User.findOneAndUpdate({ id: String(id) }, { $set: update }, { new: true, lean: true });
         if (!user) return res.status(404).json({ success: false });
-        io.to(`user_${id}`).emit('wallet_updated', {}); res.json({ success: true, data: user });
+        io.to(`user_${id}`).emit('wallet_updated', {});
+        res.json({ success: true, data: user });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/admin/transactions', adminAuth, async (req, res) => {
     try {
-        const filter = {}; if (req.query.type) filter.type = req.query.type; if (req.query.method) filter.method = req.query.method;
+        const filter = {};
+        if (req.query.type) filter.type = req.query.type;
+        if (req.query.method) filter.method = req.query.method;
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
         filter.$or = [{ status: 'pending' }, { status: { $in: ['approved', 'rejected'] }, created: { $gte: oneHourAgo } }];
         const txns = await Transaction.find(filter).sort({ created: -1 }).limit(200).lean();
@@ -277,7 +301,8 @@ app.get('/api/wallet/me', async (req, res) => {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         const dbUser = await User.findOne({ id: String(user.id) }).lean();
         if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "" } });
-        dbUser.play_balance = Number(dbUser.play_balance) || 0; dbUser.win_balance = Number(dbUser.win_balance) || 0;
+        dbUser.play_balance = Number(dbUser.play_balance) || 0;
+        dbUser.win_balance = Number(dbUser.win_balance) || 0;
         res.json({ success: true, data: dbUser });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -305,7 +330,10 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.get('/api/leaderboard', async (req, res) => { try { const top = await User.find().sort({ win_balance: -1 }).limit(10).select({ name: 1, win_balance: 1, _id: 0 }).lean(); res.json({ success: true, data: top }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/leaderboard', async (req, res) => {
+    try { const top = await User.find().sort({ win_balance: -1 }).limit(10).select({ name: 1, win_balance: 1, _id: 0 }).lean(); res.json({ success: true, data: top }); }
+    catch (e) { res.status(500).json({ success: false }); }
+});
 
 app.get('/api/admin/game-status', adminAuth, async (req, res) => {
     try {
@@ -319,81 +347,92 @@ app.get('/api/admin/game-status', adminAuth, async (req, res) => {
 });
 
 app.post('/api/admin/start-game', adminAuth, (req, res) => { gameState.isRunning = true; if (gameState.phase === 'waiting') startRound(); res.json({ success: true }); });
+
 app.post('/api/admin/stop-game', adminAuth, (req, res) => {
     gameState.isRunning = false;
-    if (gameTimerInterval) clearInterval(gameTimerInterval); if (callInterval) clearInterval(callInterval); if (autoRestartTimer) clearTimeout(autoRestartTimer); if (claimTimer) clearTimeout(claimTimer);
-    gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.takenCards = {}; gameState.isAutoOn = false; gameState.currentCall = null;
-    isEndingRound = false; roundWinners = []; io.emit('reset_game'); res.json({ success: true });
+    if (gameTimerInterval) clearInterval(gameTimerInterval);
+    if (callInterval) clearInterval(callInterval);
+    if (autoRestartTimer) clearTimeout(autoRestartTimer);
+    if (claimTimer) clearTimeout(claimTimer);
+    gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.takenCards = []; gameState.isAutoOn = false; gameState.currentCall = null;
+    gameState.takenCards = {};
+    isEndingRound = false; roundWinners = [];
+    io.emit('reset_game');
+    res.json({ success: true });
 });
 
 app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) {
         return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
     }
-    
-    let num; 
-    do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-    
-    gameState.calledNumbers.push(num); 
+    let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+    gameState.calledNumbers.push(num);
     gameState.currentCall = num;
-    
     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-    
     const winnerFound = await checkForAutoWinner();
-    if (winnerFound) {
-        await endRound(roundWinners);
-    }
-    
+    if (winnerFound) await endRound(roundWinners);
     res.json({ success: true });
 });
 
 app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     const { isAutoOn, speed } = req.body;
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    gameState.isAutoOn = !!isAutoOn; if (Number(speed) > 0) gameState.settings.callInterval = Number(speed);
+    gameState.isAutoOn = !!isAutoOn;
+    if (Number(speed) > 0) gameState.settings.callInterval = Number(speed);
     if (isAutoOn && gameState.phase === 'calling') {
         callInterval = setInterval(async () => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
-            
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-            
-            let num; 
-            do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-            
-            gameState.calledNumbers.push(num); 
+            let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+            gameState.calledNumbers.push(num);
             gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-            
             const winnerFound = await checkForAutoWinner();
-            if (winnerFound) {
-                clearInterval(callInterval);
-                callInterval = null;
-                await endRound(roundWinners);
-            }
+            if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
         }, gameState.settings.callInterval * 1000);
     }
     res.json({ success: true });
 });
 
+/* ═══════════════════════════════════════════════════════════
+   SOCKET.IO
+   ═══════════════════════════════════════════════════════════ */
+const socketCooldowns = new Map();
+function checkSocketRate(socketId, action, cooldownMs = 500) {
+    const now = Date.now(); const key = `${socketId}_${action}`;
+    const lastTime = socketCooldowns.get(key) || 0;
+    if (now - lastTime < cooldownMs) return false;
+    socketCooldowns.set(key, now);
+    return true;
+}
+
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {
         socket.join('abisinya_global_room');
         let userId = null;
-        if (payload?.initData && BOT_TOKEN) { const tgUser = verifyTelegramInitData(payload.initData, BOT_TOKEN); if (tgUser) userId = String(tgUser.id); }
+        if (payload?.initData && BOT_TOKEN) {
+            const tgUser = verifyTelegramInitData(payload.initData, BOT_TOKEN);
+            if (tgUser) userId = String(tgUser.id);
+        }
         if (!userId && REQUIRE_TG_AUTH) { socket.emit('auth_error'); return socket.disconnect(); }
         if (!userId && payload?.clientId) userId = String(payload.clientId);
-        socket.verifiedId = userId; if (userId) socket.join(`user_${userId}`);
-        const myCards = []; if (socket.verifiedId) { for (const [num, data] of Object.entries(gameState.takenCards)) { if (String(data.userId) === String(socket.verifiedId)) myCards.push(Number(num)); } }
-        
+        socket.verifiedId = userId;
+        if (userId) socket.join(`user_${userId}`);
+
+        const myCards = [];
+        if (socket.verifiedId) {
+            for (const [num, data] of Object.entries(gameState.takenCards)) {
+                if (String(data.userId) === String(socket.verifiedId)) myCards.push(Number(num));
+            }
+        }
         const totalCards = Object.keys(gameState.takenCards).length;
-        
-        socket.emit('init_state', { 
-            phase: gameState.phase, 
-            takenCards: Object.keys(gameState.takenCards).map(Number), 
-            myCards, 
-            calledNumbers: gameState.calledNumbers, 
-            remainingTime, 
-            currentCall: gameState.currentCall, 
+        socket.emit('init_state', {
+            phase: gameState.phase,
+            takenCards: Object.keys(gameState.takenCards).map(Number),
+            myCards,
+            calledNumbers: gameState.calledNumbers,
+            remainingTime,
+            currentCall: gameState.currentCall,
             maxCards: gameState.settings.maxCards,
             totalPlayers: totalCards,
             totalCards: totalCards
@@ -406,7 +445,6 @@ io.on('connection', (socket) => {
             if (!socket.verifiedId) return socket.emit('card_error', { message: 'ያልተረጋገጠ ተጠቃሚ' });
             if (gameState.phase !== 'waiting' && gameState.phase !== 'countdown') return socket.emit('card_error', { message: 'ጨዋታ ተጀምሯል' });
             const cardNum = Number(data?.cardNum);
-            
             if (data.action === 'select') {
                 if (gameState.takenCards[cardNum]) {
                     if (gameState.takenCards[cardNum].userId === socket.verifiedId) return;
@@ -415,89 +453,143 @@ io.on('connection', (socket) => {
                 let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም! (Play & Win)' });
-                gameState.takenCards[cardNum] = { userId: socket.verifiedId }; socket.emit('wallet_updated', {});
+                gameState.takenCards[cardNum] = { userId: socket.verifiedId };
+                socket.emit('wallet_updated', {});
             } else if (data.action === 'deselect') {
-                if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) { 
-                    delete gameState.takenCards[cardNum]; 
-                    await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } }); 
-                    socket.emit('wallet_updated', {}); 
+                if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) {
+                    delete gameState.takenCards[cardNum];
+                    await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } });
+                    socket.emit('wallet_updated', {});
                 }
             }
-            
             const totalCards = Object.keys(gameState.takenCards).length;
-            
-            io.emit('sync_taken_cards', { 
+            io.emit('sync_taken_cards', {
                 takenCards: Object.keys(gameState.takenCards).map(Number),
                 totalPlayers: totalCards,
                 totalCards: totalCards
             });
         } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
     });
+
+    // ✅ አዲስ፦ ተጫዋች ቁጥር ሲነካ ("daub" ሲያደርግ) — ወዲያውኑ ማረጋገጥ
+    socket.on('mark_number', async (data) => {
+        if (!checkSocketRate(socket.id, 'mark_number', 100)) return;
+        try {
+            if (!socket.verifiedId) return;
+            if (gameState.phase !== 'calling' || isEndingRound) return;
+            const cardNum = Number(data?.cardNum);
+            const number = Number(data?.number);
+            if (!cardNum || !number) return;
+            const owner = gameState.takenCards[cardNum];
+            if (!owner || String(owner.userId) !== String(socket.verifiedId)) return;
+            if (!gameState.calledNumbers.includes(number)) return;
+            // ወዲያውኑ ሁሉንም ካርቴላዎች መርምር
+            const winnerFound = await checkForAutoWinner();
+            if (winnerFound) await endRound(roundWinners);
+        } catch (err) { console.error('mark_number error:', err); }
+    });
+
+    // ✅ አዲስ፦ ተጫዋች "BINGO!" ቁልፍ ሲነካ (አማራጭ ደህንነት)
+    socket.on('claim_bingo', async (data) => {
+        try {
+            if (!socket.verifiedId) return;
+            if (gameState.phase !== 'calling' || isEndingRound) return;
+            const cardNum = Number(data?.cardNum);
+            const owner = gameState.takenCards[cardNum];
+            if (!owner || String(owner.userId) !== String(socket.verifiedId)) {
+                return socket.emit('bingo_result', { valid: false, reason: 'not_owner' });
+            }
+            const win = checkWinningLine(cardNum, gameState.calledNumbers);
+            if (win) {
+                const winnerFound = await checkForAutoWinner();
+                if (winnerFound) await endRound(roundWinners);
+                socket.emit('bingo_result', { valid: true });
+            } else {
+                socket.emit('bingo_result', { valid: false, reason: 'no_line' });
+            }
+        } catch (err) { console.error('claim_bingo error:', err); }
+    });
 });
 
-function checkSocketRate(socketId, action, cooldownMs = 500) {
-    const now = Date.now(); const key = `${socketId}_${action}`;
-    const lastTime = socketCooldowns.get(key) || 0;
-    if (now - lastTime < cooldownMs) return false;
-    socketCooldowns.set(key, now); return true;
-}
-const socketCooldowns = new Map();
-
+/* ═══════════════════════════════════════════════════════════
+   WINNER CHECK + ROUND END
+   ═══════════════════════════════════════════════════════════ */
 async function checkForAutoWinner() {
-    if (isEndingRound) return false;
-    const entries = Object.entries(gameState.takenCards); 
+    if (isEndingRound || gameState.phase !== 'calling') return false;
+    const entries = Object.entries(gameState.takenCards);
     if (entries.length === 0) return false;
-    
+
     const potentialWinners = [];
     for (const [cardNum, data] of entries) {
         const win = checkWinningLine(cardNum, gameState.calledNumbers);
-        if (win) { potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win }); }
+        if (win) potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win });
     }
-    
     if (potentialWinners.length === 0) return false;
-    
+
     const userIds = [...new Set(potentialWinners.map(p => p.userId))];
     const users = await User.find({ id: { $in: userIds } }, { id: 1, name: 1 }).lean();
     const userMap = new Map(users.map(u => [u.id, u.name]));
-    
-    for (const p of potentialWinners) { 
-        roundWinners.push({ id: p.userId, name: userMap.get(p.userId) || 'Player', cardNum: p.cardNum, winDesc: p.win.desc, winType: p.win.type, winIndex: p.win.index, allLines: [p.win] }); 
-    }
-    
-    if (potentialWinners.length > 0) {
-        isEndingRound = true; gameState.phase = 'claiming';
-        if (callInterval) { clearInterval(callInterval); callInterval = null; }
-        if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
-        return true;
-    }
-    return false;
+
+    roundWinners = potentialWinners.map(p => {
+        const allLines = getAllWinningLines(p.cardNum, gameState.calledNumbers);
+        return {
+            id: p.userId,
+            name: userMap.get(p.userId) || 'Player',
+            cardNum: p.cardNum,
+            winDesc: p.win.desc,
+            winType: p.win.type,
+            winIndex: p.win.index,
+            allLines: allLines.length ? allLines : [p.win]
+        };
+    });
+
+    isEndingRound = true;
+    gameState.phase = 'claiming';
+    if (callInterval) { clearInterval(callInterval); callInterval = null; }
+    if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
+    return true;
 }
 
+/* ─── ROUND CONTROL ─── */
 function startRound() {
     if (!gameState.isRunning) return;
-    if (gameTimerInterval) clearInterval(gameTimerInterval); if (callInterval) clearInterval(callInterval); if (autoRestartTimer) clearTimeout(autoRestartTimer); if (claimTimer) clearTimeout(claimTimer);
-    gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; roundWinners = []; isEndingRound = false; remainingTime = 50;
-    io.emit('phase_change', { phase: 'countdown' }); io.emit('timer_tick', { remaining: remainingTime });
+    if (gameTimerInterval) clearInterval(gameTimerInterval);
+    if (callInterval) clearInterval(callInterval);
+    if (autoRestartTimer) clearTimeout(autoRestartTimer);
+    if (claimTimer) clearTimeout(claimTimer);
+    gameState.phase = 'countdown';
+    gameState.currentCall = null;
+    gameState.calledNumbers = [];
+    roundWinners = [];
+    isEndingRound = false;
+    remainingTime = 50;
+    io.emit('phase_change', { phase: 'countdown' });
+    io.emit('timer_tick', { remaining: remainingTime });
     gameTimerInterval = setInterval(() => {
         if (!gameState.isRunning) return;
-        remainingTime--; io.emit('timer_tick', { remaining: remainingTime });
+        remainingTime--;
+        io.emit('timer_tick', { remaining: remainingTime });
         if (remainingTime <= 0) {
             const totalCards = Object.keys(gameState.takenCards).length;
-            if (totalCards < 3) { remainingTime = 50; io.emit('timer_tick', { remaining: remainingTime }); io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); return; }
-            clearInterval(gameTimerInterval); gameTimerInterval = null; gameState.phase = 'calling'; io.emit('phase_change', { phase: 'calling' });
+            if (totalCards < 3) {
+                remainingTime = 50;
+                io.emit('timer_tick', { remaining: remainingTime });
+                io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' });
+                return;
+            }
+            clearInterval(gameTimerInterval); gameTimerInterval = null;
+            gameState.phase = 'calling';
+            io.emit('phase_change', { phase: 'calling' });
             if (gameState.isAutoOn) {
                 callInterval = setInterval(async () => {
                     if (gameState.phase !== 'calling' || isEndingRound) return;
                     if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
                     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-                    gameState.calledNumbers.push(num); gameState.currentCall = num;
+                    gameState.calledNumbers.push(num);
+                    gameState.currentCall = num;
                     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-                    
                     const winnerFound = await checkForAutoWinner();
-                    if (winnerFound) {
-                        clearInterval(callInterval); callInterval = null;
-                        await endRound(roundWinners);
-                    }
+                    if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
                 }, gameState.settings.callInterval * 1000);
             }
         }
@@ -505,38 +597,55 @@ function startRound() {
 }
 
 async function endRound(winnersData) {
-    if (gameState.phase === 'gameover') return; 
+    if (gameState.phase === 'gameover') return;
     isEndingRound = true;
     gameState.phase = 'gameover';
     if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
     if (claimTimer) { clearTimeout(claimTimer); claimTimer = null; }
-    
+
     try {
         const playersInRound = [...new Set(Object.values(gameState.takenCards).map(c => c.userId))];
-        const totalCards = Object.keys(gameState.takenCards).length; const totalPrize = totalCards * DERASH_PER_CARD; const promises = [];
+        const totalCards = Object.keys(gameState.takenCards).length;
+        const totalPrize = totalCards * DERASH_PER_CARD;
+        const promises = [];
         if (playersInRound.length > 0) promises.push(User.updateMany({ id: { $in: playersInRound } }, { $inc: { total_games: 1 } }));
-        
+
         if (!winnersData || winnersData.length === 0) {
-            await Promise.all(promises); io.emit('reset_game');
+            await Promise.all(promises);
+            io.emit('reset_game');
             autoRestartTimer = setTimeout(() => {
-                autoRestartTimer = null; gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
+                autoRestartTimer = null;
+                gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
                 if (gameState.isRunning) startRound();
-            }, 3000); return;
+            }, 3000);
+            return;
         }
-        
-        const prizePerWinner = Math.floor(totalPrize / winnersData.length); const winnerIds = winnersData.map(w => String(w.id));
+
+        const prizePerWinner = Math.floor(totalPrize / winnersData.length);
+        const winnerIds = winnersData.map(w => String(w.id));
         promises.push(User.updateMany({ id: { $in: winnerIds } }, { $inc: { win_balance: prizePerWinner, total_wins: 1 } }));
         await Promise.all(promises);
-        
-        for (const w of winnersData) { io.to(`user_${w.id}`).emit('wallet_updated', {}); }
-        const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1]; const firstWinner = winnersData[0];
-        
-        io.emit('game_over', { reason: 'bingo', winners: winnersData, totalPrize, prizePerWinner, winningCard: firstWinner.cardNum, lastCall, calledNumbers: gameState.calledNumbers });
-        
+
+        for (const w of winnersData) io.to(`user_${w.id}`).emit('wallet_updated', {});
+        const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1];
+        const firstWinner = winnersData[0];
+
+        io.emit('game_over', {
+            reason: 'bingo',
+            winners: winnersData,
+            totalPrize,
+            prizePerWinner,
+            winningCard: firstWinner.cardNum,
+            lastCall,
+            calledNumbers: gameState.calledNumbers
+        });
+
         autoRestartTimer = setTimeout(() => {
-            autoRestartTimer = null; gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
-            io.emit('reset_game'); if (gameState.isRunning) startRound();
+            autoRestartTimer = null;
+            gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
+            io.emit('reset_game');
+            if (gameState.isRunning) startRound();
         }, 10000);
     } catch (err) { console.error('❌ endRound error:', err); }
 }
