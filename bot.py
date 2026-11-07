@@ -5,7 +5,8 @@ import threading
 import requests
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, ConversationHandler
+# ✅ CallbackQueryHandler እና ConversationHandler በ import ላይ ተጨምረዋል
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, ConversationHandler
 from dotenv import load_dotenv
 
 # .env ፋይልን ጫን
@@ -27,7 +28,8 @@ def home():
 
 def run_web():
     port = int(os.environ.get("PORT", 8080))
-    app_web.run(host='0.0.0.0', port=port)
+    # ✅ use_reloader=False ተጨምሯል እንዳይደጋገም
+    app_web.run(host='0.0.0.0', port=port, use_reloader=False)
 
 # ─── የቦት ማስተካከያ ───
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
