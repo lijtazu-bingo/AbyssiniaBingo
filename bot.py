@@ -63,15 +63,26 @@ def save_user(user_id, username, first_name, phone=None):
     conn.commit()
     conn.close()
 
-# ─── ዋናው ምናሌ (Main Menu) ───
+def get_user_phone(user_id):
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT phone FROM users WHERE user_id = ?", (str(user_id),))
+    result = c.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+# ─── ዋናው ምናሌ (Persistent Main Menu) ───
 def get_main_menu():
     keyboard = [
+        [KeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))],
         [KeyboardButton(text="📥 ገቢ (Deposit)"), KeyboardButton(text="📤 ወጪ (Withdraw)")],
         [KeyboardButton(text="💵 ሂሳብ"), KeyboardButton(text="👤 ትርፍዬል")],
         [KeyboardButton(text="🔗 ግብዣ እና አጋር"), KeyboardButton(text="📢 ድርጅተኛ አስተዋዋቂ")],
-        [KeyboardButton(text="🌐 ቋንቋ (Language)"), KeyboardButton(text="🆘 እርዳታ")]
+        [KeyboardButton(text="🌐 ቋንቋ (Language)"), KeyboardButton(text="🆘 እርዳታ")],
+        [KeyboardButton(text="🔢 Register")]
     ]
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    # ✅ is_persistent=True ማድረጋችን ምናሌው እንዳይጠፋ ያደርገዋል
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
 # ─── የቦት ትዕዛዞች ───
 
@@ -82,15 +93,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         f"ሰላም {user.first_name}! 👋\n\n"
         "🎉 <b>እንኳን ወደ Abyssinia Bingo በደህና መጡ!</b> 🎉\n\n"
-        "ከታች ያለውን ምናሌ በመጠቀም ገንዘብ ማስገባት፣ ማውጣት ወይም ጨዋታ መጀመር ይችላሉ።"
+        "ከታች ያለውን ምናሌ በመጠቀም ጨዋታ መጫወት፣ ገንዘብ ማስገባት ወይም ማውጣት ይችላሉ።"
     )
-    
-    # ✅ "Play Bingo" ን በ Inline Keyboard መልክ ከመልእክቱ ጋር እንላክ
-    web_app_btn = InlineKeyboardButton(text="🎮 ጨዋታ ይጫወቱ (Play Bingo)", web_app=WebAppInfo(url=WEBAPP_URL))
-    inline_markup = InlineKeyboardMarkup([[web_app_btn]])
-    
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu())
-    await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ይህንን ቁልፍ ይጫኑ፦", reply_markup=inline_markup)
+
+# ─── REGISTER (Contact Sharing) ───
+async def register_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [[KeyboardButton(text="📱 ስልክ ቁጥሬን አጋራ", request_contact=True)]]
+    # ለጊዜው ምናሌውን ወደ ጎን አድርገን የስልክ ቁጥር መጋሪያ ብቻ እንላክ
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text("እባክዎ ለመመዝገብ የስልክ ቁጥርዎን ያጋሩ፦", reply_markup=reply_markup)
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
@@ -98,36 +110,30 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user = update.effective_user
         phone = contact.phone_number
         save_user(user.id, user.username, user.first_name, phone)
-        await update.message.reply_text(
-            f"✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 <code>{phone}</code>", 
-            parse_mode='HTML', 
-            reply_markup=get_main_menu()
-        )
+        
+        success_text = f"✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>"
+        await update.message.reply_text(success_text, parse_mode='HTML', reply_markup=get_main_menu())
+        
+        if ADMIN_ID:
+            try:
+                await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ ተጫዋች ተመዝግቧል!</b>\n👤 ስም: {user.first_name}\n🆔 ID: <code>{user.id}</code>\n📱 ስልክ: <code>{phone}</code>", parse_mode='HTML')
+            except Exception as e:
+                logger.error(f"Admin send error: {e}")
 
-# ─── 1. DEPOSIT FLOW ───
+# ─── DEPOSIT FLOW ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="dep_cbe")],
         [InlineKeyboardButton("🟢 M-Pesa", callback_data="dep_mpesa")]
     ]
-    await update.message.reply_text(
-        "🏦 የትኛውን የባንክ አማራጭ መጠቀም ይፈልጋሉ?", 
-        reply_markup=InlineKeyboardMarkup(keyboard), 
-        parse_mode='HTML'
-    )
+    await update.message.reply_text("🏦 የትኛውን የባንክ አማራጭ መጠቀም ይፈልጋሉ?", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
     return DEPOSIT_METHOD
 
 async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    if query.data == "dep_telebirr":
-        method = "Telebirr"
-    elif query.data == "dep_cbe":
-        method = "CBEBirr"
-    else:
-        method = "M-Pesa"
-        
+    method = "Telebirr" if query.data == "dep_telebirr" else "CBEBirr" if query.data == "dep_cbe" else "M-Pesa"
     context.user_data['deposit_method'] = method
     
     try:
@@ -136,12 +142,8 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
     except:
         settings = {}
         
-    if method == "Telebirr":
-        acc = settings.get("telebirr_number", "0968940123")
-        name = settings.get("telebirr_name", "Lij Tazu")
-    else:
-        acc = "1000390803005"
-        name = "Lij Tazu"
+    acc = settings.get("telebirr_number", "0968940123") if method == "Telebirr" else "1000390803005"
+    name = settings.get("telebirr_name", "Lij Tazu") if method == "Telebirr" else "Lij Tazu"
 
     text = (
         f"🏦 <b>{method} የክፍያ አካውንት</b>\n\n"
@@ -150,13 +152,11 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
         f"👉 ከላይ ወደሚገኘው አካውንት ገንዘቡን ያስገቡ።\n"
         f"👉 ከዚያ የላኩበትን <b>የግብይት ቁጥር (Transaction ID)</b> እዚህ ይላኩ፦"
     )
-    
     await query.edit_message_text(text, parse_mode='HTML')
     return DEPOSIT_TXN_ID
 
 async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txn_id = update.message.text
-    context.user_data['deposit_txn'] = txn_id
+    context.user_data['deposit_txn'] = update.message.text
     await update.message.reply_text("💰 አሁን የላኩትን <b>የገንዘብ መጠን (Amount)</b> በቁጥር ያስገቡ (ለምሳሌ: 100):", parse_mode='HTML')
     return DEPOSIT_AMOUNT
 
@@ -168,44 +168,35 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
         return DEPOSIT_AMOUNT
 
     user = update.effective_user
-    method = context.user_data.get('deposit_method')
-    txn_id = context.user_data.get('deposit_txn')
-    
     msg = (
         f"✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n"
         f"👤 ስም: {user.first_name}\n"
-        f"🆔 ID: <code>{user.id}</code>\n"
-        f"💳 አማራጭ: {method}\n"
+        f"💳 አማራጭ: {context.user_data.get('deposit_method')}\n"
         f"💰 መጠን: {amount} ETB\n"
-        f"🧾 Txn ID: <code>{txn_id}</code>\n\n"
+        f"🧾 Txn ID: <code>{context.user_data.get('deposit_txn')}</code>\n\n"
         f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
     )
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu())
     
     if ADMIN_ID:
         try:
-            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Deposit ጥያቄ!</b>\n\n{msg}", parse_mode='HTML')
-        except Exception as e:
-            logger.error(f"Admin send error: {e}")
-            
+            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Deposit ጥያቄ!</b>\nID: {user.id}\n{msg}", parse_mode='HTML')
+        except: pass
     return ConversationHandler.END
 
-# ─── 2. WITHDRAW FLOW ───
+# ─── WITHDRAW FLOW ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr", callback_data="wd_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="wd_cbe")],
         [InlineKeyboardButton("🟢 M-Pesa", callback_data="wd_mpesa")]
     ]
-    await update.message.reply_text(
-        "🏦 የትኛውን የባንክ ወጪ ማድረግ ይፈልጋሉ?", 
-        reply_markup=InlineKeyboardMarkup(keyboard), 
-        parse_mode='HTML'
-    )
+    await update.message.reply_text("🏦 የትኛውን የባንክ ወጪ ማድረግ ይፈልጋሉ?", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
     return WITHDRAW_METHOD
 
 async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    context.user_data['withdraw_method'] = query.data.replace('wd_', '')
     await query.edit_message_text("💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን (Amount)</b> በቁጥር ያስገቡ (ቢያንስ 100 ETB):", parse_mode='HTML')
     return WITHDRAW_AMOUNT
 
@@ -225,9 +216,7 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
 
 async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phone = update.message.text
-    amount = context.user_data.get('withdraw_amount')
     user = update.effective_user
-
     if len(phone) < 9:
         await update.message.reply_text("❌ እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።")
         return WITHDRAW_PHONE
@@ -235,8 +224,8 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     msg = (
         f"✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n"
         f"👤 ስም: {user.first_name}\n"
-        f"🆔 ID: <code>{user.id}</code>\n"
-        f"💰 መጠን: {amount} ETB\n"
+        f"💳 አማራጭ: {context.user_data.get('withdraw_method')}\n"
+        f"💰 መጠን: {context.user_data.get('withdraw_amount')} ETB\n"
         f"📱 ስልክ: <code>{phone}</code>\n\n"
         f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
     )
@@ -244,17 +233,15 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     
     if ADMIN_ID:
         try:
-            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Withdraw ጥያቄ!</b>\n\n{msg}", parse_mode='HTML')
-        except Exception as e:
-            logger.error(f"Admin send error: {e}")
-
+            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Withdraw ጥያቄ!</b>\nID: {user.id}\n{msg}", parse_mode='HTML')
+        except: pass
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── 3. OTHER MENU BUTTONS ───
+# ─── OTHER BUTTONS ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -266,11 +253,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             data = res.json()
             if data.get("success"):
                 bal = data.get("data", {})
-                msg = (
-                    f"💵 <b>የሂሳብ ማጠቃለያ፦</b>\n\n"
-                    f"🟢 መጫወቻ ሂሳብ (Play): <b>{bal.get('play_balance', 0)} ETB</b>\n"
-                    f"🟡 ዋና ሂሳብ (Main): <b>{bal.get('win_balance', 0)} ETB</b>"
-                )
+                msg = f"💵 <b>የሂሳብ ማጠቃለያ፦</b>\n\n🟢 መጫወቻ (Play): <b>{bal.get('play_balance', 0)} ETB</b>\n🟡 ዋና (Main): <b>{bal.get('win_balance', 0)} ETB</b>"
                 await update.message.reply_text(msg, parse_mode='HTML')
             else:
                 await update.message.reply_text("⚠️ ሂሳብ ማግኘት አልተቻለም።")
@@ -278,50 +261,29 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text("❌ ሰርቨሩ ላይ ችግር ተፈጥሯል።")
             
     elif "ትርፍዬል" in text:
-        msg = (
-            f"👤 <b>የእርስዎ ትርፍዬል</b>\n\n"
-            f"🔹 ስም: <b>{user.first_name}</b>\n"
-            f"🔹 ስልክ: <b>{context.user_data.get('phone', 'አልተመዘገበም')}</b>\n"
-            f"🔹 መጫወቻ ሂሳብ: <b>-- ETB</b>\n\n"
-            f"👉 ጨዋታ ለመጀመር /start ይጫኑ እና '🎮 ጨዋታ ይጫወቱ (Play Bingo)' የሚለውን ይጫኑ።"
-        )
+        phone = get_user_phone(user.id) or "አልተመዘገበም"
+        msg = f"👤 <b>የእርስዎ ትርፍዬል</b>\n\n🔹 ስም: <b>{user.first_name}</b>\n🔹 ስልክ: <b>{phone}</b>"
         await update.message.reply_text(msg, parse_mode='HTML')
         
     elif "ግብዣ እና አጋር" in text:
-        msg = (
-            f"🔗 <b>ግብዣ እና አጋር</b>\n\n"
-            f"ይህንን የራስዎ የሆነ መጋበዣ ሊንክ ለወዳጆችዎ ይላኩ።\n"
-            f"ጋብዘው በእርስዎ ሊንክ ገብተው ሲመዘገቡ እርስዎም ሆነ እነሱ የመጫወቻ ቦነስ ያገኛሉ!\n\n"
-            f"👉 የግብዣ ሊንክ:\nhttps://t.me/AbyssiniaBingoBot?start={user.id}"
-        )
+        msg = f"🔗 <b>ግብዣ እና አጋር</b>\n\nይህንን ሊንክ ለወዳጆችዎ ይላኩ፦\nhttps://t.me/AbyssiniaBingoBot?start={user.id}"
         await update.message.reply_text(msg, parse_mode='HTML')
         
     elif "ድርጅተኛ አስተዋዋቂ" in text:
-        await update.message.reply_text("📢 ልዩ አስተዋዋቂ (Promoter) ይሁኑ!\n\nልዩ አስተዋዋቂ ለመሆን እና ኮሚሽን በየቀኑ ለመሰብሰብ እባክዎ አድሚንን ያግኙ፦\n@AbyssiniaSupport")
+        await update.message.reply_text("📢 ልዩ አስተዋዋቂ ለመሆን አድሚንን ያግኙ፦\n@AbyssiniaSupport")
         
     elif "ቋንቋ" in text:
-        keyboard = [
-            [InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am"), InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")],
-            [InlineKeyboardButton("🌳 Afaan Oromoo", callback_data="lang_om"), InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="lang_ti")]
-        ]
-        await update.message.reply_text("🌐 እባክዎ ቋንቋ ይምረጡ (Choose Language):", reply_markup=InlineKeyboardMarkup(keyboard))
+        keyboard = [[InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am"), InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")]]
+        await update.message.reply_text("🌐 እባክዎ ቋንቋ ይምረጡ:", reply_markup=InlineKeyboardMarkup(keyboard))
         
     elif "እርዳታ" in text:
-        msg = (
-            f"💬 ማንኛውም ጥያቄ ወይም አስተያየት ካለዎት አድሚኑን በቴሌግራም ቻት በ @AbyssiniaSupport ያግኙ።\n\n"
-            f"📞 በተጨማሪም በቀጥታ በስልክ መስመራችን፦\n<b>0968940123</b> ይደውሉልን።"
-        )
+        msg = f"💬 ማንኛውም ጥያቄ ካለዎት በ @AbyssiniaSupport ያግኙን።\n📞 ስልክ፦ <b>0968940123</b>"
         await update.message.reply_text(msg, parse_mode='HTML')
 
 async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text("✅ ቋንቋው ተቀይሯል!", reply_markup=get_main_menu())
-
-async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    web_app_btn = InlineKeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))
-    markup = InlineKeyboardMarkup([[web_app_btn]])
-    await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ፦", reply_markup=markup)
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.warning('Update "%s" caused error "%s"', update, context.error)
@@ -335,7 +297,7 @@ def main():
 
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # ─── Conversation Handlers (Deposit & Withdraw) ───
+    # Conversation Handlers
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📥 ገቢ \\(Deposit\\)$"), deposit_start)],
         states={
@@ -356,20 +318,26 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
+    # Commands
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("play", play_game))
     
+    # Register & Contact
+    application.add_handler(MessageHandler(filters.Regex("^🔢 Register$"), register_start))
+    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    
+    # Conversations
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
     
+    # Callbacks
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     
-    application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    # Fallback for all other text
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     
     application.add_error_handler(error_handler)
 
-    print("🤖 Bot is running with full menu logic...")
+    print("🤖 Bot is running with Persistent Menu...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
