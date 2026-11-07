@@ -71,6 +71,41 @@ def get_user_phone(user_id):
     conn.close()
     return result[0] if result else None
 
+# ─── ሰርቨር ላይ ስልክ ቁጥር ማስቀመጥ ───
+def save_phone_to_server(user_id, phone, name=""):
+    try:
+        res = requests.post(
+            f"{SERVER_API_URL}/api/user/phone",
+            json={"user_id": str(user_id), "phone": phone, "name": name},
+            timeout=10
+        )
+        return res.json()
+    except Exception as e:
+        logger.error(f"save_phone_to_server error: {e}")
+        return None
+
+# ─── Deposit/Withdraw ጥያቄን ወደ ሰርቨር መላክ ───
+def create_txn_on_server(txn_type, user_id, user_name, amount, method, phone=None, reference=None):
+    try:
+        payload = {
+            "type": txn_type,
+            "user_id": str(user_id),
+            "user_name": user_name,
+            "amount": float(amount),
+            "method": method.lower(),
+            "phone": phone or "",
+            "reference": reference or "",
+        }
+        res = requests.post(
+            f"{SERVER_API_URL}/api/bot/create-txn",
+            json=payload,
+            timeout=10
+        )
+        return res.json()
+    except Exception as e:
+        logger.error(f"create_txn_on_server error: {e}")
+        return None
+
 # ─── ዋናው ምናሌ (Persistent Menu) ───
 def get_main_menu():
     keyboard = [
@@ -83,11 +118,9 @@ def get_main_menu():
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ─── የተለያዩ አዝራሮችን ለይቶ ማወቂያ (Regex) ───
 MENU_REGEX = r"^(🎮 ጨዋታ ይጫወቱ \(PLAY\)|📥 ገቢ \(Deposit\)|📤 ወጪ \(Withdraw\)|💵 ሂሳብ|👤 ትርፍዬል|🔗 ግብዣ እና አጋር|📢 ድርጅተኛ አስተዋዋቂ|🌐 ቋንቋ \(Language\)|🆘 እርዳታ|🔢 Register)$"
 
 # ─── የቦት ትዕዛዞች ───
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -112,12 +145,19 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = contact.phone_number
         save_user(user.id, user.username, user.first_name, phone)
         
+        # ✅ ስልክ ቁጥርን ወደ ሰርቨር (MongoDB) ላክ
+        save_phone_to_server(user.id, phone, user.first_name)
+        
         success_text = f"✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>"
         await update.message.reply_text(success_text, parse_mode='HTML', reply_markup=get_main_menu())
         
         if ADMIN_ID:
             try:
-                await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ ተጫዋች ተመዝግቧል!</b>\n👤 ስም: {user.first_name}\n🆔 ID: <code>{user.id}</code>\n📱 ስልክ: <code>{phone}</code>", parse_mode='HTML')
+                await context.bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=f"🔔 <b>አዲስ ተጫዋች ተመዝግቧል!</b>\n👤 ስም: {user.first_name}\n🆔 ID: <code>{user.id}</code>\n📱 ስልክ: <code>{phone}</code>",
+                    parse_mode='HTML'
+                )
             except Exception as e:
                 logger.error(f"Admin send error: {e}")
 
@@ -138,7 +178,7 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
     context.user_data['deposit_method'] = method
     
     try:
-        res = requests.get(f"{SERVER_API_URL}/api/settings")
+        res = requests.get(f"{SERVER_API_URL}/api/settings", timeout=5)
         settings = res.json().get("data", {})
     except:
         settings = {}
@@ -164,24 +204,52 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
 async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         amount = float(update.message.text)
+        if amount < 10:
+            await update.message.reply_text("❌ ዝቅተኛው የገቢ መጠን 10 ETB ነው።")
+            return DEPOSIT_AMOUNT
     except:
         await update.message.reply_text("❌ እባክዎ ትክክለኛ ቁጥር ያስገቡ።")
         return DEPOSIT_AMOUNT
 
     user = update.effective_user
-    msg = (
-        f"✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n"
-        f"👤 ስም: {user.first_name}\n"
-        f"💳 አማራጭ: {context.user_data.get('deposit_method')}\n"
-        f"💰 መጠን: {amount} ETB\n"
-        f"🧾 Txn ID: <code>{context.user_data.get('deposit_txn')}</code>\n\n"
-        f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
+    method = context.user_data.get('deposit_method', 'Telebirr')
+    txn_ref = context.user_data.get('deposit_txn', '')
+
+    # ✅ ግብይትን በሰርቨር ላይ መዝግብ
+    result = create_txn_on_server(
+        txn_type='deposit',
+        user_id=user.id,
+        user_name=user.first_name,
+        amount=amount,
+        method=method,
+        reference=txn_ref,
     )
+    
+    if result and result.get('success'):
+        msg = (
+            f"✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n"
+            f"👤 ስም: {user.first_name}\n"
+            f"💳 አማራጭ: {method}\n"
+            f"💰 መጠን: {amount} ETB\n"
+            f"🧾 Txn ID: <code>{txn_ref}</code>\n\n"
+            f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
+        )
+    else:
+        msg = (
+            f"⚠️ <b>ጥያቄዎ ሊመዘገብ አልቻለም!</b>\n\n"
+            f"እባክዎ በ @AbyssiniaSupport ያግኙን።\n"
+            f"ዝርዝር: {result}"
+        )
+    
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu())
     
     if ADMIN_ID:
         try:
-            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Deposit ጥያቄ!</b>\nID: {user.id}\n{msg}", parse_mode='HTML')
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"🔔 <b>አዲስ Deposit ጥያቄ!</b>\nID: {user.id}\n{msg}",
+                parse_mode='HTML'
+            )
         except: pass
     return ConversationHandler.END
 
@@ -197,7 +265,8 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    context.user_data['withdraw_method'] = query.data.replace('wd_', '')
+    method_map = {'wd_telebirr': 'telebirr', 'wd_cbe': 'cbe', 'wd_mpesa': 'mpesa'}
+    context.user_data['withdraw_method'] = method_map.get(query.data, 'telebirr')
     await query.edit_message_text("💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን (Amount)</b> በቁጥር ያስገቡ (ቢያንስ 100 ETB):", parse_mode='HTML')
     return WITHDRAW_AMOUNT
 
@@ -216,25 +285,51 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
     return WITHDRAW_PHONE
 
 async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    phone = update.message.text
+    phone = update.message.text.strip()
     user = update.effective_user
-    if len(phone) < 9:
+    if len(phone.replace('+', '').replace(' ', '')) < 9:
         await update.message.reply_text("❌ እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።")
         return WITHDRAW_PHONE
 
-    msg = (
-        f"✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n"
-        f"👤 ስም: {user.first_name}\n"
-        f"💳 አማራጭ: {context.user_data.get('withdraw_method')}\n"
-        f"💰 መጠን: {context.user_data.get('withdraw_amount')} ETB\n"
-        f"📱 ስልክ: <code>{phone}</code>\n\n"
-        f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
+    amount = context.user_data.get('withdraw_amount', 0)
+    method = context.user_data.get('withdraw_method', 'telebirr')
+
+    # ✅ ግብይትን በሰርቨር ላይ መዝግብ
+    result = create_txn_on_server(
+        txn_type='withdrawal',
+        user_id=user.id,
+        user_name=user.first_name,
+        amount=amount,
+        method=method,
+        phone=phone,
     )
+
+    if result and result.get('success'):
+        msg = (
+            f"✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n"
+            f"👤 ስም: {user.first_name}\n"
+            f"💳 አማራጭ: {method}\n"
+            f"💰 መጠን: {amount} ETB\n"
+            f"📱 ስልክ: <code>{phone}</code>\n\n"
+            f"⏳ Admin እስኪያጸድቅ ይጠብቁ።"
+        )
+    else:
+        error_msg = result.get('error', 'Unknown error') if result else 'Server unreachable'
+        msg = (
+            f"⚠️ <b>ጥያቄዎ ሊመዘገብ አልቻለም!</b>\n\n"
+            f"ምክንያት: {error_msg}\n"
+            f"እባክዎ በ @AbyssiniaSupport ያግኙን።"
+        )
+    
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu())
     
     if ADMIN_ID:
         try:
-            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 <b>አዲስ Withdraw ጥያቄ!</b>\nID: {user.id}\n{msg}", parse_mode='HTML')
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"🔔 <b>አዲስ Withdraw ጥያቄ!</b>\nID: {user.id}\n{msg}",
+                parse_mode='HTML'
+            )
         except: pass
     return ConversationHandler.END
 
@@ -242,20 +337,15 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── ከሂደት መሃል ሌላ አዝራር ሲጫኑ የሚሰራ (Interrupt) ───
 async def interrupt_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
-    
-    # ተጠቃሚው በሂደት ውስጥ ሳለ Deposit/Withdraw ን እንደገና ቢጫን
     if text in ["📥 ገቢ (Deposit)", "📤 ወጪ (Withdraw)"]:
         await update.message.reply_text("🔄 እባክዎ የመረጡትን ቁልፍ እንደገና ይጫኑ።", reply_markup=get_main_menu())
     else:
-        # ሌላ አዝራር ከሆነ (ለምሳሌ Balance, Register) በቀጥታ አስፈጽም
         await handle_menu_buttons(update, context)
-    
     return ConversationHandler.END
 
-# ─── ሌሎች አዝራሮች (Balance, Register, etc.) ───
+# ─── ሌሎች አዝራሮች ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -263,7 +353,11 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     if "ሂሳብ" in text:
         await update.message.reply_text("⏳ ሂሳብዎን በመፈለግ ላይ...")
         try:
-            res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)})
+            res = requests.get(
+                f"{SERVER_API_URL}/api/wallet/me",
+                headers={"X-User-Id": str(user.id)},
+                timeout=10
+            )
             data = res.json()
             if data.get("success"):
                 bal = data.get("data", {})
@@ -318,7 +412,6 @@ def main():
 
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Conversation Handlers
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📥 ገቢ \\(Deposit\\)$"), deposit_start)],
         states={
@@ -357,22 +450,12 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
-    # Commands
     application.add_handler(CommandHandler("start", start))
-    
-    # Conversations
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
-    
-    # Callbacks
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
-    
-    # Contact
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-    
-    # General Menu Buttons
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
-    
     application.add_error_handler(error_handler)
 
     print("🤖 Bot is running with Persistent Menu...")

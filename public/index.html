@@ -193,6 +193,7 @@ body {
 </style>
 </head>
 <body>
+
 <div id="loading-screen">
     <div class="loader-spinner"></div>
     <div class="loader-text">LOADING...</div>
@@ -388,10 +389,9 @@ window.fetch = function(url, opts = {}) {
 
 let currentWallet = 0, currentWinWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
 let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', cbe_number: '1000390803005', cbe_name: 'Tazebew', enable_cbe: true };
-let isVoiceOn = localStorage.getItem('abisinya_voice') !== 'off';
 let selectedCards = new Set(), calledNumbersSet = new Set();
-let currentLatestCalledNumber = null, notificationTimeout = null, gameEndedAlready = false, liveGameInitialized = false;
-let clientId = String(userProfile.id), gamePhase = 'waiting', isModalShown = false, lastAttemptedCard = null;
+let notificationTimeout = null;
+let clientId = String(userProfile.id), gamePhase = 'waiting', isModalShown = false;
 let maxCards = 1000;
 let numberButtons = [];
 let _liveCardsRendered = new Set();
@@ -558,6 +558,7 @@ async function loadLeaderboard() {
 }
 
 function copyNumberToClipboard(num) { navigator.clipboard.writeText(num).then(() => alert('ቁጥሩ ተቀድቷል: ' + num)).catch(() => alert('ኮፒ ማድረግ አልተቻለም')); }
+function copyInviteLink() { const link = document.getElementById('invite-link-input').value; navigator.clipboard.writeText(link).then(() => alert('ሊንኩ ተቀድቷል!')).catch(() => alert('ኮፒ አልተቻለም')); }
 function toggleDepositOptions() { document.getElementById('withdraw-options-section').classList.add('hidden'); document.getElementById('deposit-options-section').classList.toggle('hidden'); }
 function toggleWithdrawOptions() { document.getElementById('deposit-options-section').classList.add('hidden'); document.getElementById('withdraw-options-section').classList.toggle('hidden'); }
 function selectDepositMethod(m) { 
@@ -609,7 +610,7 @@ function buildBingoBoard() {
     b.appendChild(frag); 
 }
 
-// ✅ ልክ ከ server.js getCardCols ጋር አንድ አይነት — NO sort!
+// ✅ 100% የተመሳሰለ የካርቴላ ማመንጫ (ምንም sort የለም)
 function mulberry32(a) { 
     return function() { 
         a |= 0; a = a + 0x6D2B79F5 | 0; 
@@ -632,7 +633,7 @@ function generateCardLayout(cn) {
             const j = Math.floor(rand() * (i + 1));
             [avail[i], avail[j]] = [avail[j], avail[i]];
         }
-        cols[c] = avail.slice(0, 5); // NO sort!
+        cols[c] = avail.slice(0, 5);
     }
     cols[2][2] = 'FREE';
     return cols;
@@ -704,7 +705,7 @@ function updateCalledNumbersUI(allCalled) {
 }
 
 const socket = io({ transports: ['websocket', 'polling'] });
-socket.on('connect', () => { socket.emit('join_room', { clientId: clientId }); });
+socket.on('connect', () => { socket.emit('join_room', { clientId: clientId, initData: TG_INIT_DATA }); });
 
 socket.on('init_state', (state) => {
     gamePhase = state.phase;
@@ -756,10 +757,8 @@ socket.on('new_number_called', (data) => {
     updateCalledNumbersUI(data.allCalled);
     if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
     updateLiveCardsContainer(); 
-    // ✅ ሰርቨሩ ራሱ በየጥሪው ላይ ያረጋግጣል — client መላክ አያስፈልግም
 });
 
-// ✅ አዲስ፦ ሰርቨሩ የBingo ማረጋገጫ ውጤት ሲመልስ
 socket.on('bingo_result', (data) => {
     if (data.valid) {
         showFooterNotification('🎉 BINGO ተረጋግጧል!');
@@ -825,7 +824,6 @@ socket.on('game_over', (data) => {
     const ci = setInterval(() => { cd--; cdEl.innerText = cd; if (cd <= 0) { clearInterval(ci); overlay.classList.add('hidden'); isModalShown = false; } }, 1000);
 });
 
-function toggleVoice() { isVoiceOn = !isVoiceOn; document.getElementById('voice-toggle').innerText = isVoiceOn ? '🔊' : '🔇'; }
 function showFooterNotification(msg) { const n = document.getElementById('footer-notification'); n.innerText = msg; clearTimeout(notificationTimeout); notificationTimeout = setTimeout(() => { n.innerText = ''; }, 3000); }
 
 setTimeout(hideLoadingScreen, 3000);
