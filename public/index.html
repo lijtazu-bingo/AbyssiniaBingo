@@ -357,10 +357,20 @@ body {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 <script>
 // ==========================================
-// ✅ GOOGLE TRANSLATE TTS (100% Mobile Compatible)
+// ✅ LOCAL MP3 VOICE SYSTEM (100% Reliable)
 // ==========================================
 let isVoiceEnabled = localStorage.getItem('abisinya_voice') !== 'off';
 let currentAudio = null;
+let audioUnlocked = false;
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+    try {
+        const silentAudio = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+        silentAudio.volume = 0.01;
+        silentAudio.play().then(() => { audioUnlocked = true; }).catch(() => {});
+    } catch (e) {}
+}
 
 function toggleVoice() {
     isVoiceEnabled = !isVoiceEnabled;
@@ -370,6 +380,7 @@ function toggleVoice() {
     if (isVoiceEnabled) {
         btn.innerText = '🔊';
         btn.style.background = 'var(--gold)';
+        unlockAudio();
         speakNumber(1); // Test with B-1
     } else {
         btn.innerText = '🔇';
@@ -381,35 +392,28 @@ function toggleVoice() {
 function speakNumber(num) {
     if (!isVoiceEnabled) return;
     
-    // Determine BINGO letter
-    let prefix = '';
-    if (num <= 15) prefix = 'B';
-    else if (num <= 30) prefix = 'I';
-    else if (num <= 45) prefix = 'N';
-    else if (num <= 60) prefix = 'G';
-    else prefix = 'O';
+    let prefix = num <= 15 ? 'B' : num <= 30 ? 'I' : num <= 45 ? 'N' : num <= 60 ? 'G' : 'O';
     
-    // Stop existing audio if playing
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     
-    // ✅ Use Google Translate TTS (Highly reliable on mobile)
-    const text = encodeURIComponent(`${prefix} ${num}`);
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${text}&tl=en&client=tw-ob`;
+    // ✅ Play local MP3 file
+    const filePath = `/bingo_audio/${prefix}_${num}.mp3`;
+    currentAudio = new Audio(filePath);
+    currentAudio.volume = 1.0;
     
-    currentAudio = new Audio(ttsUrl);
     currentAudio.play().catch(e => {
-        console.log("TTS Audio Play Failed:", e);
-        // Fallback: Try Web Speech API if Google TTS fails
-        if (window.speechSynthesis) {
-            let utterance = new SpeechSynthesisUtterance(`${prefix} ${num}`);
-            utterance.lang = 'en-US';
-            utterance.rate = 0.9;
-            speechSynthesis.speak(utterance);
-        }
+        console.log("Local MP3 play failed:", e);
+        // Fallback: Google TTS (if MP3 not found)
+        const text = encodeURIComponent(`${prefix} ${num}`);
+        const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${text}&tl=en&client=tw-ob`;
+        const fallbackAudio = new Audio(fallbackUrl);
+        fallbackAudio.volume = 1.0;
+        fallbackAudio.play().catch(() => {});
     });
 }
 
-// Initialize Voice state on load
+document.addEventListener('touchstart', function() { unlockAudio(); }, { once: true });
+
 window.addEventListener('load', () => {
     const btn = document.getElementById('voice-toggle-btn');
     if (btn) { 
@@ -887,7 +891,7 @@ socket.on('new_number_called', (data) => {
     if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
     updateLiveCardsContainer(); 
     
-    // ✅ Use Google Translate TTS
+    // ✅ Play voice
     speakNumber(data.number); 
 });
 
