@@ -49,7 +49,7 @@ const TransactionSchema = new mongoose.Schema({
     user_id: { type: String, index: true }, user_name: String, amount: Number,
     method: String, reference: { type: String, index: true }, phone: String,
     status: { type: String, index: true }, created: { type: String, index: true }, notified: Boolean,
-    hidden_by_user: { type: Boolean, default: false } // ✅ Added to support hiding history
+    hidden_by_user: { type: Boolean, default: false } 
 }, { collection: 'transactions' });
 
 const GameHistorySchema = new mongoose.Schema({
@@ -72,9 +72,9 @@ const GiveawaySchema = new mongoose.Schema({
     amount: Number,
     totalUsers: Number,
     claimedBy: [String],
-    status: { type: String, default: 'active' },
+    status: { type: String, default: 'active' }, 
     createdAt: { type: Date, default: Date.now },
-    expiresAt: Date
+    expiresAt: Date 
 }, { collection: 'giveaways' });
 
 const BroadcastSchema = new mongoose.Schema({
@@ -231,7 +231,17 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
             Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
         ]);
-        res.json({ success: true, data: { totalPlayers, pendingDeposits, pendingWithdrawals, totalDeposits: depAgg[0]?.total || 0, totalWithdrawals: wdAgg[0]?.total || 0, netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0) } });
+        res.json({ 
+            success: true, 
+            data: { 
+                totalPlayers, pendingDeposits, pendingWithdrawals, 
+                totalDeposits: depAgg[0]?.total || 0, 
+                totalWithdrawals: wdAgg[0]?.total || 0, 
+                netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
+                systemUptime: process.uptime(), // ✅ New: System Uptime
+                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 // ✅ New: RAM usage in MB
+            } 
+        });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -318,27 +328,31 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ New Giveaway Logic (With Timer)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
-        const { amount, totalUsers, message } = req.body;
+        const { amount, totalUsers, message, durationMinutes } = req.body;
         const amt = Number(amount);
         const limit = Number(totalUsers);
+        const duration = Number(durationMinutes) || 60; 
         
         if (!amt || amt <= 0 || !limit || limit <= 0) {
             return res.status(400).json({ success: false, error: 'Invalid amount or user limit' });
         }
 
+        const expiresAt = new Date(Date.now() + duration * 60 * 1000);
+
         const giveaway = await Giveaway.create({
             id: 'gw_' + Date.now(),
             amount: amt,
             totalUsers: limit,
-            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+            expiresAt: expiresAt
         });
 
         const users = await User.find({}, { id: 1 }).lean();
         let sentCount = 0;
         
-        const text = message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ። ለማግኘት ከታች ያለውን ቁልፍ ይጫኑ!`;
+        const text = message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ። ለማግኘት ከታች ያለውን ቁልፍ ይጫኑ!\n\n⏳ <i>ይህ ቦነስ በ ${duration} ደቂቃ ውስጥ ያበቃል።</i>`;
         
         users.forEach(async (u) => {
             try {
@@ -358,7 +372,7 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
             } catch (err) { }
         });
 
-        res.json({ success: true, count: sentCount, giveawayId: giveaway.id });
+        res.json({ success: true, count: sentCount, giveawayId: giveaway.id, expiresAt });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -376,9 +390,9 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
 
         let users = [];
         if (targetUserId) {
-            users = [{ id: targetUserId }]; // Single user DM
+            users = [{ id: targetUserId }]; 
         } else {
-            users = await User.find({}, { id: 1 }).lean(); // Broadcast to all
+            users = await User.find({}, { id: 1 }).lean(); 
         }
         
         let sentMessages = []; 
@@ -391,15 +405,12 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
                     body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' })
                 });
                 const data = await response.json();
-                if (data.ok) {
-                    sentMessages.push({ user_id: u.id, message_id: data.result.message_id });
-                }
+                if (data.ok) sentMessages.push({ user_id: u.id, message_id: data.result.message_id });
             } catch (err) { }
         }
 
-        // Only save history if it was a broadcast to everyone
         if (!targetUserId) {
-            const broadcast = await Broadcast.create({
+            await Broadcast.create({
                 id: 'bc_' + Date.now(),
                 message: message,
                 sentMessages: sentMessages
@@ -466,45 +477,46 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Get History (Only returns non-hidden ones)
+/* ✅ HISTORY MANAGEMENT APIs */
 app.get('/api/wallet/history', async (req, res) => {
     try {
         const user = authFromHeaders(req); 
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         
-        const history = await Transaction.find({ user_id: userId, hidden_by_user: false }).sort({ created: -1 }).limit(50).lean();
+        const includeHidden = req.query.includeHidden === 'true';
+        const query = { user_id: userId };
+        if (!includeHidden) query.hidden_by_user = false;
+
+        const history = await Transaction.find(query).sort({ created: -1 }).limit(50).lean();
         res.json({ success: true, data: history });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Toggle Hide/Unhide History Item
 app.post('/api/wallet/history/hide', async (req, res) => {
     try {
         const user = authFromHeaders(req);
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        const { txnId, hide } = req.body; // hide: true or false
+        const { txnId, hide } = req.body;
         
         await Transaction.updateOne({ id: txnId, user_id: userId }, { $set: { hidden_by_user: hide } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Delete Selected History Items
 app.post('/api/wallet/history/delete-selected', async (req, res) => {
     try {
         const user = authFromHeaders(req);
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        const { txnIds } = req.body; // Array of IDs
+        const { txnIds } = req.body; 
         
         await Transaction.deleteMany({ id: { $in: txnIds }, user_id: userId });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Clear All History
 app.delete('/api/wallet/history/clear', async (req, res) => {
     try {
         const user = authFromHeaders(req);
@@ -675,6 +687,12 @@ app.post('/api/bot/giveaway-claim', async (req, res) => {
         const giveaway = await Giveaway.findOne({ id: giveaway_id, status: 'active' });
         if (!giveaway) return res.status(400).json({ success: false, error: 'Giveaway expired or invalid' });
         
+        if (new Date() > giveaway.expiresAt) {
+            giveaway.status = 'expired';
+            await giveaway.save();
+            return res.status(400).json({ success: false, error: 'This giveaway has expired!' });
+        }
+
         if (giveaway.claimedBy.length >= giveaway.totalUsers) {
             return res.status(400).json({ success: false, error: 'All bonuses have been claimed' });
         }
@@ -697,6 +715,18 @@ app.post('/api/bot/giveaway-claim', async (req, res) => {
         res.json({ success: true, amount: giveaway.amount });
     } catch (e) { res.status(500).json({ success: false }); }
 });
+
+// ✅ Background Job to expire giveaways automatically
+setInterval(async () => {
+    try {
+        const now = new Date();
+        const expired = await Giveaway.updateMany(
+            { status: 'active', expiresAt: { $lt: now } },
+            { $set: { status: 'expired' } }
+        );
+        if (expired.modifiedCount > 0) console.log(`⏳ Expired ${expired.modifiedCount} giveaways`);
+    } catch (e) { console.error('Giveaway expiration error:', e); }
+}, 60000);
 
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {

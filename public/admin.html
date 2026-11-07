@@ -195,6 +195,19 @@
                     <div class="stat-card"><div class="stat-title">Total Withdrawals (ETB)</div><div class="stat-value" id="stat-withdrawals">0</div></div>
                     <div class="stat-card"><div class="stat-title">Pending Requests</div><div class="stat-value" id="stat-pending" style="color:var(--primary)">0</div></div>
                 </div>
+
+                <!-- ✅ System Health Widget -->
+                <div class="stats-grid">
+                    <div class="stat-card" style="border-left-color: var(--blue);">
+                        <div class="stat-title">System Uptime</div>
+                        <div class="stat-value" id="stat-uptime" style="font-size: 20px;">-</div>
+                    </div>
+                    <div class="stat-card" style="border-left-color: var(--success);">
+                        <div class="stat-title">Server RAM Usage</div>
+                        <div class="stat-value" id="stat-memory" style="font-size: 20px;">- MB</div>
+                    </div>
+                </div>
+
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Recent Activity (Transactions)</h3></div>
                     <div class="table-responsive">
@@ -311,7 +324,7 @@
                 </div>
             </div>
 
-            <!-- GIVEAWAY / BONUS -->
+            <!-- GIVEAWAY / BONUS (With Duration) -->
             <div id="page-giveaway" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
@@ -322,6 +335,11 @@
                     <div style="margin-bottom: 15px;">
                         <label style="color:var(--text-muted); font-size:13px;">Total Users (Limit)</label>
                         <input type="number" id="giveaway-total-users" class="form-control mt-1" placeholder="e.g. 750">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="color:var(--text-muted); font-size:13px;">Duration (Minutes)</label>
+                        <input type="number" id="giveaway-duration" class="form-control mt-1" placeholder="e.g. 60" value="60">
+                        <small style="color:var(--text-muted); font-size:11px;">Giveaway will expire automatically after this time.</small>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="color:var(--text-muted); font-size:13px;">Custom Message (Optional)</label>
@@ -423,10 +441,9 @@
 let currentPage = 'dashboard';
 let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
-let allPlayersData = []; // Store all users for search/filter
-let currentSelectedPlayer = null; // For Side Panel
+let allPlayersData = []; 
+let currentSelectedPlayer = null; 
 
-// Mobile Menu Toggle
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
 }
@@ -450,7 +467,6 @@ async function apiFetch(url, method = 'GET', body = null) {
     return await res.json();
 }
 
-// Authentication
 async function attemptLogin() {
     const user = document.getElementById('login-username').value.trim();
     const pass = document.getElementById('login-password').value.trim();
@@ -492,7 +508,6 @@ if (AUTH_TOKEN) {
     })();
 }
 
-// Navigation
 function switchPage(pageId, element) {
     currentPage = pageId;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -536,18 +551,27 @@ async function loadStats() {
             document.getElementById('stat-deposits').innerText = d.data.totalDeposits.toFixed(2);
             document.getElementById('stat-withdrawals').innerText = d.data.totalWithdrawals.toFixed(2);
             document.getElementById('stat-pending').innerText = (d.data.pendingDeposits + d.data.pendingWithdrawals);
+            
+            // System Health
+            if (d.data.systemUptime !== undefined) {
+                const uptimeHours = Math.floor(d.data.systemUptime / 3600);
+                const uptimeMins = Math.floor((d.data.systemUptime % 3600) / 60);
+                document.getElementById('stat-uptime').innerText = `${uptimeHours}h ${uptimeMins}m`;
+            }
+            if (d.data.memoryUsage !== undefined) {
+                document.getElementById('stat-memory').innerText = `${d.data.memoryUsage.toFixed(1)} MB`;
+            }
         }
     } catch (e) {}
 }
 
-// Players Directory with Search
 async function loadPlayers() {
     const tbody = document.getElementById('players-table-body');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     try {
         const d = await apiFetch('/api/admin/users');
         if (d.success) {
-            allPlayersData = d.data; // Store globally
+            allPlayersData = d.data; 
             renderPlayersTable(allPlayersData);
         }
     } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Error loading users</td></tr>'; }
@@ -579,7 +603,6 @@ function filterPlayers() {
     renderPlayersTable(filtered);
 }
 
-// ✅ Player Details Slide-over Logic
 function openPlayerPanel(player) {
     currentSelectedPlayer = player;
     document.getElementById('p-name').innerText = player.name || 'Unknown';
@@ -612,7 +635,6 @@ async function editPlayerBalance() {
         const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
         if (res.success) { 
             showToast("Balance updated!"); 
-            // Update local object so panel doesn't need full reload
             currentSelectedPlayer.play_balance = Number(newPlay);
             currentSelectedPlayer.win_balance = Number(newWin);
             openPlayerPanel(currentSelectedPlayer); 
@@ -636,10 +658,8 @@ async function deletePlayerAccount() {
     if (!currentSelectedPlayer) return;
     if (!confirm(`Are you sure you want to delete ${currentSelectedPlayer.name}? This cannot be undone.`)) return;
     showToast("Delete operation requires server API implementation.", true);
-    // Note: Implement DELETE /api/admin/users/:id in server.js to fully support this
 }
 
-// Transactions
 async function loadTransactions(type) {
     const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
     const tbody = document.getElementById(tbodyId);
@@ -674,7 +694,6 @@ async function actionTxn(id, action) {
     } catch (e) { showToast('Action failed', true); }
 }
 
-// Referrals (With Top Inviter)
 async function loadReferrals() {
     const tbody = document.getElementById('referral-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
@@ -690,11 +709,8 @@ async function loadReferrals() {
 
             document.getElementById('top-inviter-card').style.display = 'flex';
 
-            // Calculate Top Inviter
             const counts = {};
-            d.data.forEach(r => {
-                counts[r.referrer_id] = (counts[r.referrer_id] || 0) + 1;
-            });
+            d.data.forEach(r => { counts[r.referrer_id] = (counts[r.referrer_id] || 0) + 1; });
             let topId = null, topCount = 0;
             for (const [id, count] of Object.entries(counts)) {
                 if (count > topCount) { topCount = count; topId = id; }
@@ -703,7 +719,6 @@ async function loadReferrals() {
             document.getElementById('top-inviter-name').innerText = topUser ? topUser.referrer_name : 'Unknown';
             document.getElementById('top-inviter-count').innerText = topCount;
 
-            // Render Table
             d.data.forEach(r => {
                 tbody.innerHTML += `<tr>
                     <td>${escapeHtml(r.referrer_name)} <br><small>${r.referrer_id}</small></td>
@@ -720,7 +735,6 @@ async function loadReferrals() {
     }
 }
 
-// Game Control
 function startGameStatusPolling() {
     if (gameStatusInterval) return;
     loadGameStatus();
@@ -792,22 +806,27 @@ async function updateMaxCards() {
     } catch (e) { showToast('Update failed', true); }
 }
 
-// Broadcasting & Giveaway
 async function createGiveaway() {
     const amount = parseFloat(document.getElementById('giveaway-amount').value);
     const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
+    const durationMinutes = parseInt(document.getElementById('giveaway-duration').value);
     const message = document.getElementById('giveaway-msg').value.trim();
     
     if (!amount || amount <= 0) return showToast('Enter valid amount', true);
     if (!totalUsers || totalUsers <= 0) return showToast('Enter valid user limit', true);
-    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users?`)) return;
+    if (!durationMinutes || durationMinutes <= 0) return showToast('Enter valid duration', true);
+    
+    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users for ${durationMinutes} minutes?`)) return;
 
     try {
-        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, message });
+        const res = await apiFetch('/api/admin/giveaway', 'POST', { 
+            amount, totalUsers, message, durationMinutes 
+        });
         if (res.success) { 
             showToast(`Giveaway sent to ${res.count} users!`); 
             document.getElementById('giveaway-amount').value = '';
             document.getElementById('giveaway-total-users').value = '';
+            document.getElementById('giveaway-duration').value = '60';
             document.getElementById('giveaway-msg').value = '';
         }
         else showToast(res.error || 'Failed', true);
@@ -857,7 +876,6 @@ async function deleteBroadcast(id) {
     } catch(e) { showToast('Failed to delete', true); }
 }
 
-// History & Settings
 async function loadGameHistory() {
     const tbody = document.getElementById('history-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
