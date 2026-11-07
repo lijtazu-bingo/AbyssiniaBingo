@@ -136,7 +136,7 @@ function getCardCols(cardNum) {
     return cols;
 }
 
-// ✅ 100% ትክክለኛ checkWinningLine (ምንም latestCall ማስፈለግ የለም)
+// ✅ 100% ትክክለኛ checkWinningLine
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum);
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -302,7 +302,6 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => { try { const top = await User.find().sort({ win_balance: -1 }).limit(10).select({ name: 1, win_balance: 1, _id: 0 }).lean(); res.json({ success: true, data: top }); } catch (e) { res.status(500).json({ success: false }); } });
 
-// ✅ አዲስ፦ የጨዋታ ታሪክ API
 app.get('/api/admin/game-history', adminAuth, async (req, res) => {
     try {
         const history = await GameHistory.find({}).sort({ createdAt: -1 }).limit(50).lean();
@@ -378,6 +377,40 @@ app.post('/api/user/phone', async (req, res) => {
         io.to(`user_${user_id}`).emit('wallet_updated', {});
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ አዲስ፦ የግብዣ (Referral) ስርዓት
+app.post('/api/user/referral', async (req, res) => {
+    try {
+        const { new_user_id, referrer_id } = req.body;
+        if (!new_user_id || !referrer_id || new_user_id === referrer_id) {
+            return res.status(400).json({ success: false, error: 'Invalid referral' });
+        }
+
+        const newUser = await User.findOne({ id: String(new_user_id) });
+        if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' });
+
+        const referrer = await User.findOne({ id: String(referrer_id) });
+        if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
+
+        // 1. ለጋባዡ 30 ብር
+        await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30 } });
+        
+        // 2. ለአዲሱ ተጠቃሚ 20 ብር እና referred_by መዝግብ
+        await User.findOneAndUpdate(
+            { id: String(new_user_id) },
+            { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } },
+            { upsert: true }
+        );
+
+        io.to(`user_${referrer_id}`).emit('wallet_updated', {});
+        io.to(`user_${new_user_id}`).emit('wallet_updated', {});
+
+        res.json({ success: true, message: 'Referral bonus applied' });
+    } catch (e) {
+        console.error('Referral error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
 });
 
 app.post('/api/bot/create-txn', async (req, res) => {
@@ -573,7 +606,6 @@ async function endRound(winnersData) {
         
         promises.push(User.updateMany({ id: { $in: winnerIds } }, { $inc: { win_balance: prizePerWinner, total_wins: 1 } }));
         
-        // ✅ የጨዋታ ታሪክ አስቀምጥ
         promises.push(GameHistory.create({
             gameId: 'game_' + Date.now(),
             winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: prizePerWinner })),
