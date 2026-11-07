@@ -27,7 +27,7 @@
 
     /* Layout */
     #main-content { flex: 1; display: flex; flex-direction: row; overflow: hidden; display: none; }
-    #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; }
+    #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; transition: 0.3s; }
     .logo { padding: 20px; font-size: 20px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
     .menu-group { padding: 15px 0; overflow-y: auto; flex: 1; }
     .menu-label { padding: 0 20px 10px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
@@ -91,6 +91,13 @@
     /* Utility */
     .flex-row { display: flex; gap: 15px; align-items: center; }
     .mt-3 { margin-top: 20px; }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        #sidebar { position: absolute; left: -260px; height: 100vh; z-index: 100; }
+        #sidebar.active { left: 0; }
+        .live-status { grid-template-columns: 1fr; }
+    }
 </style>
 </head>
 <body>
@@ -131,9 +138,12 @@
 
     <div class="main-panel">
         <div class="top-bar">
-            <h3 style="font-size: 16px;">Admin Dashboard</h3>
             <div class="flex-row">
-                <span id="current-time" style="color: var(--text-muted); font-size: 13px;"></span>
+                <button class="btn btn-primary" style="display:none; padding: 5px 10px;" id="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h3 style="font-size: 16px;">Admin Dashboard</h3>
+            </div>
+            <div class="flex-row">
+                <span id="current-time" style="color: var(--text-muted); font-size: 13px; display:none;"></span>
                 <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
@@ -242,35 +252,39 @@
             <!-- GIVEAWAY / BONUS -->
             <div id="page-giveaway" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
-                    <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Distribute Bonus</h3>
+                    <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="color:var(--text-muted); font-size:13px;">Amount per User (ETB)</label>
-                        <input type="number" id="giveaway-amount" class="form-control mt-1" placeholder="e.g. 20">
+                        <input type="number" id="giveaway-amount" class="form-control mt-1" placeholder="e.g. 14">
                     </div>
                     <div style="margin-bottom: 15px;">
-                        <label style="color:var(--text-muted); font-size:13px;">Target Audience</label>
-                        <select id="giveaway-target" class="form-control mt-1" onchange="toggleGiveawayFields()">
-                            <option value="all">All Players</option>
-                            <option value="specific">Specific User ID</option>
-                        </select>
+                        <label style="color:var(--text-muted); font-size:13px;">Total Users (Limit)</label>
+                        <input type="number" id="giveaway-total-users" class="form-control mt-1" placeholder="e.g. 750">
                     </div>
-                    <div id="giveaway-user-field" style="margin-bottom: 15px; display: none;">
-                        <label style="color:var(--text-muted); font-size:13px;">User ID</label>
-                        <input type="text" id="giveaway-user-id" class="form-control mt-1" placeholder="Enter Telegram ID">
+                    <div style="margin-bottom: 15px;">
+                        <label style="color:var(--text-muted); font-size:13px;">Custom Message (Optional)</label>
+                        <textarea id="giveaway-msg" class="form-control mt-1" rows="3" placeholder="Leave blank for default message..."></textarea>
                     </div>
-                    <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="executeGiveaway()"><i class="fas fa-paper-plane"></i> Send Bonus Now</button>
+                    <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="createGiveaway()"><i class="fas fa-paper-plane"></i> Send Giveaway to All Users</button>
                 </div>
             </div>
 
             <!-- BROADCAST -->
             <div id="page-broadcast" class="page">
-                <div class="table-wrapper" style="padding: 25px; max-width: 700px;">
+                <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
                     <div style="margin-bottom: 15px;">
                         <label style="color:var(--text-muted); font-size:13px;">Message Content</label>
-                        <textarea id="broadcast-msg" class="form-control mt-1" rows="5" placeholder="Type your message here (HTML supported)..."></textarea>
+                        <textarea id="broadcast-msg" class="form-control mt-1" rows="4" placeholder="Type your message here (HTML supported)..."></textarea>
                     </div>
                     <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="sendBroadcast()"><i class="fas fa-paper-plane"></i> Send to All Users</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Previous Broadcasts</h3><button class="btn btn-primary btn-sm" onclick="loadBroadcasts()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Date</th><th>Message</th><th>Actions</th></tr></thead><tbody id="broadcast-table-body"></tbody></table>
+                    </div>
                 </div>
             </div>
 
@@ -310,8 +324,10 @@ let currentPage = 'dashboard';
 let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
 
-// Clock
-setInterval(() => { document.getElementById('current-time').innerText = new Date().toLocaleTimeString(); }, 1000);
+// Mobile Menu Toggle
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
+}
 
 function showToast(msg, isError = false) { 
     const toast = document.getElementById('admin-toast'); 
@@ -382,12 +398,16 @@ function switchPage(pageId, element) {
     document.getElementById(`page-${pageId}`).classList.add('active');
     if (element) element.classList.add('active');
     
+    // Close mobile sidebar
+    if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
+
     if (pageId === 'dashboard') loadDashboardData();
     else if (pageId === 'players') loadPlayers();
     else if (pageId === 'deposits') loadTransactions('deposit');
     else if (pageId === 'withdrawals') loadTransactions('withdrawal');
     else if (pageId === 'referrals') loadReferrals();
     else if (pageId === 'game') startGameStatusPolling();
+    else if (pageId === 'broadcast') loadBroadcasts();
     else if (pageId === 'history') loadGameHistory();
     else if (pageId === 'settings') loadSettings();
 
@@ -396,7 +416,6 @@ function switchPage(pageId, element) {
 
 function loadDashboardData() {
     loadStats();
-    // Load recent txns for dashboard
     apiFetch('/api/admin/transactions').then(d => {
         if(d.success) {
             const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = '';
@@ -583,22 +602,23 @@ async function updateMaxCards() {
 }
 
 // Broadcasting & Giveaway
-function toggleGiveawayFields() {
-    document.getElementById('giveaway-user-field').style.display = document.getElementById('giveaway-target').value === 'specific' ? 'block' : 'none';
-}
-
-async function executeGiveaway() {
+async function createGiveaway() {
     const amount = parseFloat(document.getElementById('giveaway-amount').value);
-    const target = document.getElementById('giveaway-target').value;
-    const userId = document.getElementById('giveaway-user-id').value.trim();
+    const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
+    const message = document.getElementById('giveaway-msg').value.trim();
     
     if (!amount || amount <= 0) return showToast('Enter valid amount', true);
-    if (target === 'specific' && !userId) return showToast('Enter User ID', true);
-    if (!confirm(`Are you sure you want to send ${amount} ETB?`)) return;
+    if (!totalUsers || totalUsers <= 0) return showToast('Enter valid user limit', true);
+    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users?`)) return;
 
     try {
-        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, target, userId });
-        if (res.success) { showToast(`Successfully sent ${amount} ETB!`); document.getElementById('giveaway-amount').value = ''; }
+        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, message });
+        if (res.success) { 
+            showToast(`Giveaway sent to ${res.count} users!`); 
+            document.getElementById('giveaway-amount').value = '';
+            document.getElementById('giveaway-total-users').value = '';
+            document.getElementById('giveaway-msg').value = '';
+        }
         else showToast(res.error || 'Failed', true);
     } catch(e) { showToast('Server Error', true); }
 }
@@ -610,9 +630,40 @@ async function sendBroadcast() {
 
     try {
         const res = await apiFetch('/api/admin/broadcast', 'POST', { message: msg });
-        if (res.success) { showToast(`Broadcast sent to ${res.count} users!`); document.getElementById('broadcast-msg').value = ''; }
+        if (res.success) { 
+            showToast(`Broadcast sent to ${res.count} users!`); 
+            document.getElementById('broadcast-msg').value = ''; 
+            loadBroadcasts();
+        }
         else showToast(res.error || 'Failed', true);
     } catch(e) { showToast('Server Error', true); }
+}
+
+async function loadBroadcasts() {
+    const tbody = document.getElementById('broadcast-table-body');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/broadcasts');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No active broadcasts.</td></tr>';
+            d.data.forEach(b => {
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(b.sentAt).toLocaleString()}</td>
+                    <td><div style="max-height:60px; overflow-y:auto; white-space:pre-wrap; font-size:12px; color:var(--text-muted);">${escapeHtml(b.message)}</div></td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteBroadcast('${b.id}')"><i class="fas fa-trash"></i> Delete</button></td>
+                </tr>`;
+            });
+        }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--danger)">Error loading broadcasts</td></tr>'; }
+}
+
+async function deleteBroadcast(id) {
+    if (!confirm("Delete this message for ALL users?")) return;
+    try {
+        const d = await apiFetch(`/api/admin/broadcasts/${id}`, 'DELETE');
+        if (d.success) { showToast('Broadcast deleted!'); loadBroadcasts(); }
+    } catch(e) { showToast('Failed to delete', true); }
 }
 
 // History & Settings

@@ -14,7 +14,6 @@ load_dotenv()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ─── Flask Web Server (ለ Render) ───
 app_web = Flask(__name__)
 @app_web.route('/')
 def home(): return "Abisinya Bingo Bot is running!"
@@ -23,14 +22,12 @@ def run_web():
     port = int(os.environ.get("PORT", 8080))
     app_web.run(host='0.0.0.0', port=port, use_reloader=False)
 
-# ─── ማስተካከያዎች ───
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBAPP_URL = "https://abyssiniabingo.onrender.com"
 SERVER_API_URL = os.getenv("SERVER_API_URL", WEBAPP_URL)
 ADMIN_ID = os.getenv("ADMIN_ID")
 DB_FILE = "abisinya_bot.db"
 
-# ─── የውይይት ሁኔታዎች ───
 DEPOSIT_AMOUNT, DEPOSIT_TXN = range(2)
 WITHDRAW_METHOD, WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(2, 5)
 
@@ -67,7 +64,6 @@ def get_user_data(user_id):
     conn.close()
     return result if result else (None, 'am')
 
-# ─── ትርጉሞች (Translations) ───
 TEXTS = {
     'am': {
         'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ። (ይህ ለደህንነትዎ ነው)",
@@ -239,14 +235,11 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ─── Interrupt Handler ───
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ✅ Clear current state and immediately process the new menu button
     context.user_data.clear()
     await handle_menu_buttons(update, context)
     return ConversationHandler.END
 
-# ─── Commands ───
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -280,7 +273,6 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
-# ─── Register ───
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
@@ -293,7 +285,29 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
-# ─── Deposit Flow ───
+# ✅ Claim Giveaway Callback
+async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    user = query.from_user
+    data = query.data # e.g., "claim_gw_gw_123456789"
+    giveaway_id = data.replace("claim_gw_", "")
+    
+    try:
+        res = requests.post(f"{SERVER_API_URL}/api/bot/giveaway-claim", json={
+            "giveaway_id": giveaway_id,
+            "user_id": str(user.id)
+        }, timeout=10).json()
+        
+        if res.get('success'):
+            await query.edit_message_text(f"🎉 እንኳን ደስ አለዎት! የ {res.get('amount')} ETB ቦነስ በተሳካ ሁኔታ አግኝተዋል። በ Play Walletዎ ውስጥ ይገኛል።")
+        else:
+            await query.edit_message_text(f"❌ {res.get('error', 'ስህተት ተከስቷል።')}")
+            
+    except Exception as e:
+        await query.edit_message_text("❌ ሰርቨር ላይ ችግር ተፈጥሯል። እባክዎ በኋላ ይሞክሩ።")
+
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
@@ -304,7 +318,6 @@ async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TY
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    
     await query.edit_message_text(get_text(user.id, 'dep_enter_amt'), parse_mode='HTML')
     return DEPOSIT_AMOUNT
 
@@ -357,7 +370,6 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
         except: pass
     return ConversationHandler.END
 
-# ─── Withdraw Flow ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [
@@ -446,7 +458,6 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'cancelled'), reply_markup=get_main_menu(update.effective_user.id))
     return ConversationHandler.END
 
-# ─── Language ───
 async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am")],
@@ -465,11 +476,8 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_user(user_id, query.from_user.username, query.from_user.first_name, lang=lang_code)
     
     await query.edit_message_text(get_text(user_id, 'lang_changed'), parse_mode='HTML')
-    
-    # ✅ Send a new message with the updated persistent menu
     await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
-# ─── Other Menu Buttons ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -478,7 +486,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     _, lang = get_user_data(user.id)
     texts = TEXTS.get(lang, TEXTS['en'])
 
-    # Check against all languages to ensure correct routing even if state is mixed
     is_play = any(text == TEXTS[l].get('menu_play') for l in TEXTS) or "Play Abyssinia Bingo" in text
     is_balance = any(text == TEXTS[l].get('menu_balance') for l in TEXTS)
     is_invite = any(text == TEXTS[l].get('menu_invite') for l in TEXTS)
@@ -551,7 +558,6 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Dynamic Regex to catch all possible menu buttons across all languages
     all_menu_buttons = []
     for l in TEXTS:
         for k in ['menu_play', 'menu_deposit', 'menu_withdraw', 'menu_balance', 'menu_invite', 'menu_history', 'menu_support', 'menu_register', 'menu_lang', 'menu_help', 'menu_rank']:
@@ -591,6 +597,9 @@ def main():
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
+    # ✅ Add Giveaway Callback
+    application.add_handler(CallbackQueryHandler(claim_giveaway_callback, pattern="^claim_gw_"))
+    
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     
