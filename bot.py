@@ -3,7 +3,6 @@ import os
 import sqlite3
 import threading
 import requests
-import re
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, ConversationHandler
@@ -68,7 +67,6 @@ def get_user_data(user_id):
     return result if result else (None, 'am')
 
 # ─── ትርጉሞች (Translations) ───
-# You can fill in 'ti' and 'om' completely later, for now they fall back gracefully.
 TEXTS = {
     'am': {
         'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ። (ይህ ለደህንነትዎ ነው)",
@@ -176,7 +174,6 @@ TEXTS = {
         'play_inline_btn': "🎮 Play Bingo",
         'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>",
         'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
-        # Fallbacks for missing keys will use English or Amharic
     },
     'om': {
         'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
@@ -205,7 +202,6 @@ def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
     if lang not in TEXTS: lang = 'en'
     
-    # Get text from the specific language, fallback to English, then Amharic
     text = TEXTS[lang].get(key)
     if not text:
         text = TEXTS['en'].get(key)
@@ -226,6 +222,15 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
+# ─── Interrupt Handler (የተሳሳተ ፍሰትን ለማቋረጥ) ───
+async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # If user clicks any main menu button while inside a conversation, cancel it and process the new button
+    await handle_menu_buttons(update, context)
+    return ConversationHandler.END
+
+async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Menu updated 👇", reply_markup=get_main_menu(update.effective_user.id))
+
 # ─── Commands ───
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -233,7 +238,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     phone, _ = get_user_data(user.id)
     
-    # If not registered, force register
+    # Point 4: Check if registered. If not, ask for contact.
     if not phone:
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -272,7 +277,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
-# ─── Deposit Flow (Inline Text Input) ───
+# ─── Deposit Flow ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
@@ -376,7 +381,6 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
     context.user_data['withdraw_amount'] = amount
     
     method = context.user_data.get('withdraw_method', '')
-    # If they chose "Self", pre-fill their phone
     if method == 'Telebirr (Self)':
         phone, _ = get_user_data(user.id)
         if phone:
@@ -413,7 +417,7 @@ async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_T
     if result and result.get('success'):
         msg = get_text(user.id, 'wd_success', name=user.first_name, method=method, amount=amount, phone=phone)
     else:
-        msg = get_text(user.id, 'dep_fail') # Reuse failure msg
+        msg = get_text(user.id, 'dep_fail')
         
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
     
@@ -444,10 +448,7 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     save_user(user_id, query.from_user.username, query.from_user.first_name, lang=lang_code)
     
-    # Show confirmation in new language
     await query.edit_message_text(get_text(user_id, 'lang_changed'), parse_mode='HTML')
-    
-    # Send an empty message to force the new persistent keyboard
     await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
 # ─── Other Menu Buttons ───
@@ -459,7 +460,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     _, lang = get_user_data(user.id)
     texts = TEXTS.get(lang, TEXTS['en'])
 
-    # Check if the user clicked a recognized button based on their CURRENT language
     if text == texts.get('menu_play') or "Play Abyssinia Bingo" in text:
         web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
         await update.message.reply_text(t('play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
@@ -472,8 +472,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
                 data = res.json().get("data", {})
                 play = float(data.get('play_balance', 0))
                 win = float(data.get('win_balance', 0))
-                
-                # Note: If your server doesn't return 'referral_balance', we default to 0 or calculate it.
                 ref = float(data.get('referral_balance', 0)) 
                 total = play + win + ref
                 
@@ -514,14 +512,17 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Conversations
+    # Interrupt Fallback: If user types a menu button instead of the expected step
+    menu_filter = filters.Regex(r"^(💰 Deposit|📥 ገቢ \(Deposit\)|💸 Withdraw|📤 ወጪ \(Withdraw\)|🏦 Balance|💵 ሂሳብ|👥 Invite|📜 History|💬 Support|🔢 Register|🌐 Language|ℹ️ Help|🏆 Rank|🎮 Play Abyssinia Bingo)$")
+
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^(💰 Deposit|📥 ገቢ \(Deposit\))$"), deposit_start)],
         states={
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
+        allow_reentry=True
     )
     
     wd_conv = ConversationHandler(
@@ -531,22 +532,17 @@ def main():
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
+        allow_reentry=True
     )
 
-    # Commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("play", play_command))
     application.add_handler(CommandHandler("help", help_command))
 
-    # Conversations
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
-    
-    # Callbacks
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
-    
-    # Contacts & Messages
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     

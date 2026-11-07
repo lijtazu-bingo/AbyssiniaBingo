@@ -114,7 +114,7 @@ function mulberry32(a) {
 
 const cardCache = new Map();
 
-// ✅ ልክ ከ index.html ጋር አንድ አይነት — ምንም sort የለም!
+// ✅ 100% Synced with index.html — No sort!
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
     const cols = [[], [], [], [], []];
@@ -136,7 +136,7 @@ function getCardCols(cardNum) {
     return cols;
 }
 
-// ✅ 100% ትክክለኛ checkWinningLine
+// ✅ 100% Accurate Winning Line Check (No latestCall requirement)
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum);
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -273,7 +273,9 @@ app.get('/api/wallet/me', async (req, res) => {
         
         const dbUser = await User.findOne({ id: userId }).lean();
         if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "" } });
-        dbUser.play_balance = Number(dbUser.play_balance) || 0; dbUser.win_balance = Number(dbUser.win_balance) || 0;
+        dbUser.play_balance = Number(dbUser.play_balance) || 0; 
+        dbUser.win_balance = Number(dbUser.win_balance) || 0;
+        dbUser.referral_balance = Number(dbUser.referral_balance) || 0; // Support for referral balance
         res.json({ success: true, data: dbUser });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -379,7 +381,7 @@ app.post('/api/user/phone', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ አዲስ፦ የግብዣ (Referral) ስርዓት
+// ✅ Referral System API
 app.post('/api/user/referral', async (req, res) => {
     try {
         const { new_user_id, referrer_id } = req.body;
@@ -393,10 +395,10 @@ app.post('/api/user/referral', async (req, res) => {
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
 
-        // 1. ለጋባዡ 30 ብር
-        await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30 } });
+        // 1. Give Referrer 30 ETB
+        await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
         
-        // 2. ለአዲሱ ተጠቃሚ 20 ብር እና referred_by መዝግብ
+        // 2. Give New User 20 ETB and set referred_by
         await User.findOneAndUpdate(
             { id: String(new_user_id) },
             { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } },
@@ -495,7 +497,7 @@ io.on('connection', (socket) => {
 });
 
 /* ═══════════════════════════════════════════════════════════
-   WINNER CHECK — የመጀመሪያውን አሸናፊ ብቻ ይወስዳል
+   WINNER CHECK — Only takes the FIRST winner
    ═══════════════════════════════════════════════════════════ */
 async function checkForAutoWinner() {
     if (isEndingRound || gameState.phase !== 'calling') return false;
