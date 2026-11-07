@@ -231,12 +231,18 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── 3. OTHER MENU BUTTONS (ይህ ክፍል ሙሉ በሙሉ ተስተካክሏል) ───
+# ─── 3. OTHER MENU BUTTONS ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
 
-    if "Balance" in text:
+    if "Deposit" in text:
+        return await deposit_start(update, context)
+    
+    elif "Withdraw" in text:
+        return await withdraw_start(update, context)
+
+    elif "Balance" in text:
         await update.message.reply_text("⏳ ባላንስዎን በመፈለግ ላይ...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)})
@@ -282,9 +288,10 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     elif "Rank" in text:
         await update.message.reply_text("🏆 ከፍተኛ አሸናፊዎችን ለማየት ወደ Bingo ገጽ ይግቡ።")
         
-    elif "Abisinya Bingo" in text:
-        # የራሱን መልእክት ሲያገኝ
-        pass
+    elif "Play Bingo" in text:
+        web_app_btn = InlineKeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))
+        markup = InlineKeyboardMarkup([[web_app_btn]])
+        await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ፦", reply_markup=markup)
 
 async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     web_app_btn = InlineKeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))
@@ -304,7 +311,6 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
     # ─── Conversation Handlers (Deposit & Withdraw) ───
-    # እዚህ ጋር የ አዝራሮቹን ስም በትክክል ማስገባት አለብን
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💰 Deposit$"), deposit_start)],
         states={
@@ -325,18 +331,15 @@ def main():
     )
 
     # ✅ ቅደም ተከተሉ በጣም አስፈላጊ ነው!
-    # 1. Command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("play", play_game))
     
-    # 2. Conversation handlers (ለ Deposit እና Withdraw)
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
     
-    # 3. Contact handler
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     
-    # 4. General text handler (ለሌሎቹ አዝራሮች)
+    # ሌሎቹ አዝራሮች እዚህ ይያዛሉ
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
     
     application.add_error_handler(error_handler)
