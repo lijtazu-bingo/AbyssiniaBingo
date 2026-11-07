@@ -3,6 +3,7 @@ import os
 import sqlite3
 import threading
 import requests
+import re
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, ConversationHandler
@@ -30,8 +31,8 @@ ADMIN_ID = os.getenv("ADMIN_ID")
 DB_FILE = "abisinya_bot.db"
 
 # ─── የውይይት ሁኔታዎች ───
-DEPOSIT_METHOD, DEPOSIT_TXN_ID, DEPOSIT_AMOUNT = range(3)
-WITHDRAW_METHOD, WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(3, 6)
+DEPOSIT_AMOUNT, DEPOSIT_TXN = range(2)
+WITHDRAW_METHOD, WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(2, 5)
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -67,11 +68,13 @@ def get_user_data(user_id):
     return result if result else (None, 'am')
 
 # ─── ትርጉሞች (Translations) ───
+# You can fill in 'ti' and 'om' completely later, for now they fall back gracefully.
 TEXTS = {
     'am': {
-        'start': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👤 ስም፦ {name}\n🆔 መለያ፦ <code>{id}</code>\n💵 ባላንስ፦ <b>{balance} ETB</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
-        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
-        'play_inline_btn': "🎮 Play Bingo",
+        'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ። (ይህ ለደህንነትዎ ነው)",
+        'share_contact': "📱 ስልክ ቁጥሬን አጋራ",
+        'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
+        'welcome_back': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         'menu_play': "🎮 Play Abyssinia Bingo",
         'menu_deposit': "💰 Deposit",
         'menu_withdraw': "💸 Withdraw",
@@ -83,35 +86,38 @@ TEXTS = {
         'menu_lang': "🌐 Language",
         'menu_help': "ℹ️ Help",
         'menu_rank': "🏆 Rank",
-        'help_msg': "📚 <b>የቦት ትዕዛዞች እና አጋዥ መረጃ</b>\n\n/start - ቦቱን እንደገና ለመጀመር\n/play - ጨዋታውን ለመጫወት\n/balance - ባላንስዎን ለማየት\n/deposit - ገንዘብ ለማስገባት\n/withdraw - ገንዘብ ለማውጣት\n/invite - የግብዣ ሊንክ ለማግኘት\n/support - እርዳታ ለማግኘት\n/lang - ቋንቋ ለመቀየር\n\n💡 <i>ማንኛውንም አዝራር በመጫን ቦቱን መጠቀም ይችላሉ።</i>",
-        'dep_choose': "💳 የክፍያ አማራጭ ይምረጡ፦",
-        'dep_enter_amt': "💸 እባክዎ ማስገባት የሚፈልጉትን የብር መጠን ያስገቡ፦",
-        'dep_instructions': "🏦 ባንክ፦ TeleBirr\n\n⚠️ <b>ማስጠንቀቂያ፦ ገንዘቡን ከTeleBirr ወደ TeleBirr ብቻ ይላኩ!</b>\n\nገንዘብ ይላኩ፦\n👤 ስም፦ <b>{name}</b>\n👉 አካውንት፦ <code>{acc}</code>\n\n👉 ከተላከ በኋላ የመጣውን የSMS ሙሉ ጽሁፍ ኮፒ አድርገው ከታች 👇 ፓስት (Paste) ያድርጉት፦",
-        'dep_success': "✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ Admin እስኪያጸድቅ ይጠብቁ።",
-        'dep_fail': "⚠️ ጥያቄዎ ሊመዘገብ አልቻለም። እባክዎ በ @Tazikes ያግኙን።",
-        'wd_choose': "🏦 ወደ የትኛው ባንክ ማውጣት ይፈልጋሉ?",
-        'wd_enter_amt': "💸 እባክዎ ማውጣት የሚፈልጉትን መጠን ያስገቡ (ዝቅተኛው 100 ETB)፦",
-        'wd_enter_phone': "📱 እባክዎ ወደሚወጣበትን የቴሌብር/ባንክ ስልክ ቁጥር ያስገቡ፦",
-        'wd_success': "✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n📱 ስልክ፦ {phone}\n⏳ Admin እስኪያጸድቅ ይጠብቁ።",
-        'wd_fail': "⚠️ ጥያቄዎ ሊመዘገብ አልቻለም። እባክዎ በ @Tazikes ያግኙን።",
+        
+        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
+        'play_inline_btn': "🎮 Play Bingo",
+        
+        'dep_choose': "💳 <b>የክፍያ አማራጭ ይምረጡ፦</b>",
+        'dep_enter_amt': "💸 እባክዎ ማስገባት የሚፈልጉትን <b>የብር መጠን</b> ያስገቡ (ለምሳሌ፦ 100)፦",
+        'dep_instructions': "🏦 <b>የክፍያ መረጃ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 አካውንት፦ <code>{acc}</code>\n\n⚠️ ከተላከ በኋላ የመጣውን የSMS ሙሉ ጽሁፍ (Transaction ID) ኮፒ አድርገው ከታች 👇 ፓስት ያድርጉት፦",
+        'dep_success': "✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ አድሚን እስኪያጸድቅ ይጠብቁ።",
+        
+        'wd_choose': "🏦 <b>ወደ የትኛው ባንክ/አካውንት ማውጣት ይፈልጋሉ?</b>",
+        'wd_enter_amt': "💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን</b> ያስገቡ (ዝቅተኛው 100 ETB)፦",
+        'wd_enter_phone': "📱 እባክዎ ወደሚወጣበትን የቴሌብር/ባንክ <b>ስልክ ቁጥር</b> ያስገቡ፦",
+        'wd_success': "✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n📱 ስልክ፦ {phone}\n\n⏳ <b>እባክዎ አድሚን እስኪያጸድቅ ይጠብቁ።</b>",
+
+        'bal_msg': "💵 <b>የሂሳብ ማጠቃለያ</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>አጠቃላይ ባላንስ፦ {total} ETB</b>",
         'invite_msg': "🔗 <b>የእርስዎ የግብዣ ሊንክ፦</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 ወዳጅዎን ሲጋብዙ 30 ብር ያገኛሉ! ጓደኛዎም 20 ብር ያገኛል።",
         'support_msg': "💬 ማንኛውም ጥያቄ ካለዎት በ @Tazikes ያግኙን።",
         'history_msg': "📜 ታሪክዎን ለማየት ከዚህ በታች ይጫኑ፦",
-        'register_prompt': "እባክዎ ለመመዝገብ የስልክ ቁጥርዎን ያጋሩ፦",
-        'share_contact': "📱 ስልክ ቁጥሬን አጋራ",
-        'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>",
-        'lang_choose': "🌐 እባክዎ ቋንቋ ይምረጡ፦",
-        'lang_changed': "✅ ቋንቋ ተቀይሯል! አሁን ምናሌውን እንደገና ይመልከቱ።",
-        'cancel': "❌ ሂደቱ ተሰርዟል።",
+        'help_msg': "📚 <b>የቦት ትዕዛዞች እና አጋዥ መረጃ</b>\n\n/start - ቦቱን እንደገና ለመጀመር\n/play - ጨዋታውን ለመጫወት\n/balance - ባላንስዎን ለማየት\n/deposit - ገንዘብ ለማስገባት\n/withdraw - ገንዘብ ለማውጣት\n/invite - የግብዣ ሊንክ ለማግኘት\n/support - እርዳታ ለማግኘት\n/lang - ቋንቋ ለመቀየር\n\n💡 <i>ማንኛውንም አዝራር በመጫን ቦቱን መጠቀም ይችላሉ።</i>",
+        
+        'lang_choose': "🌐 <b>እባክዎ ቋንቋ ይምረጡ፦</b>",
+        'lang_changed': "✅ ቋንቋ ወደ አማርኛ ተቀይሯል!",
         'invalid_amt': "❌ እባክዎ ትክክለኛ ቁጥር ያስገቡ።",
         'min_wd': "❌ ዝቅተኛው የወጭ መጠን 100 ETB ነው።",
         'min_dep': "❌ ዝቅተኛው የገቢ መጠን 10 ETB ነው።",
         'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።"
     },
     'en': {
-        'start': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👤 Name: {name}\n🆔 ID: <code>{id}</code>\n💵 Balance: <b>{balance} ETB</b>\n\n👇 Choose an option below",
-        'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
-        'play_inline_btn': "🎮 Play Bingo",
+        'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number. (This is for security)",
+        'share_contact': "📱 Share Phone Number",
+        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abisinya Bingo App!\n\n👇 Choose an option below",
+        'welcome_back': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👇 Choose an option below",
         'menu_play': "🎮 Play Abyssinia Bingo",
         'menu_deposit': "💰 Deposit",
         'menu_withdraw': "💸 Withdraw",
@@ -123,54 +129,100 @@ TEXTS = {
         'menu_lang': "🌐 Language",
         'menu_help': "ℹ️ Help",
         'menu_rank': "🏆 Rank",
-        'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
-        'dep_choose': "💳 Choose a payment method:",
-        'dep_enter_amt': "💸 Please enter the amount you want to deposit:",
-        'dep_instructions': "🏦 Bank: TeleBirr\n\n⚠️ <b>WARNING: Send Telebirr to Telebirr ONLY!</b>\n\nSend money to:\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n👉 After sending, copy the full SMS and paste it below 👇",
-        'dep_txn_prompt': "👉 Please paste the SMS text (Transaction ID) here:",
+        
+        'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
+        'play_inline_btn': "🎮 Play Bingo",
+        
+        'dep_choose': "💳 <b>Choose a payment method:</b>",
+        'dep_enter_amt': "💸 Please enter the <b>amount</b> you want to deposit (e.g., 100):",
+        'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ After sending, copy the full SMS (Transaction ID) and paste it below 👇",
         'dep_success': "✅ <b>Deposit Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n⏳ Wait for Admin approval.",
-        'dep_fail': "⚠️ Request failed. Please contact @Tazikes.",
-        'wd_choose': "🏦 Choose a bank to withdraw:",
-        'wd_enter_amt': "💸 Enter the amount to withdraw (minimum 100 ETB):",
-        'wd_enter_phone': "📱 Enter the Phone/Account number to withdraw to:",
-        'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n⏳ Wait for Admin approval.",
-        'wd_fail': "⚠️ Request failed. Please contact @Tazikes.",
+        
+        'wd_choose': "🏦 <b>Choose a bank/account to withdraw:</b>",
+        'wd_enter_amt': "💸 Enter the <b>amount</b> to withdraw (minimum 100 ETB):",
+        'wd_enter_phone': "📱 Enter the Phone/Account <b>number</b> to withdraw to:",
+        'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n\n⏳ <b>Please wait for Admin approval.</b>",
+
+        'bal_msg': "💵 <b>Balance Summary</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Total Balance: {total} ETB</b>",
         'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
         'support_msg': "💬 For any questions contact @Tazikes.",
         'history_msg': "📜 Click below to view your history:",
-        'register_prompt': "Please share your phone number to register:",
-        'share_contact': "📱 Share Phone Number",
-        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>",
-        'lang_choose': "🌐 Choose a language:",
-        'lang_changed': "✅ Language changed! Check your updated menu below.",
-        'cancel': "❌ Process cancelled.",
+        'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
+        
+        'lang_choose': "🌐 <b>Choose a language:</b>",
+        'lang_changed': "✅ Language changed to English!",
         'invalid_amt': "❌ Please enter a valid number.",
         'min_wd': "❌ Minimum withdrawal is 100 ETB.",
         'min_dep': "❌ Minimum deposit is 10 ETB.",
         'invalid_phone': "❌ Please enter a valid phone number."
+    },
+    'ti': {
+        'register_first': "👋 <b>እንቋዕ ደሓን መጻእኩም!</b>\n\nንምጅማር በጃኹም ቁጽሪ ተሌፎንኩም ኣካፍሉ።",
+        'share_contact': "📱 ቁጽሪ ተሌፎነይ ኣካፍል",
+        'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        'welcome_back': "🎉 <b>እንቋዕ ናብ Abisinya Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        'menu_play': "🎮 Play Abyssinia Bingo",
+        'menu_deposit': "💰 Deposit",
+        'menu_withdraw': "💸 Withdraw",
+        'menu_balance': "🏦 Balance",
+        'menu_invite': "👥 Invite",
+        'menu_history': "📜 History",
+        'menu_support': "💬 Support",
+        'menu_register': "🔢 Register",
+        'menu_lang': "🌐 Language",
+        'menu_help': "ℹ️ Help",
+        'menu_rank': "🏆 Rank",
+        'play_prompt': "🎲 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\nተጻወቱ ተዓወቱ!\n\n👇 ጸወታ ንምጅማር ኣብ ታሕቲ ዘሎ መጠወቒ ጠውቑ:",
+        'play_inline_btn': "🎮 Play Bingo",
+        'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>",
+        'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
+        # Fallbacks for missing keys will use English or Amharic
+    },
+    'om': {
+        'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
+        'share_contact': "📱 Lakkoofsa Bilbilaa Qoodi",
+        'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abisinya Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
+        'welcome_back': "🎉 <b>Baga gara Abisinya Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
+        'menu_play': "🎮 Play Abyssinia Bingo",
+        'menu_deposit': "💰 Deposit",
+        'menu_withdraw': "💸 Withdraw",
+        'menu_balance': "🏦 Balance",
+        'menu_invite': "👥 Invite",
+        'menu_history': "📜 History",
+        'menu_support': "💬 Support",
+        'menu_register': "🔢 Register",
+        'menu_lang': "🌐 Language",
+        'menu_help': "ℹ️ Help",
+        'menu_rank': "🏆 Rank",
+        'play_prompt': "🎲 Baga gara Abisinya Bingo dhuftan!\nTaphadhaa Mo'adhaa!\n\n👇 Taphni akka jalqabuuf button gadii tuqaa:",
+        'play_inline_btn': "🎮 Play Bingo",
+        'lang_choose': "🌐 <b>Afaan filadhaa:</b>",
+        'lang_changed': "✅ Afaan gara Afaan Oromootti jijjiirameera!",
     }
 }
 
-TEXTS['ti'] = TEXTS['am']
-TEXTS['om'] = TEXTS['am']
-
 def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
-    if lang not in TEXTS: lang = 'am'
-    text = TEXTS[lang].get(key, TEXTS['am'].get(key, ''))
+    if lang not in TEXTS: lang = 'en'
+    
+    # Get text from the specific language, fallback to English, then Amharic
+    text = TEXTS[lang].get(key)
+    if not text:
+        text = TEXTS['en'].get(key)
+    if not text:
+        text = TEXTS['am'].get(key, '')
+        
     return text.format(**kwargs) if kwargs else text
 
 def get_main_menu(user_id):
-    _, lang = get_user_data(user_id)
-    if lang not in TEXTS: lang = 'am'
-    t = TEXTS[lang]
+    t = lambda k: get_text(user_id, k)
     keyboard = [
-        [KeyboardButton(text=t['menu_play'])],
-        [KeyboardButton(text=t['menu_deposit']), KeyboardButton(text=t['menu_withdraw'])],
-        [KeyboardButton(text=t['menu_balance']), KeyboardButton(text=t['menu_invite'])],
-        [KeyboardButton(text=t['menu_history']), KeyboardButton(text=t['menu_support'])],
-        [KeyboardButton(text=t['menu_register']), KeyboardButton(text=t['menu_lang'])],
-        [KeyboardButton(text=t['menu_help']), KeyboardButton(text=t['menu_rank'])]
+        [KeyboardButton(text=t('menu_play'))],
+        [KeyboardButton(text=t('menu_deposit')), KeyboardButton(text=t('menu_withdraw'))],
+        [KeyboardButton(text=t('menu_balance')), KeyboardButton(text=t('menu_invite'))],
+        [KeyboardButton(text=t('menu_history')), KeyboardButton(text=t('menu_support'))],
+        [KeyboardButton(text=t('menu_register')), KeyboardButton(text=t('menu_lang'))],
+        [KeyboardButton(text=t('menu_help')), KeyboardButton(text=t('menu_rank'))]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
@@ -179,6 +231,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
     
+    phone, _ = get_user_data(user.id)
+    
+    # If not registered, force register
+    if not phone:
+        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
+        return
+
     # Referral system
     args = context.args
     if args and len(args) > 0 and not user.is_bot:
@@ -187,36 +248,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 requests.post(f"{SERVER_API_URL}/api/user/referral", json={"new_user_id": str(user.id), "referrer_id": referrer_id}, timeout=5)
             except: pass
-            
-    balance = 0.00
-    try:
-        res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=5)
-        if res.ok:
-            balance = res.json().get("data", {}).get("play_balance", 0.00)
-    except: pass
 
-    # Use 'start' key for the text
-    welcome_text = get_text(user.id, 'start', name=user.first_name, id=user.id, balance=balance)
-    await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu(user.id))
+    await update.message.reply_text(get_text(user.id, 'welcome_back'), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
-# ✅ አዲስ፦ /play ኮማንድ
 async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    play_text = get_text(user.id, 'play_prompt')
     web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
-    await update.message.reply_text(play_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+    await update.message.reply_text(get_text(user.id, 'play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
-# ✅ አዲስ፦ /help ኮማንድ
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    await update.message.reply_text(get_text(user.id, 'help_msg'), parse_mode='HTML')
+    await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
 # ─── Register ───
-async def register_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[KeyboardButton(text=get_text(update.effective_user.id, 'share_contact'), request_contact=True)]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text(get_text(update.effective_user.id, 'register_prompt'), reply_markup=reply_markup)
-
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
@@ -229,21 +272,20 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
-# ─── Deposit ───
+# ─── Deposit Flow (Inline Text Input) ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
     await update.message.reply_text(get_text(user.id, 'dep_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
-    return DEPOSIT_METHOD
+    return DEPOSIT_AMOUNT
 
 async def deposit_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    context.user_data['deposit_method'] = "Telebirr"
     
     await query.edit_message_text(get_text(user.id, 'dep_enter_amt'), parse_mode='HTML')
-    return DEPOSIT_TXN_ID
+    return DEPOSIT_AMOUNT
 
 async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -251,10 +293,10 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
         amount = float(update.message.text)
         if amount < 10: 
             await update.message.reply_text(get_text(user.id, 'min_dep'))
-            return DEPOSIT_TXN_ID
+            return DEPOSIT_AMOUNT
     except:
         await update.message.reply_text(get_text(user.id, 'invalid_amt'))
-        return DEPOSIT_TXN_ID
+        return DEPOSIT_AMOUNT
 
     context.user_data['deposit_amount'] = amount
     
@@ -267,7 +309,7 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
     name = settings.get("telebirr_name", "tazebew")
     
     await update.message.reply_text(get_text(user.id, 'dep_instructions', name=name, acc=acc), parse_mode='HTML')
-    return DEPOSIT_AMOUNT
+    return DEPOSIT_TXN
 
 async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -285,7 +327,7 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     if result and result.get('success'):
         msg = get_text(user.id, 'dep_success', name=user.first_name, method="Telebirr", amount=amount)
     else:
-        msg = get_text(user.id, 'dep_fail')
+        msg = "⚠️ Request failed. Please contact support."
         
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
     
@@ -294,11 +336,12 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
         except: pass
     return ConversationHandler.END
 
-# ─── Withdraw ───
+# ─── Withdraw Flow ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [
-        [InlineKeyboardButton("📱 TeleBirr", callback_data="wd_telebirr")],
+        [InlineKeyboardButton("📱 TeleBirr (Self)", callback_data="wd_telebirr_self")],
+        [InlineKeyboardButton("📱 TeleBirr (Other)", callback_data="wd_telebirr_other")],
         [InlineKeyboardButton("🏦 CBE", callback_data="wd_cbe")]
     ]
     await update.message.reply_text(get_text(user.id, 'wd_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
@@ -308,7 +351,11 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    method_map = {'wd_telebirr': 'Telebirr', 'wd_cbe': 'CBE'}
+    method_map = {
+        'wd_telebirr_self': 'Telebirr (Self)', 
+        'wd_telebirr_other': 'Telebirr (Other)', 
+        'wd_cbe': 'CBE'
+    }
     method = method_map.get(query.data, 'Telebirr')
     context.user_data['withdraw_method'] = method
     
@@ -327,6 +374,15 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
         return WITHDRAW_AMOUNT
 
     context.user_data['withdraw_amount'] = amount
+    
+    method = context.user_data.get('withdraw_method', '')
+    # If they chose "Self", pre-fill their phone
+    if method == 'Telebirr (Self)':
+        phone, _ = get_user_data(user.id)
+        if phone:
+            context.user_data['withdraw_phone'] = phone
+            return await process_withdraw_final(update, context)
+            
     await update.message.reply_text(get_text(user.id, 'wd_enter_phone'), parse_mode='HTML')
     return WITHDRAW_PHONE
 
@@ -337,8 +393,14 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text(get_text(user.id, 'invalid_phone'))
         return WITHDRAW_PHONE
 
+    context.user_data['withdraw_phone'] = phone
+    return await process_withdraw_final(update, context)
+
+async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
     amount = context.user_data.get('withdraw_amount', 0)
-    method = context.user_data.get('withdraw_method', 'Telebirr')
+    method = context.user_data.get('withdraw_method', '')
+    phone = context.user_data.get('withdraw_phone', '')
     
     result = None
     try:
@@ -351,7 +413,7 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     if result and result.get('success'):
         msg = get_text(user.id, 'wd_success', name=user.first_name, method=method, amount=amount, phone=phone)
     else:
-        msg = get_text(user.id, 'wd_fail')
+        msg = get_text(user.id, 'dep_fail') # Reuse failure msg
         
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
     
@@ -361,7 +423,7 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(get_text(update.effective_user.id, 'cancel'), reply_markup=get_main_menu(update.effective_user.id))
+    await update.message.reply_text("❌ Cancelled.", reply_markup=get_main_menu(update.effective_user.id))
     return ConversationHandler.END
 
 # ─── Language ───
@@ -372,7 +434,7 @@ async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")],
         [InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="lang_om")]
     ]
-    await update.message.reply_text(get_text(update.effective_user.id, 'lang_choose'), reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(get_text(update.effective_user.id, 'lang_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
 
 async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -380,13 +442,12 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
     lang_code = query.data.replace('lang_', '')
     
-    # Save new language
     save_user(user_id, query.from_user.username, query.from_user.first_name, lang=lang_code)
     
-    # Confirm in the new language
-    await query.edit_message_text(get_text(user_id, 'lang_changed'))
+    # Show confirmation in new language
+    await query.edit_message_text(get_text(user_id, 'lang_changed'), parse_mode='HTML')
     
-    # Force update the persistent menu by sending a new message
+    # Send an empty message to force the new persistent keyboard
     await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
 # ─── Other Menu Buttons ───
@@ -395,41 +456,52 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     user = update.effective_user
     t = lambda key: get_text(user.id, key)
     
-    # Get current language strings for matching
     _, lang = get_user_data(user.id)
-    if lang not in TEXTS: lang = 'am'
-    texts = TEXTS[lang]
+    texts = TEXTS.get(lang, TEXTS['en'])
 
-    if text in [texts['menu_play'], "🎮 Play Abyssinia Bingo"]:
-        play_text = t('play_prompt')
+    # Check if the user clicked a recognized button based on their CURRENT language
+    if text == texts.get('menu_play') or "Play Abyssinia Bingo" in text:
         web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
-        await update.message.reply_text(play_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+        await update.message.reply_text(t('play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
-    elif text in [texts['menu_balance'], "🏦 Balance", "💵 ሂሳብ"]:
-        await update.message.reply_text("⏳ Loading balance...")
+    elif text == texts.get('menu_balance') or "Balance" in text:
+        await update.message.reply_text("⏳ Loading...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=10)
-            bal = res.json().get("data", {})
-            msg = f"💵 <b>Balance:</b>\n\n🟢 Play: <b>{bal.get('play_balance', 0)} ETB</b>\n🟡 Win: <b>{bal.get('win_balance', 0)} ETB</b>"
-            await update.message.reply_text(msg, parse_mode='HTML')
-        except: await update.message.reply_text("❌ Server Error")
+            if res.ok:
+                data = res.json().get("data", {})
+                play = float(data.get('play_balance', 0))
+                win = float(data.get('win_balance', 0))
+                
+                # Note: If your server doesn't return 'referral_balance', we default to 0 or calculate it.
+                ref = float(data.get('referral_balance', 0)) 
+                total = play + win + ref
+                
+                msg = t('bal_msg').format(play=f"{play:.2f}", win=f"{win:.2f}", ref=f"{ref:.2f}", total=f"{total:.2f}")
+                await update.message.reply_text(msg, parse_mode='HTML')
+            else:
+                await update.message.reply_text("❌ Failed to load balance.")
+        except: 
+            await update.message.reply_text("❌ Server Error")
 
-    elif text in [texts['menu_invite'], "👥 Invite", "🔗 ግብዣ እና አጋር"]:
+    elif text == texts.get('menu_invite') or "Invite" in text:
         await update.message.reply_text(t('invite_msg').format(id=user.id), parse_mode='HTML')
         
-    elif text in [texts['menu_support'], "💬 Support", "🆘 እርዳታ"]:
+    elif text == texts.get('menu_support') or "Support" in text:
         await update.message.reply_text(t('support_msg'), parse_mode='HTML')
     
-    elif text in [texts['menu_help'], "ℹ️ Help"]:
+    elif text == texts.get('menu_help') or "Help" in text:
         await update.message.reply_text(t('help_msg'), parse_mode='HTML')
 
-    elif text in [texts['menu_register'], "🔢 Register"]:
-        await register_start(update, context)
+    elif text == texts.get('menu_register') or "Register" in text:
+        keyboard = [[KeyboardButton(text=t('share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(t('register_first'), parse_mode='HTML', reply_markup=reply_markup)
 
-    elif text in [texts['menu_lang'], "🌐 Language", "🌐 ቋንቋ (Language)"]:
+    elif text == texts.get('menu_lang') or "Language" in text:
         await lang_menu(update, context)
 
-    elif text in [texts['menu_history'], "📜 History"]:
+    elif text == texts.get('menu_history') or "History" in text:
         await update.message.reply_text(t('history_msg'))
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
@@ -442,12 +514,12 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
+    # Conversations
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^(💰 Deposit|📥 ገቢ \(Deposit\))$"), deposit_start)],
         states={
-            DEPOSIT_METHOD: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_")],
-            DEPOSIT_TXN_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
-            DEPOSIT_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
+            DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
+            DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
@@ -480,7 +552,7 @@ def main():
     
     application.add_error_handler(error_handler)
 
-    print("🤖 Bot is running with Multi-language support...")
+    print("🤖 Bot is running...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
