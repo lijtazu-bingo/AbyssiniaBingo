@@ -11,6 +11,7 @@
         --bg: #0f172a; --bg-card: #1e293b; --bg-sidebar: #0b1120;
         --text: #f8fafc; --text-muted: #94a3b8;
         --danger: #ef4444; --success: #22c55e; --blue: #3b82f6;
+        --gold: #facc15;
         --border: #334155;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -27,14 +28,14 @@
 
     /* Layout */
     #main-content { flex: 1; display: flex; flex-direction: row; overflow: hidden; display: none; }
-    #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; transition: 0.3s; }
+    #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; }
     .logo { padding: 20px; font-size: 20px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
     .menu-group { padding: 15px 0; overflow-y: auto; flex: 1; }
     .menu-label { padding: 0 20px 10px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
     .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-muted); font-size: 14px; font-weight: 600; transition: 0.2s; border-left: 3px solid transparent; }
     .menu-item:hover, .menu-item.active { background: rgba(245, 158, 11, 0.1); color: var(--primary); border-left-color: var(--primary); }
 
-    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
     .top-bar { height: 64px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-bottom: 1px solid var(--border); }
     .logout-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
     .logout-btn:hover { background: var(--danger); color: #fff; }
@@ -53,13 +54,20 @@
 
     /* Tables */
     .table-wrapper { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
-    .table-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .table-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .table-header h3 { font-size: 16px; }
+    
+    .search-bar { display: flex; gap: 10px; flex: 1; max-width: 400px; }
+    .search-bar input { flex: 1; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 6px; outline: none; font-size: 13px; }
+    .search-bar input:focus { border-color: var(--primary); }
+
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; }
     th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
     th { background: rgba(0,0,0,0.2); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 12px; }
     tr:hover td { background: rgba(255,255,255,0.02); }
+    .clickable-row { cursor: pointer; transition: 0.2s; }
+    .clickable-row:hover { background: rgba(59,130,246,0.1) !important; }
 
     /* Badges & Buttons */
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
@@ -88,15 +96,45 @@
     #admin-toast.show { opacity: 1; transform: translateY(0); }
     #admin-toast.error { background: var(--danger); }
     
+    /* ✅ Slide-over Player Details Modal */
+    .side-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
+    .side-panel-overlay.active { opacity: 1; pointer-events: auto; }
+    .side-panel { position: fixed; top: 0; right: -450px; width: 100%; max-width: 450px; height: 100vh; background: var(--bg-card); z-index: 10000; box-shadow: -5px 0 30px rgba(0,0,0,0.5); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+    .side-panel.active { right: 0; }
+    .side-panel-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+    .side-panel-header h2 { font-size: 18px; color: var(--primary); }
+    .close-panel { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+    .side-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .info-group { margin-bottom: 20px; }
+    .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .info-row span:first-child { color: var(--text-muted); }
+    .info-row span:last-child { font-weight: bold; }
+
+    /* ✅ Top Inviter Card Style */
+    .top-inviter-card { background: linear-gradient(135deg, rgba(250, 204, 21, 0.15), rgba(245, 158, 11, 0.05)); border: 1px solid var(--gold); border-radius: 12px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
+    .top-inviter-info { display: flex; align-items: center; gap: 15px; }
+    .top-inviter-icon { width: 50px; height: 50px; background: var(--gold); color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .top-inviter-details h3 { color: var(--gold); font-size: 18px; margin-bottom: 4px; }
+    .top-inviter-details p { color: var(--text-muted); font-size: 13px; }
+    .top-inviter-count { text-align: right; }
+    .top-inviter-count .count { font-size: 28px; font-weight: 900; color: var(--text); }
+    .top-inviter-count .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
+
     /* Utility */
     .flex-row { display: flex; gap: 15px; align-items: center; }
     .mt-3 { margin-top: 20px; }
     
     /* Mobile Responsiveness */
+    #mobile-menu-btn { display: none; }
     @media (max-width: 768px) {
         #sidebar { position: absolute; left: -260px; height: 100vh; z-index: 100; }
         #sidebar.active { left: 0; }
+        #mobile-menu-btn { display: block; }
         .live-status { grid-template-columns: 1fr; }
+        .table-header { flex-direction: column; align-items: stretch; }
+        .top-inviter-card { flex-direction: column; text-align: center; }
+        .top-inviter-info { flex-direction: column; }
+        .top-inviter-count { text-align: center; }
     }
 </style>
 </head>
@@ -120,7 +158,7 @@
         <div class="menu-group">
             <div class="menu-label">Overview</div>
             <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-home"></i> Dashboard</div>
-            <div class="menu-item" onclick="switchPage('players', this)"><i class="fas fa-users"></i> Players</div>
+            <div class="menu-item" onclick="switchPage('players', this)"><i class="fas fa-users"></i> Players Directory</div>
             
             <div class="menu-label mt-3">Finance</div>
             <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-arrow-down text-success"></i> Deposits</div>
@@ -139,7 +177,7 @@
     <div class="main-panel">
         <div class="top-bar">
             <div class="flex-row">
-                <button class="btn btn-primary" style="display:none; padding: 5px 10px;" id="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <button class="btn btn-primary" id="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <h3 style="font-size: 16px;">Admin Dashboard</h3>
             </div>
             <div class="flex-row">
@@ -158,19 +196,28 @@
                     <div class="stat-card"><div class="stat-title">Pending Requests</div><div class="stat-value" id="stat-pending" style="color:var(--primary)">0</div></div>
                 </div>
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>Recent Transactions</h3></div>
+                    <div class="table-header"><h3>Recent Activity (Transactions)</h3></div>
                     <div class="table-responsive">
                         <table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody id="dashboard-recent-txns"></tbody></table>
                     </div>
                 </div>
             </div>
 
-            <!-- PLAYERS -->
+            <!-- PLAYERS DIRECTORY (CRUD) -->
             <div id="page-players" class="page">
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>All Players</h3><button class="btn btn-primary btn-sm" onclick="loadPlayers()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-header">
+                        <h3>Players Directory</h3>
+                        <div class="search-bar">
+                            <input type="text" id="player-search" placeholder="Search by Name, ID or Phone..." oninput="filterPlayers()">
+                            <button class="btn btn-primary btn-sm" onclick="loadPlayers()"><i class="fas fa-sync"></i></button>
+                        </div>
+                    </div>
                     <div class="table-responsive">
-                        <table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Joined</th><th>Action</th></tr></thead><tbody id="players-table-body"></tbody></table>
+                        <table>
+                            <thead><tr><th>Name</th><th>Telegram ID</th><th>Play Bal</th><th>Win Bal</th><th>Joined</th></tr></thead>
+                            <tbody id="players-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -195,12 +242,27 @@
                 </div>
             </div>
 
-            <!-- REFERRALS -->
+            <!-- REFERRALS (With Top Inviter) -->
             <div id="page-referrals" class="page">
+                <div class="top-inviter-card" id="top-inviter-card">
+                    <div class="top-inviter-info">
+                        <div class="top-inviter-icon"><i class="fas fa-crown"></i></div>
+                        <div class="top-inviter-details">
+                            <h3 id="top-inviter-name">-</h3>
+                            <p>Top Inviter (Most users brought)</p>
+                        </div>
+                    </div>
+                    <div class="top-inviter-count">
+                        <div class="count" id="top-inviter-count">0</div>
+                        <div class="label">Referrals</div>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-title">Total Referrals</div><div class="stat-value" id="stat-total-refs">0</div></div>
-                    <div class="stat-card"><div class="stat-title">Bonuses Given (ETB)</div><div class="stat-value" id="stat-ref-bonus">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Total Bonuses Given (ETB)</div><div class="stat-value" id="stat-ref-bonus">0</div></div>
                 </div>
+                
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Referral Network</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i> Refresh</button></div>
                     <div class="table-responsive">
@@ -319,10 +381,50 @@
     </div>
 </div>
 
+<!-- ✅ Slide-over Player Details Modal -->
+<div class="side-panel-overlay" id="player-overlay" onclick="closePlayerPanel()"></div>
+<div class="side-panel" id="player-panel">
+    <div class="side-panel-header">
+        <h2><i class="fas fa-user-circle"></i> Player Details</h2>
+        <button class="close-panel" onclick="closePlayerPanel()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="side-panel-body">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 10px; color: #fff;"><i class="fas fa-user"></i></div>
+            <h3 id="p-name" style="font-size: 20px;">-</h3>
+            <p id="p-id" style="color: var(--text-muted); font-size: 13px;">ID: -</p>
+        </div>
+
+        <div class="info-group">
+            <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 14px;">Wallet Balances</h4>
+            <div class="info-row"><span>Play Balance:</span><span id="p-play" style="color: var(--gold);">0.00 ETB</span></div>
+            <div class="info-row"><span>Win Balance:</span><span id="p-win" style="color: var(--success);">0.00 ETB</span></div>
+            <div class="info-row"><span>Referral Bonus:</span><span id="p-ref" style="color: var(--blue);">0.00 ETB</span></div>
+        </div>
+
+        <div class="info-group">
+            <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 14px;">Account Info</h4>
+            <div class="info-row"><span>Phone Number:</span><span id="p-phone">-</span></div>
+            <div class="info-row"><span>Games Played:</span><span id="p-games">0</span></div>
+            <div class="info-row"><span>Total Wins:</span><span id="p-wins">0</span></div>
+            <div class="info-row"><span>Joined Date:</span><span id="p-joined">-</span></div>
+            <div class="info-row"><span>Referred By:</span><span id="p-referrer">None</span></div>
+        </div>
+
+        <div class="info-group" style="display: flex; gap: 10px; flex-direction: column;">
+            <button class="btn btn-warning" style="width: 100%; justify-content: center;" onclick="editPlayerBalance()"><i class="fas fa-edit"></i> Edit Balance</button>
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="sendMessageToPlayer()"><i class="fas fa-paper-plane"></i> Send Direct Message</button>
+            <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="deletePlayerAccount()"><i class="fas fa-trash"></i> Delete Account</button>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentPage = 'dashboard';
 let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
+let allPlayersData = []; // Store all users for search/filter
+let currentSelectedPlayer = null; // For Side Panel
 
 // Mobile Menu Toggle
 function toggleSidebar() {
@@ -398,7 +500,6 @@ function switchPage(pageId, element) {
     document.getElementById(`page-${pageId}`).classList.add('active');
     if (element) element.classList.add('active');
     
-    // Close mobile sidebar
     if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
 
     if (pageId === 'dashboard') loadDashboardData();
@@ -439,36 +540,103 @@ async function loadStats() {
     } catch (e) {}
 }
 
-// Users
+// Players Directory with Search
 async function loadPlayers() {
     const tbody = document.getElementById('players-table-body');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     try {
         const d = await apiFetch('/api/admin/users');
         if (d.success) {
-            tbody.innerHTML = '';
-            d.data.forEach(u => {
-                tbody.innerHTML += `<tr>
-                    <td>${escapeHtml(u.name || '-')}</td>
-                    <td><code>${u.id}</code></td>
-                    <td>${escapeHtml(u.phone || '-')}</td>
-                    <td style="color:var(--primary); font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td>
-                    <td style="color:var(--success); font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td>
-                    <td>${new Date(u.registered_at).toLocaleDateString()}</td>
-                    <td><button class="btn btn-primary btn-sm" onclick="editBalance('${u.id}', ${u.play_balance}, ${u.win_balance})"><i class="fas fa-edit"></i></button></td>
-                </tr>`;
-            });
+            allPlayersData = d.data; // Store globally
+            renderPlayersTable(allPlayersData);
         }
-    } catch (e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error</td></tr>'; }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Error loading users</td></tr>'; }
 }
 
-async function editBalance(id, play, win) {
-    let newPlay = prompt("New Play Balance:", play); if (newPlay === null) return;
-    let newWin = prompt("New Win Balance:", win); if (newWin === null) return;
+function renderPlayersTable(players) {
+    const tbody = document.getElementById('players-table-body');
+    tbody.innerHTML = '';
+    if(players.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No players found.</td></tr>'; return; }
+    
+    players.forEach(u => {
+        tbody.innerHTML += `<tr class="clickable-row" onclick='openPlayerPanel(${JSON.stringify(u).replace(/'/g, "&apos;")})'>
+            <td style="font-weight:bold; color:var(--blue);">${escapeHtml(u.name || '-')}</td>
+            <td><code>${u.id}</code></td>
+            <td style="color:var(--gold); font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td>
+            <td style="color:var(--success); font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td>
+            <td>${new Date(u.registered_at).toLocaleDateString()}</td>
+        </tr>`;
+    });
+}
+
+function filterPlayers() {
+    const query = document.getElementById('player-search').value.toLowerCase();
+    const filtered = allPlayersData.filter(u => 
+        (u.name && u.name.toLowerCase().includes(query)) || 
+        (u.id && u.id.includes(query)) || 
+        (u.phone && u.phone.includes(query))
+    );
+    renderPlayersTable(filtered);
+}
+
+// ✅ Player Details Slide-over Logic
+function openPlayerPanel(player) {
+    currentSelectedPlayer = player;
+    document.getElementById('p-name').innerText = player.name || 'Unknown';
+    document.getElementById('p-id').innerText = 'ID: ' + player.id;
+    document.getElementById('p-play').innerText = Number(player.play_balance).toFixed(2) + ' ETB';
+    document.getElementById('p-win').innerText = Number(player.win_balance).toFixed(2) + ' ETB';
+    document.getElementById('p-ref').innerText = Number(player.referral_balance || 0).toFixed(2) + ' ETB';
+    document.getElementById('p-phone').innerText = player.phone || 'Not Registered';
+    document.getElementById('p-games').innerText = player.total_games || 0;
+    document.getElementById('p-wins').innerText = player.total_wins || 0;
+    document.getElementById('p-joined').innerText = new Date(player.registered_at).toLocaleString();
+    document.getElementById('p-referrer').innerText = player.referred_by || 'None';
+
+    document.getElementById('player-overlay').classList.add('active');
+    document.getElementById('player-panel').classList.add('active');
+}
+
+function closePlayerPanel() {
+    document.getElementById('player-overlay').classList.remove('active');
+    document.getElementById('player-panel').classList.remove('active');
+    currentSelectedPlayer = null;
+}
+
+async function editPlayerBalance() {
+    if (!currentSelectedPlayer) return;
+    let newPlay = prompt("New Play Balance:", currentSelectedPlayer.play_balance); if (newPlay === null) return;
+    let newWin = prompt("New Win Balance:", currentSelectedPlayer.win_balance); if (newWin === null) return;
+    
     try { 
-        const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
-        if (res.success) { showToast("Balance updated!"); loadPlayers(); } 
+        const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
+        if (res.success) { 
+            showToast("Balance updated!"); 
+            // Update local object so panel doesn't need full reload
+            currentSelectedPlayer.play_balance = Number(newPlay);
+            currentSelectedPlayer.win_balance = Number(newWin);
+            openPlayerPanel(currentSelectedPlayer); 
+            loadPlayers(); 
+        } 
     } catch (e) { showToast('Update failed', true); }
+}
+
+async function sendMessageToPlayer() {
+    if (!currentSelectedPlayer) return;
+    const msg = prompt("Enter message to send to this player via Bot:");
+    if (!msg) return;
+    
+    try {
+        const res = await apiFetch(`/api/admin/broadcast`, 'POST', { message: msg, targetUserId: currentSelectedPlayer.id });
+        if (res.success) showToast("Message sent!");
+    } catch (e) { showToast('Failed to send', true); }
+}
+
+async function deletePlayerAccount() {
+    if (!currentSelectedPlayer) return;
+    if (!confirm(`Are you sure you want to delete ${currentSelectedPlayer.name}? This cannot be undone.`)) return;
+    showToast("Delete operation requires server API implementation.", true);
+    // Note: Implement DELETE /api/admin/users/:id in server.js to fully support this
 }
 
 // Transactions
@@ -506,7 +674,7 @@ async function actionTxn(id, action) {
     } catch (e) { showToast('Action failed', true); }
 }
 
-// Referrals
+// Referrals (With Top Inviter)
 async function loadReferrals() {
     const tbody = document.getElementById('referral-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
@@ -514,7 +682,28 @@ async function loadReferrals() {
         const d = await apiFetch('/api/admin/referrals');
         if (d.success) {
             tbody.innerHTML = '';
-            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No referrals yet.</td></tr>';
+            if(d.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No referrals yet.</td></tr>';
+                document.getElementById('top-inviter-card').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('top-inviter-card').style.display = 'flex';
+
+            // Calculate Top Inviter
+            const counts = {};
+            d.data.forEach(r => {
+                counts[r.referrer_id] = (counts[r.referrer_id] || 0) + 1;
+            });
+            let topId = null, topCount = 0;
+            for (const [id, count] of Object.entries(counts)) {
+                if (count > topCount) { topCount = count; topId = id; }
+            }
+            const topUser = d.data.find(r => r.referrer_id === topId);
+            document.getElementById('top-inviter-name').innerText = topUser ? topUser.referrer_name : 'Unknown';
+            document.getElementById('top-inviter-count').innerText = topCount;
+
+            // Render Table
             d.data.forEach(r => {
                 tbody.innerHTML += `<tr>
                     <td>${escapeHtml(r.referrer_name)} <br><small>${r.referrer_id}</small></td>
@@ -526,7 +715,9 @@ async function loadReferrals() {
             document.getElementById('stat-total-refs').innerText = d.data.length;
             document.getElementById('stat-ref-bonus').innerText = d.data.length * 50;
         }
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; }
+    } catch(e) { 
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; 
+    }
 }
 
 // Game Control

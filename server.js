@@ -48,7 +48,8 @@ const TransactionSchema = new mongoose.Schema({
     id: { type: String, index: true, unique: true }, type: { type: String, index: true },
     user_id: { type: String, index: true }, user_name: String, amount: Number,
     method: String, reference: { type: String, index: true }, phone: String,
-    status: { type: String, index: true }, created: { type: String, index: true }, notified: Boolean
+    status: { type: String, index: true }, created: { type: String, index: true }, notified: Boolean,
+    hidden_by_user: { type: Boolean, default: false } // ✅ Added to support hiding history
 }, { collection: 'transactions' });
 
 const GameHistorySchema = new mongoose.Schema({
@@ -370,15 +371,16 @@ app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
 
 app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     try {
-        const { message } = req.body;
+        const { message, targetUserId } = req.body;
         if (!message) return res.status(400).json({ success: false, error: 'Message required' });
 
-        const broadcast = await Broadcast.create({
-            id: 'bc_' + Date.now(),
-            message: message
-        });
-
-        const users = await User.find({}, { id: 1 }).lean();
+        let users = [];
+        if (targetUserId) {
+            users = [{ id: targetUserId }]; // Single user DM
+        } else {
+            users = await User.find({}, { id: 1 }).lean(); // Broadcast to all
+        }
+        
         let sentMessages = []; 
         
         for (const u of users) {
@@ -395,8 +397,14 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
             } catch (err) { }
         }
 
-        broadcast.sentMessages = sentMessages;
-        await broadcast.save();
+        // Only save history if it was a broadcast to everyone
+        if (!targetUserId) {
+            const broadcast = await Broadcast.create({
+                id: 'bc_' + Date.now(),
+                message: message,
+                sentMessages: sentMessages
+            });
+        }
 
         res.json({ success: true, count: users.length });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -458,7 +466,45 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Clear User History API
+// ✅ Get History (Only returns non-hidden ones)
+app.get('/api/wallet/history', async (req, res) => {
+    try {
+        const user = authFromHeaders(req); 
+        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
+        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
+        
+        const history = await Transaction.find({ user_id: userId, hidden_by_user: false }).sort({ created: -1 }).limit(50).lean();
+        res.json({ success: true, data: history });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ Toggle Hide/Unhide History Item
+app.post('/api/wallet/history/hide', async (req, res) => {
+    try {
+        const user = authFromHeaders(req);
+        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
+        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
+        const { txnId, hide } = req.body; // hide: true or false
+        
+        await Transaction.updateOne({ id: txnId, user_id: userId }, { $set: { hidden_by_user: hide } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ Delete Selected History Items
+app.post('/api/wallet/history/delete-selected', async (req, res) => {
+    try {
+        const user = authFromHeaders(req);
+        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
+        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
+        const { txnIds } = req.body; // Array of IDs
+        
+        await Transaction.deleteMany({ id: { $in: txnIds }, user_id: userId });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ Clear All History
 app.delete('/api/wallet/history/clear', async (req, res) => {
     try {
         const user = authFromHeaders(req);
@@ -468,14 +514,6 @@ app.delete('/api/wallet/history/clear', async (req, res) => {
         await Transaction.deleteMany({ user_id: userId });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
-
-app.get('/api/wallet/history', async (req, res) => {
-    try {
-        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
-        const history = await Transaction.find({ user_id: String(user.id) }).sort({ created: -1 }).limit(50).lean();
-        res.json({ success: true, data: history });
-    } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/wallet/withdraw-request', async (req, res) => {
