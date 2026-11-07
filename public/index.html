@@ -92,14 +92,6 @@ body {
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 
-/* Preview Section */
-.preview-section { height: 130px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 10px; margin-bottom: 5px; }
-.preview-card { display: inline-block; background: #fff; border-radius: 8px; padding: 6px; margin-right: 8px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); vertical-align: top; }
-.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 3px; border-radius: 4px; margin-bottom: 4px; }
-.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 10px; font-weight: 800; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
-.preview-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
-
 .page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
 .sec-title { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
 .profile-card { padding: 15px; margin-bottom: 15px; }
@@ -226,11 +218,6 @@ body {
     <div class="grid-container" id="number-grid"></div>
     
     <div class="footer-notification" id="footer-notification"></div>
-    
-    <!-- Preview Section (Free Space) -->
-    <div class="preview-section glass-panel" id="preview-container">
-        <!-- ካርቴላዎች እዚህ ይመጣሉ -->
-    </div>
   </div>
 
   <!-- LIVE PAGE -->
@@ -487,7 +474,6 @@ window.toggleCard = function(num) {
     
     if (selectedCards.has(num)) { 
         selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
-        updatePreviewUI();
         socket.emit('select_card', { cardNum: num, action: 'deselect' }); 
         return; 
     }
@@ -501,36 +487,7 @@ window.toggleCard = function(num) {
         showFooterNotification("❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!"); return;
     }
     selectedCards.add(num); numberButtons[num].className = 'number-btn selected'; 
-    updatePreviewUI();
     socket.emit('select_card', { cardNum: num, action: 'select' });
-}
-
-function updatePreviewUI() {
-    const c = document.getElementById('preview-container');
-    if (selectedCards.size === 0) { 
-        c.innerHTML = ''; 
-        return; 
-    }
-    
-    c.innerHTML = ''; 
-    selectedCards.forEach(cn => { 
-        const cols = generateCardLayout(cn);
-        const d = document.createElement('div'); 
-        d.className = 'preview-card'; 
-        
-        let gridHtml = `<div class="preview-header">BOARD ${cn}</div><div class="preview-grid">`;
-        for(let r=0; r<5; r++) {
-            for(let col=0; col<5; col++) {
-                const v = cols[col][r];
-                if(v === 'FREE') gridHtml += `<div class="preview-cell free">F</div>`;
-                else gridHtml += `<div class="preview-cell">${v}</div>`;
-            }
-        }
-        gridHtml += `</div>`;
-        
-        d.innerHTML = gridHtml; 
-        c.appendChild(d); 
-    });
 }
 
 window.switchTab = function(tabName) {
@@ -803,7 +760,6 @@ socket.on('init_state', (state) => {
     maxCards = state.maxCards || 1000;
     selectedCards.clear(); state.myCards.forEach(n => selectedCards.add(n));
     initGrid();
-    updatePreviewUI(); 
     
     updateLiveStats(state.totalCards);
     
@@ -860,7 +816,6 @@ socket.on('reset_game', () => {
     document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0/75';
     document.getElementById('timer-val').innerText = '50ሰ';
     document.getElementById('recent-calls-container').innerHTML = '';
-    updatePreviewUI(); 
     loadWallet(true);
 });
 
