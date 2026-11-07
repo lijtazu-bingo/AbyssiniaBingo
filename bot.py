@@ -24,7 +24,7 @@ def run_web():
 
 # ─── ማስተካከያዎች ───
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://abyssinia-bingo.onrender.com")
+WEBAPP_URL = "https://abyssiniabingo.onrender.com"
 SERVER_API_URL = os.getenv("SERVER_API_URL", WEBAPP_URL)
 ADMIN_ID = os.getenv("ADMIN_ID")
 DB_FILE = "abisinya_bot.db"
@@ -69,7 +69,7 @@ def get_user_data(user_id):
 # ─── ትርጉሞች (Translations) ───
 TEXTS = {
     'am': {
-        'welcome': "🎉 <b>እንኳን ወደ Abisinya Bingo በደህና መጡ!</b>\n\n👤 ስም፦ {name}\n🆔 መለያ፦ <code>{id}</code>\n💵 ባላንስ፦ <b>{balance} ETB</b>\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን በተን ይጫኑ",
+        'start': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👤 ስም፦ {name}\n🆔 መለያ፦ <code>{id}</code>\n💵 ባላንስ፦ <b>{balance} ETB</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
         'play_inline_btn': "🎮 Play Bingo",
         'menu_play': "🎮 Play Abyssinia Bingo",
@@ -83,10 +83,10 @@ TEXTS = {
         'menu_lang': "🌐 Language",
         'menu_help': "ℹ️ Help",
         'menu_rank': "🏆 Rank",
+        'help_msg': "📚 <b>የቦት ትዕዛዞች እና አጋዥ መረጃ</b>\n\n/start - ቦቱን እንደገና ለመጀመር\n/play - ጨዋታውን ለመጫወት\n/balance - ባላንስዎን ለማየት\n/deposit - ገንዘብ ለማስገባት\n/withdraw - ገንዘብ ለማውጣት\n/invite - የግብዣ ሊንክ ለማግኘት\n/support - እርዳታ ለማግኘት\n/lang - ቋንቋ ለመቀየር\n\n💡 <i>ማንኛውንም አዝራር በመጫን ቦቱን መጠቀም ይችላሉ።</i>",
         'dep_choose': "💳 የክፍያ አማራጭ ይምረጡ፦",
         'dep_enter_amt': "💸 እባክዎ ማስገባት የሚፈልጉትን የብር መጠን ያስገቡ፦",
         'dep_instructions': "🏦 ባንክ፦ TeleBirr\n\n⚠️ <b>ማስጠንቀቂያ፦ ገንዘቡን ከTeleBirr ወደ TeleBirr ብቻ ይላኩ!</b>\n\nገንዘብ ይላኩ፦\n👤 ስም፦ <b>{name}</b>\n👉 አካውንት፦ <code>{acc}</code>\n\n👉 ከተላከ በኋላ የመጣውን የSMS ሙሉ ጽሁፍ ኮፒ አድርገው ከታች 👇 ፓስት (Paste) ያድርጉት፦",
-        'dep_txn_prompt': "👉 እባክዎ የመጣውን የSMS ጽሁፍ (Transaction ID) እዚህ ፓስት ያድርጉ፦",
         'dep_success': "✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ Admin እስኪያጸድቅ ይጠብቁ።",
         'dep_fail': "⚠️ ጥያቄዎ ሊመዘገብ አልቻለም። እባክዎ በ @Tazikes ያግኙን።",
         'wd_choose': "🏦 ወደ የትኛው ባንክ ማውጣት ይፈልጋሉ?",
@@ -94,14 +94,14 @@ TEXTS = {
         'wd_enter_phone': "📱 እባክዎ ወደሚወጣበትን የቴሌብር/ባንክ ስልክ ቁጥር ያስገቡ፦",
         'wd_success': "✅ <b>የWithdraw ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n📱 ስልክ፦ {phone}\n⏳ Admin እስኪያጸድቅ ይጠብቁ።",
         'wd_fail': "⚠️ ጥያቄዎ ሊመዘገብ አልቻለም። እባክዎ በ @Tazikes ያግኙን።",
-        'invite_msg': "🔗 <b>የእርስዎ የግብዣ ሊንክ፦</b>\nhttps://t.me/AbisinyaBingo_Bot?start={id}\n\n🎁 ወዳጅዎን ሲጋብዙ 30 ብር ያገኛሉ! ጓደኛዎም 20 ብር ያገኛል።",
+        'invite_msg': "🔗 <b>የእርስዎ የግብዣ ሊንክ፦</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 ወዳጅዎን ሲጋብዙ 30 ብር ያገኛሉ! ጓደኛዎም 20 ብር ያገኛል።",
         'support_msg': "💬 ማንኛውም ጥያቄ ካለዎት በ @Tazikes ያግኙን።",
         'history_msg': "📜 ታሪክዎን ለማየት ከዚህ በታች ይጫኑ፦",
         'register_prompt': "እባክዎ ለመመዝገብ የስልክ ቁጥርዎን ያጋሩ፦",
         'share_contact': "📱 ስልክ ቁጥሬን አጋራ",
         'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>",
         'lang_choose': "🌐 እባክዎ ቋንቋ ይምረጡ፦",
-        'lang_changed': "✅ ቋንቋ ወደ አማርኛ ተቀይሯል!",
+        'lang_changed': "✅ ቋንቋ ተቀይሯል! አሁን ምናሌውን እንደገና ይመልከቱ።",
         'cancel': "❌ ሂደቱ ተሰርዟል።",
         'invalid_amt': "❌ እባክዎ ትክክለኛ ቁጥር ያስገቡ።",
         'min_wd': "❌ ዝቅተኛው የወጭ መጠን 100 ETB ነው።",
@@ -109,7 +109,7 @@ TEXTS = {
         'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።"
     },
     'en': {
-        'welcome': "🎉 <b>Welcome to Abisinya Bingo!</b>\n\n👤 Name: {name}\n🆔 ID: <code>{id}</code>\n💵 Balance: <b>{balance} ETB</b>\n\n👇 Tap the Menu below to start playing",
+        'start': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👤 Name: {name}\n🆔 ID: <code>{id}</code>\n💵 Balance: <b>{balance} ETB</b>\n\n👇 Choose an option below",
         'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
         'play_inline_btn': "🎮 Play Bingo",
         'menu_play': "🎮 Play Abyssinia Bingo",
@@ -123,6 +123,7 @@ TEXTS = {
         'menu_lang': "🌐 Language",
         'menu_help': "ℹ️ Help",
         'menu_rank': "🏆 Rank",
+        'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
         'dep_choose': "💳 Choose a payment method:",
         'dep_enter_amt': "💸 Please enter the amount you want to deposit:",
         'dep_instructions': "🏦 Bank: TeleBirr\n\n⚠️ <b>WARNING: Send Telebirr to Telebirr ONLY!</b>\n\nSend money to:\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n👉 After sending, copy the full SMS and paste it below 👇",
@@ -134,14 +135,14 @@ TEXTS = {
         'wd_enter_phone': "📱 Enter the Phone/Account number to withdraw to:",
         'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n⏳ Wait for Admin approval.",
         'wd_fail': "⚠️ Request failed. Please contact @Tazikes.",
-        'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/AbisinyaBingo_Bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
+        'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
         'support_msg': "💬 For any questions contact @Tazikes.",
         'history_msg': "📜 Click below to view your history:",
         'register_prompt': "Please share your phone number to register:",
         'share_contact': "📱 Share Phone Number",
         'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>",
         'lang_choose': "🌐 Choose a language:",
-        'lang_changed': "✅ Language changed to English!",
+        'lang_changed': "✅ Language changed! Check your updated menu below.",
         'cancel': "❌ Process cancelled.",
         'invalid_amt': "❌ Please enter a valid number.",
         'min_wd': "❌ Minimum withdrawal is 100 ETB.",
@@ -163,7 +164,6 @@ def get_main_menu(user_id):
     _, lang = get_user_data(user_id)
     if lang not in TEXTS: lang = 'am'
     t = TEXTS[lang]
-    # ✅ "Play Abyssinia Bingo" አሁን እንደ መደበኛ የፅሁፍ ቁልፍ ሆኖ ተቀይሯል (web_app የለውም)
     keyboard = [
         [KeyboardButton(text=t['menu_play'])],
         [KeyboardButton(text=t['menu_deposit']), KeyboardButton(text=t['menu_withdraw'])],
@@ -179,7 +179,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
     
-    # የግብዣ ሊንክ ማረጋገጫ (Referral)
+    # Referral system
     args = context.args
     if args and len(args) > 0 and not user.is_bot:
         referrer_id = args[0]
@@ -188,7 +188,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 requests.post(f"{SERVER_API_URL}/api/user/referral", json={"new_user_id": str(user.id), "referrer_id": referrer_id}, timeout=5)
             except: pass
             
-    # Wallet ማምጣት
     balance = 0.00
     try:
         res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=5)
@@ -196,8 +195,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             balance = res.json().get("data", {}).get("play_balance", 0.00)
     except: pass
 
-    welcome_text = get_text(user.id, 'welcome', name=user.first_name, id=user.id, balance=balance)
+    # Use 'start' key for the text
+    welcome_text = get_text(user.id, 'start', name=user.first_name, id=user.id, balance=balance)
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu(user.id))
+
+# ✅ አዲስ፦ /play ኮማንድ
+async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    play_text = get_text(user.id, 'play_prompt')
+    web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
+    await update.message.reply_text(play_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+
+# ✅ አዲስ፦ /help ኮማንድ
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await update.message.reply_text(get_text(user.id, 'help_msg'), parse_mode='HTML')
 
 # ─── Register ───
 async def register_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -367,24 +379,33 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = query.from_user.id
     lang_code = query.data.replace('lang_', '')
+    
+    # Save new language
     save_user(user_id, query.from_user.username, query.from_user.first_name, lang=lang_code)
+    
+    # Confirm in the new language
     await query.edit_message_text(get_text(user_id, 'lang_changed'))
-    await query.message.reply_text("Menu updated 👇", reply_markup=get_main_menu(user_id))
+    
+    # Force update the persistent menu by sending a new message
+    await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
 # ─── Other Menu Buttons ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
     t = lambda key: get_text(user.id, key)
-    _, current_lang = get_user_data(user.id)
+    
+    # Get current language strings for matching
+    _, lang = get_user_data(user.id)
+    if lang not in TEXTS: lang = 'am'
+    texts = TEXTS[lang]
 
-    # ✅ "Play Abyssinia Bingo" ሲጫን የፅሁፍ መግለጫ እና Inline Button ማሳየት
-    if text in ["🎮 Play Abyssinia Bingo", "🎯 Play Bingo"]:
+    if text in [texts['menu_play'], "🎮 Play Abyssinia Bingo"]:
         play_text = t('play_prompt')
         web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=WEBAPP_URL))
         await update.message.reply_text(play_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
-    elif text in ["🏦 Balance", "💵 ሂሳብ"]:
+    elif text in [texts['menu_balance'], "🏦 Balance", "💵 ሂሳብ"]:
         await update.message.reply_text("⏳ Loading balance...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=10)
@@ -393,19 +414,22 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text(msg, parse_mode='HTML')
         except: await update.message.reply_text("❌ Server Error")
 
-    elif text in ["👥 Invite", "🔗 ግብዣ እና አጋር"]:
+    elif text in [texts['menu_invite'], "👥 Invite", "🔗 ግብዣ እና አጋር"]:
         await update.message.reply_text(t('invite_msg').format(id=user.id), parse_mode='HTML')
         
-    elif text in ["💬 Support", "🆘 እርዳታ"]:
+    elif text in [texts['menu_support'], "💬 Support", "🆘 እርዳታ"]:
         await update.message.reply_text(t('support_msg'), parse_mode='HTML')
+    
+    elif text in [texts['menu_help'], "ℹ️ Help"]:
+        await update.message.reply_text(t('help_msg'), parse_mode='HTML')
 
-    elif text in ["🔢 Register"]:
+    elif text in [texts['menu_register'], "🔢 Register"]:
         await register_start(update, context)
 
-    elif text in ["🌐 Language", "🌐 ቋንቋ (Language)"]:
+    elif text in [texts['menu_lang'], "🌐 Language", "🌐 ቋንቋ (Language)"]:
         await lang_menu(update, context)
 
-    elif text in ["📜 History"]:
+    elif text in [texts['menu_history'], "📜 History"]:
         await update.message.reply_text(t('history_msg'))
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
@@ -438,15 +462,25 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
+    # Commands
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("play", play_command))
+    application.add_handler(CommandHandler("help", help_command))
+
+    # Conversations
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
+    
+    # Callbacks
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
+    
+    # Contacts & Messages
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
+    
     application.add_error_handler(error_handler)
 
-    print("🤖 Bot is running...")
+    print("🤖 Bot is running with Multi-language support...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
