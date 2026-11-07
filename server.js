@@ -126,7 +126,6 @@ function getCardCols(cardNum) {
     cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
 }
 
-// 🔥 የተስተካከለው የማሸነፊያ ስሌት 🔥
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum); 
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -506,7 +505,13 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
     gameState.calledNumbers.push(num); gameState.currentCall = num;
     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-    if (gameState.calledNumbers.length >= 75) { setTimeout(() => { if (!isEndingRound) endRound([]); }, 5000); } else { setImmediate(() => checkForAutoWinner()); }
+    
+    // Check synchronously and immediately stop loop
+    if (gameState.calledNumbers.length >= 75) { 
+        setTimeout(() => { if (!isEndingRound) endRound([]); }, 5000); 
+    } else { 
+        setImmediate(() => checkForAutoWinner()); 
+    }
     res.json({ success: true });
 });
 
@@ -521,6 +526,8 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
             let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
+            
+            // Check synchronously and immediately stop loop
             await checkForAutoWinner();
         }, gameState.settings.callInterval * 1000);
     }

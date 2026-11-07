@@ -92,6 +92,14 @@ body {
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 
+/* Preview Section (Small) */
+.preview-section { height: 90px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 5px; margin-bottom: 5px; border-top: 1px solid var(--glass-border); }
+.preview-card { display: inline-block; background: #fff; border-radius: 6px; padding: 4px; margin-right: 8px; border: 2px solid var(--gold); box-shadow: 0 2px 5px rgba(0,0,0,0.5); vertical-align: top; }
+.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 9px; font-weight: 900; text-align: center; padding: 2px; border-radius: 3px; margin-bottom: 3px; }
+.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
+.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 9px; font-weight: 800; width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+.preview-cell.free { background: var(--blue); color: #fff; font-size: 7px; }
+
 .page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
 .sec-title { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
 .profile-card { padding: 15px; margin-bottom: 15px; }
@@ -181,7 +189,7 @@ body {
 .winning-card-container { padding: 12px; width: 100%; max-width: 320px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); margin-bottom: 10px;}
 .winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
 .winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 10px 0; font-size: 14px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
-.winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
+.winning-cell.called-cell { background: #10b981 !important; color: #fff !important; border: 1px solid #34d399; }
 .winning-cell.highlight { background: var(--gold) !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
 
 @keyframes pulseLastNum {
@@ -218,6 +226,11 @@ body {
     <div class="grid-container" id="number-grid"></div>
     
     <div class="footer-notification" id="footer-notification"></div>
+    
+    <!-- Preview Section (Small) -->
+    <div class="preview-section" id="preview-container">
+        <!-- ካርቴላዎች እዚህ ይመጣሉ -->
+    </div>
   </div>
 
   <!-- LIVE PAGE -->
@@ -428,7 +441,7 @@ function updateProfileUI() {
     document.getElementById('profile-games-val').innerText = userTotalGames; 
     document.getElementById('profile-wins-val').innerText = userTotalWins; 
     document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; 
-    document.getElementById('invite-link-input').value = 'https://t.me/Ethiobingo_bot?start=' + userProfile.id; 
+    document.getElementById('invite-link-input').value = 'https://t.me/AbisinyaBingo_Bot?start=' + userProfile.id; 
 }
 
 function updateLiveStats(totalCards) {
@@ -474,6 +487,7 @@ window.toggleCard = function(num) {
     
     if (selectedCards.has(num)) { 
         selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
+        updatePreviewUI();
         socket.emit('select_card', { cardNum: num, action: 'deselect' }); 
         return; 
     }
@@ -487,7 +501,36 @@ window.toggleCard = function(num) {
         showFooterNotification("❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!"); return;
     }
     selectedCards.add(num); numberButtons[num].className = 'number-btn selected'; 
+    updatePreviewUI();
     socket.emit('select_card', { cardNum: num, action: 'select' });
+}
+
+function updatePreviewUI() {
+    const c = document.getElementById('preview-container');
+    if (selectedCards.size === 0) { 
+        c.innerHTML = ''; 
+        return; 
+    }
+    
+    c.innerHTML = ''; 
+    selectedCards.forEach(cn => { 
+        const cols = generateCardLayout(cn);
+        const d = document.createElement('div'); 
+        d.className = 'preview-card'; 
+        
+        let gridHtml = `<div class="preview-header">BOARD ${cn}</div><div class="preview-grid">`;
+        for(let r=0; r<5; r++) {
+            for(let col=0; col<5; col++) {
+                const v = cols[col][r];
+                if(v === 'FREE') gridHtml += `<div class="preview-cell free">F</div>`;
+                else gridHtml += `<div class="preview-cell">${v}</div>`;
+            }
+        }
+        gridHtml += `</div>`;
+        
+        d.innerHTML = gridHtml; 
+        c.appendChild(d); 
+    });
 }
 
 window.switchTab = function(tabName) {
@@ -760,6 +803,7 @@ socket.on('init_state', (state) => {
     maxCards = state.maxCards || 1000;
     selectedCards.clear(); state.myCards.forEach(n => selectedCards.add(n));
     initGrid();
+    updatePreviewUI(); 
     
     updateLiveStats(state.totalCards);
     
@@ -816,6 +860,7 @@ socket.on('reset_game', () => {
     document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0/75';
     document.getElementById('timer-val').innerText = '50ሰ';
     document.getElementById('recent-calls-container').innerHTML = '';
+    updatePreviewUI(); 
     loadWallet(true);
 });
 
