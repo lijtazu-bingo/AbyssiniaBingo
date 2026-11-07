@@ -39,7 +39,7 @@ DB_FILE = "abisinya_bot.db"
 
 # ─── የውይይት ሁኔታዎች (Conversation States) ───
 DEPOSIT_METHOD, DEPOSIT_TXN_ID, DEPOSIT_AMOUNT = range(3)
-WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(3, 5)
+WITHDRAW_METHOD, WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(3, 6)
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
@@ -63,10 +63,9 @@ def save_user(user_id, username, first_name, phone=None):
     conn.commit()
     conn.close()
 
-# ─── ዋናው ምናሌ (Main Menu) - ልክ እንደ Spark Bingo ───
+# ─── ዋናው ምናሌ (Main Menu) ───
 def get_main_menu():
     keyboard = [
-        [KeyboardButton(text="🎮 ጨዋታ ይጫወቱ (PLAY)", web_app=WebAppInfo(url=WEBAPP_URL))],
         [KeyboardButton(text="📥 ገቢ (Deposit)"), KeyboardButton(text="📤 ወጪ (Withdraw)")],
         [KeyboardButton(text="💵 ሂሳብ"), KeyboardButton(text="👤 ትርፍዬል")],
         [KeyboardButton(text="🔗 ግብዣ እና አጋር"), KeyboardButton(text="📢 ድርጅተኛ አስተዋዋቂ")],
@@ -83,10 +82,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome_text = (
         f"ሰላም {user.first_name}! 👋\n\n"
         "🎉 <b>እንኳን ወደ Abyssinia Bingo በደህና መጡ!</b> 🎉\n\n"
-        "ከታች ያለውን ምናሌ በመጠቀም ጨዋታ መጫወት፣ ገንዘብ ማስገባት ወይም ማውጣት ይችላሉ።"
+        "ከታች ያለውን ምናሌ በመጠቀም ገንዘብ ማስገባት፣ ማውጣት ወይም ጨዋታ መጀመር ይችላሉ።"
     )
     
+    # ✅ "Play Bingo" ን በ Inline Keyboard መልክ ከመልእክቱ ጋር እንላክ
+    web_app_btn = InlineKeyboardButton(text="🎮 ጨዋታ ይጫወቱ (Play Bingo)", web_app=WebAppInfo(url=WEBAPP_URL))
+    inline_markup = InlineKeyboardMarkup([[web_app_btn]])
+    
     await update.message.reply_text(welcome_text, parse_mode='HTML', reply_markup=get_main_menu())
+    await update.message.reply_text("🎮 ጨዋታውን ለመጀመር ይህንን ቁልፍ ይጫኑ፦", reply_markup=inline_markup)
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
@@ -100,7 +104,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=get_main_menu()
         )
 
-# ─── 1. DEPOSIT FLOW (ልክ እንደ ምስል 2) ───
+# ─── 1. DEPOSIT FLOW ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="dep_cbe")],
@@ -186,7 +190,7 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
             
     return ConversationHandler.END
 
-# ─── 2. WITHDRAW FLOW (ልክ እንደ ምስል 2) ───
+# ─── 2. WITHDRAW FLOW ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr", callback_data="wd_telebirr"), InlineKeyboardButton("🏦 CBEBirr", callback_data="wd_cbe")],
@@ -197,7 +201,7 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard), 
         parse_mode='HTML'
     )
-    return 5 # WITHDRAW_METHOD
+    return WITHDRAW_METHOD
 
 async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -250,7 +254,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── 3. OTHER MENU BUTTONS (ልክ እንደ ምስል 2) ───
+# ─── 3. OTHER MENU BUTTONS ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -279,7 +283,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             f"🔹 ስም: <b>{user.first_name}</b>\n"
             f"🔹 ስልክ: <b>{context.user_data.get('phone', 'አልተመዘገበም')}</b>\n"
             f"🔹 መጫወቻ ሂሳብ: <b>-- ETB</b>\n\n"
-            f"👉 ጨዋታ ለመጀመር ከታች ያለውን '🎮 ጨዋታ ይጫወቱ (PLAY)' የሚለውን ይጫኑ።"
+            f"👉 ጨዋታ ለመጀመር /start ይጫኑ እና '🎮 ጨዋታ ይጫወቱ (Play Bingo)' የሚለውን ይጫኑ።"
         )
         await update.message.reply_text(msg, parse_mode='HTML')
         
@@ -345,7 +349,7 @@ def main():
     wd_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^📤 ወጪ \\(Withdraw\\)$"), withdraw_start)],
         states={
-            5: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")], # Withdraw Method
+            WITHDRAW_METHOD: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")],
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
