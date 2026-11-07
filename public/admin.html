@@ -4,79 +4,104 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel - Abisinya Bingo</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    :root { --primary: #f59e0b; --bg: #0f172a; --card: #1e293b; --text: #fff; --danger: #ef4444; --success: #22c55e; --blue: #3b82f6; }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    :root { 
+        --primary: #f59e0b; --primary-dark: #b45309;
+        --bg: #0f172a; --bg-card: #1e293b; --bg-sidebar: #0b1120;
+        --text: #f8fafc; --text-muted: #94a3b8;
+        --danger: #ef4444; --success: #22c55e; --blue: #3b82f6;
+        --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-    #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-    .login-box { background: var(--card); padding: 30px; border-radius: 12px; border: 1px solid #334155; width: 90%; max-width: 350px; }
-    .login-box h2 { text-align: center; color: var(--blue); margin-bottom: 20px; }
-    .login-box input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; margin-bottom: 12px; outline: none; }
-    .login-box button { width: 100%; padding: 12px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .error-msg { color: var(--danger); text-align: center; margin-bottom: 15px; font-size: 13px; display: none; }
+    /* Login */
+    #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; background-image: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%); }
+    .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 16px; border: 1px solid var(--border); width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .login-box h2 { text-align: center; color: var(--primary); margin-bottom: 25px; font-size: 24px; }
+    .login-box input { width: 100%; padding: 14px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 8px; margin-bottom: 15px; outline: none; transition: 0.2s; }
+    .login-box input:focus { border-color: var(--primary); }
+    .login-box button { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+    .error-msg { color: var(--danger); text-align: center; margin-bottom: 15px; font-size: 13px; display: none; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; }
 
+    /* Layout */
     #main-content { flex: 1; display: flex; flex-direction: row; overflow: hidden; display: none; }
-    #sidebar { width: 250px; background: var(--card); padding: 20px 0; border-right: 1px solid #334155; flex-shrink: 0; overflow-y: auto; }
-    .logo { padding: 0 20px 20px; border-bottom: 1px solid #334155; margin-bottom: 20px; font-size: 20px; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
-    .menu-item { padding: 15px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: #94a3b8; font-size: 14px; font-weight: 600; border-left: 4px solid transparent; }
-    .menu-item:hover, .menu-item.active { background: #334155; color: #fff; border-left-color: var(--primary); }
+    #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; }
+    .logo { padding: 20px; font-size: 20px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+    .menu-group { padding: 15px 0; overflow-y: auto; flex: 1; }
+    .menu-label { padding: 0 20px 10px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+    .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-muted); font-size: 14px; font-weight: 600; transition: 0.2s; border-left: 3px solid transparent; }
+    .menu-item:hover, .menu-item.active { background: rgba(245, 158, 11, 0.1); color: var(--primary); border-left-color: var(--primary); }
 
     .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .top-bar { height: 60px; background: var(--card); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #334155; }
-    .logout-btn { background: var(--danger); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .top-bar { height: 64px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-bottom: 1px solid var(--border); }
+    .logout-btn { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+    .logout-btn:hover { background: var(--danger); color: #fff; }
 
-    .page-container { flex: 1; padding: 20px; overflow-y: auto; }
-    .page { display: none; }
+    .page-container { flex: 1; padding: 25px; overflow-y: auto; }
+    .page { display: none; animation: fadeIn 0.3s ease; }
     .page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-    .stat-title { font-size: 13px; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 8px; }
-    .stat-value { font-size: 24px; font-weight: bold; color: var(--primary); }
+    /* Cards & Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px; }
+    .stat-card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--primary); }
+    .stat-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 900; color: var(--text); }
 
-    .table-responsive { overflow-x: auto; background: var(--card); border-radius: 12px; border: 1px solid #334155; }
-    table { width: 100%; border-collapse: collapse; min-width: 600px; }
-    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; font-size: 14px; }
-    th { background: #0f172a; color: #94a3b8; }
-    tr:hover td { background: #1e293b; }
+    /* Tables */
+    .table-wrapper { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .table-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .table-header h3 { font-size: 16px; }
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+    th { background: rgba(0,0,0,0.2); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 12px; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
 
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
-    .badge.pending { background: #f59e0b; color: #000; }
-    .badge.approved { background: #22c55e; color: #fff; }
-    .badge.rejected { background: #ef4444; color: #fff; }
+    /* Badges & Buttons */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+    .badge.pending { background: rgba(245, 158, 11, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+    .badge.approved { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .badge.rejected { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 
-    .btn { padding: 8px 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
     .btn-primary { background: var(--blue); }
     .btn-success { background: var(--success); }
     .btn-danger { background: var(--danger); }
     .btn-warning { background: var(--primary); color: #000; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
 
-    .form-control { padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; outline: none; font-size: 14px; width: 100%; }
-    .game-controls { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+    .form-control { padding: 12px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 8px; outline: none; font-size: 14px; width: 100%; }
+    .form-control:focus { border-color: var(--primary); }
+    
+    /* Live Game Status */
+    .live-status { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid var(--blue); border-radius: 12px; padding: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: center; margin-bottom: 25px; }
+    .live-status-item span { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; font-weight: bold; }
+    .live-status-item strong { font-size: 24px; color: var(--primary); font-family: monospace; }
 
-    .live-status { background: #0f172a; border: 2px solid var(--blue); border-radius: 10px; padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-bottom: 20px; }
-    .live-status-item span { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 5px; }
-    .live-status-item strong { font-size: 20px; color: var(--primary); }
-
-    #active-players-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .player-tag { background: #334155; padding: 6px 12px; border-radius: 20px; font-size: 12px; border: 1px solid var(--blue); color: #fff; }
-
-    #admin-toast { position: fixed; top: 20px; right: 20px; background: var(--success); color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 13px; z-index: 99999; opacity: 0; transform: translateX(100%); transition: 0.2s; pointer-events: none; }
-    #admin-toast.show { opacity: 1; transform: translateX(0); }
+    .game-controls { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 25px; }
+    
+    #admin-toast { position: fixed; bottom: 30px; right: 30px; background: var(--success); color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; font-size: 14px; z-index: 99999; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    #admin-toast.show { opacity: 1; transform: translateY(0); }
     #admin-toast.error { background: var(--danger); }
+    
+    /* Utility */
+    .flex-row { display: flex; gap: 15px; align-items: center; }
+    .mt-3 { margin-top: 20px; }
 </style>
 </head>
 <body>
 
 <div id="login-screen">
     <div class="login-box">
-        <h2><i class="fas fa-lock"></i> Admin Login</h2>
-        <div class="error-msg" id="login-error">የተሳሳተ የተጠቃሚ ስም ወይም የይለፍ ቃል!</div>
+        <h2><i class="fas fa-shield-alt"></i> Admin Access</h2>
+        <div class="error-msg" id="login-error">Invalid credentials!</div>
         <input type="text" id="login-username" placeholder="Username">
         <input type="password" id="login-password" placeholder="Password" onkeypress="if(event.key==='Enter')attemptLogin()">
-        <button id="login-btn" onclick="attemptLogin()">Login</button>
+        <button id="login-btn" onclick="attemptLogin()">Login to Dashboard</button>
     </div>
 </div>
 
@@ -84,116 +109,194 @@
 
 <div id="main-content">
     <div id="sidebar">
-        <div class="logo"><i class="fas fa-dice"></i> Admin Panel</div>
-        <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-home"></i> Dashboard</div>
-        <div class="menu-item" onclick="switchPage('players', this)"><i class="fas fa-users"></i> Players</div>
-        <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-arrow-down"></i> Deposits</div>
-        <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals</div>
-        <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
-        <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
-        <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
+        <div class="logo"><i class="fas fa-dice text-primary"></i> Abisinya Admin</div>
+        <div class="menu-group">
+            <div class="menu-label">Overview</div>
+            <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-home"></i> Dashboard</div>
+            <div class="menu-item" onclick="switchPage('players', this)"><i class="fas fa-users"></i> Players</div>
+            
+            <div class="menu-label mt-3">Finance</div>
+            <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-arrow-down text-success"></i> Deposits</div>
+            <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up text-danger"></i> Withdrawals</div>
+            <div class="menu-item" onclick="switchPage('referrals', this)"><i class="fas fa-network-wired"></i> Referrals</div>
+            
+            <div class="menu-label mt-3">Management</div>
+            <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
+            <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Giveaway / Bonus</div>
+            <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
+            <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
+            <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
+        </div>
     </div>
 
     <div class="main-panel">
         <div class="top-bar">
-            <h3 style="font-size: 16px;">Abisinya Bingo Admin</h3>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button class="btn btn-primary" onclick="refreshCurrentPage()"><i class="fas fa-sync-alt"></i> Refresh</button>
-                <button class="logout-btn" onclick="logout()">Logout</button>
+            <h3 style="font-size: 16px;">Admin Dashboard</h3>
+            <div class="flex-row">
+                <span id="current-time" style="color: var(--text-muted); font-size: 13px;"></span>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
             </div>
         </div>
 
         <div class="page-container">
             <!-- DASHBOARD -->
             <div id="page-dashboard" class="page active">
-                <h2 style="margin-bottom: 20px;">Dashboard Overview</h2>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-title">Total Players</div><div class="stat-value" id="stat-players">0</div></div>
-                    <div class="stat-card"><div class="stat-title">Total Deposits</div><div class="stat-value" id="stat-deposits">0 ETB</div></div>
-                    <div class="stat-card"><div class="stat-title">Total Withdrawals</div><div class="stat-value" id="stat-withdrawals">0 ETB</div></div>
-                    <div class="stat-card"><div class="stat-title">Pending Requests</div><div class="stat-value" id="stat-pending">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Total Deposits (ETB)</div><div class="stat-value" id="stat-deposits">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Total Withdrawals (ETB)</div><div class="stat-value" id="stat-withdrawals">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Pending Requests</div><div class="stat-value" id="stat-pending" style="color:var(--primary)">0</div></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Recent Transactions</h3></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody id="dashboard-recent-txns"></tbody></table>
+                    </div>
                 </div>
             </div>
 
             <!-- PLAYERS -->
             <div id="page-players" class="page">
-                <h2 style="margin-bottom: 20px;">Players Management</h2>
-                <div class="table-responsive">
-                    <table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Actions</th></tr></thead><tbody id="players-table-body"></tbody></table>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>All Players</h3><button class="btn btn-primary btn-sm" onclick="loadPlayers()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Joined</th><th>Action</th></tr></thead><tbody id="players-table-body"></tbody></table>
+                    </div>
                 </div>
             </div>
 
             <!-- DEPOSITS -->
             <div id="page-deposits" class="page">
-                <h2 style="margin-bottom: 20px;">Deposit Requests</h2>
-                <div class="table-responsive">
-                    <table><thead><tr><th>User</th><th>Amount</th><th>Method/Ref</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="deposit-table-body"></tbody></table>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Deposit Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('deposit')"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>User</th><th>Amount</th><th>Method / Ref</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="deposit-table-body"></tbody></table>
+                    </div>
                 </div>
             </div>
 
             <!-- WITHDRAWALS -->
             <div id="page-withdrawals" class="page">
-                <h2 style="margin-bottom: 20px;">Withdrawal Requests</h2>
-                <div class="table-responsive">
-                    <table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Withdrawal Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('withdrawal')"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REFERRALS -->
+            <div id="page-referrals" class="page">
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-title">Total Referrals</div><div class="stat-value" id="stat-total-refs">0</div></div>
+                    <div class="stat-card"><div class="stat-title">Bonuses Given (ETB)</div><div class="stat-value" id="stat-ref-bonus">0</div></div>
+                </div>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Referral Network</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Referrer (Inviter)</th><th>New User (Invited)</th><th>Date Joined</th><th>Bonus Paid</th></tr></thead><tbody id="referral-table-body"></tbody></table>
+                    </div>
                 </div>
             </div>
 
             <!-- GAME CONTROL -->
             <div id="page-game" class="page">
-                <h2 style="margin-bottom: 20px;">Game Control & Status</h2>
                 <div class="live-status">
                     <div class="live-status-item"><span>Game Phase</span><strong id="game-phase">-</strong></div>
                     <div class="live-status-item"><span>Current Call</span><strong id="game-current-call">-</strong></div>
                     <div class="live-status-item"><span>Cards Taken</span><strong id="game-taken-cards">-</strong></div>
                 </div>
                 
-                <!-- Max Cards Setup -->
-                <div style="background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
-                    <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 10px;">🃏 የካርቴላ ብዛት (Max Cards)</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="1000">
-                        <button class="btn btn-primary" onclick="updateMaxCards()"><i class="fas fa-save"></i> Update</button>
-                    </div>
-                    <div style="font-size: 11px; color: #64748b; margin-top: 5px;">* ከ10 እስከ 1000 መሆን አለበት</div>
-                </div>
-
                 <div class="game-controls">
-                    <button class="btn btn-success" onclick="gameAction('start-game')"><i class="fas fa-play"></i> Start Game</button>
-                    <button class="btn btn-danger" onclick="gameAction('stop-game')"><i class="fas fa-stop"></i> Stop Game</button>
-                    <button class="btn btn-primary" onclick="gameAction('call-number')"><i class="fas fa-arrow-right"></i> Next Number</button>
-                    <div style="display:flex; gap:10px; align-items:center; margin-left: auto;">
-                        <select class="form-control" id="speed-select" onchange="changeSpeed()" style="width: 120px;"><option value="3">Speed 3s</option><option value="5" selected>Speed 5s</option><option value="7">Speed 7s</option></select>
+                    <div style="flex: 1; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="gameAction('start-game')"><i class="fas fa-play"></i> Start Game</button>
+                        <button class="btn btn-danger" onclick="gameAction('stop-game')"><i class="fas fa-stop"></i> Stop Game</button>
+                        <button class="btn btn-primary" onclick="gameAction('call-number')"><i class="fas fa-arrow-right"></i> Next Number</button>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <select class="form-control" id="speed-select" onchange="changeSpeed()" style="width: 130px;">
+                            <option value="3">Speed 3s</option><option value="5" selected>Speed 5s</option><option value="7">Speed 7s</option>
+                        </select>
                         <button class="btn btn-warning" id="auto-btn" onclick="toggleAuto()"><i class="fas fa-robot"></i> Auto: OFF</button>
                     </div>
                 </div>
-                <div style="background: var(--card); padding: 15px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px;">
-                    <h3 style="font-size: 14px; color: #94a3b8; margin-bottom: 10px;">🎮 Active Players</h3>
-                    <div id="active-players-list"></div>
+
+                <div class="table-wrapper" style="padding: 20px; margin-bottom: 20px;">
+                    <div class="flex-row" style="justify-content: space-between;">
+                        <div style="flex:1;">
+                            <label style="color:var(--text-muted); font-size:12px; font-weight:bold; margin-bottom:5px; display:block;">MAX CARDS LIMIT</label>
+                            <div class="flex-row">
+                                <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="1000">
+                                <button class="btn btn-primary" onclick="updateMaxCards()"><i class="fas fa-save"></i> Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Active Players in Current Game</h3></div>
+                    <div style="padding: 20px;" id="active-players-list"></div>
+                </div>
+            </div>
+
+            <!-- GIVEAWAY / BONUS -->
+            <div id="page-giveaway" class="page">
+                <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Distribute Bonus</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="color:var(--text-muted); font-size:13px;">Amount per User (ETB)</label>
+                        <input type="number" id="giveaway-amount" class="form-control mt-1" placeholder="e.g. 20">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="color:var(--text-muted); font-size:13px;">Target Audience</label>
+                        <select id="giveaway-target" class="form-control mt-1" onchange="toggleGiveawayFields()">
+                            <option value="all">All Players</option>
+                            <option value="specific">Specific User ID</option>
+                        </select>
+                    </div>
+                    <div id="giveaway-user-field" style="margin-bottom: 15px; display: none;">
+                        <label style="color:var(--text-muted); font-size:13px;">User ID</label>
+                        <input type="text" id="giveaway-user-id" class="form-control mt-1" placeholder="Enter Telegram ID">
+                    </div>
+                    <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="executeGiveaway()"><i class="fas fa-paper-plane"></i> Send Bonus Now</button>
+                </div>
+            </div>
+
+            <!-- BROADCAST -->
+            <div id="page-broadcast" class="page">
+                <div class="table-wrapper" style="padding: 25px; max-width: 700px;">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="color:var(--text-muted); font-size:13px;">Message Content</label>
+                        <textarea id="broadcast-msg" class="form-control mt-1" rows="5" placeholder="Type your message here (HTML supported)..."></textarea>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; padding: 15px;" onclick="sendBroadcast()"><i class="fas fa-paper-plane"></i> Send to All Users</button>
                 </div>
             </div>
 
             <!-- GAME HISTORY -->
             <div id="page-history" class="page">
-                <h2 style="margin-bottom: 20px;">Game History</h2>
-                <div class="table-responsive">
-                    <table><thead><tr><th>Game ID / Date</th><th>Winners</th><th>Total Prize</th><th>Players</th></tr></thead><tbody id="history-table-body"></tbody></table>
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Game History</h3><button class="btn btn-primary btn-sm" onclick="loadGameHistory()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Date</th><th>Winners</th><th>Total Prize</th><th>Players</th></tr></thead><tbody id="history-table-body"></tbody></table>
+                    </div>
                 </div>
             </div>
 
             <!-- SETTINGS -->
             <div id="page-settings" class="page">
-                <h2 style="margin-bottom: 20px;">Payment Settings</h2>
-                <div style="background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155;">
+                <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
+                    <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-cog"></i> Payment Settings</h3>
                     <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" id="enable-cbe" style="width: 20px; height: 20px;">
-                        <label for="enable-cbe" style="font-size: 14px; color: #fff;">Enable CBE Option</label>
+                        <input type="checkbox" id="enable-cbe" style="width: 18px; height: 18px;">
+                        <label for="enable-cbe" style="font-size: 14px;">Enable CBE Option in Bot</label>
                     </div>
-                    <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Telebirr Number</label><input type="text" id="set-telebirr" class="form-control"></div>
-                    <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">Telebirr Name</label><input type="text" id="set-telebirr-name" class="form-control"></div>
+                    <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">Telebirr Number</label><input type="text" id="set-telebirr" class="form-control mt-1"></div>
+                    <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">Telebirr Name</label><input type="text" id="set-telebirr-name" class="form-control mt-1"></div>
                     <div id="cbe-settings-section" style="display: none;">
-                        <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">CBE Number</label><input type="text" id="set-cbe" class="form-control"></div>
-                        <div style="margin-bottom: 15px;"><label style="display: block; margin-bottom: 5px; font-size: 13px; color: #94a3b8;">CBE Name</label><input type="text" id="set-cbe-name" class="form-control"></div>
+                        <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Number</label><input type="text" id="set-cbe" class="form-control mt-1"></div>
+                        <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Name</label><input type="text" id="set-cbe-name" class="form-control mt-1"></div>
                     </div>
                     <button class="btn btn-success" onclick="saveSettings()" style="width: 100%;"><i class="fas fa-save"></i> Save Changes</button>
                 </div>
@@ -204,11 +307,19 @@
 
 <script>
 let currentPage = 'dashboard';
-let playersData = [];
 let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
 
-function showToast(msg, isError = false) { const toast = document.getElementById('admin-toast'); toast.innerText = msg; toast.classList.toggle('error', isError); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
+// Clock
+setInterval(() => { document.getElementById('current-time').innerText = new Date().toLocaleTimeString(); }, 1000);
+
+function showToast(msg, isError = false) { 
+    const toast = document.getElementById('admin-toast'); 
+    toast.innerText = msg; 
+    toast.classList.toggle('error', isError); 
+    toast.classList.add('show'); 
+    setTimeout(() => toast.classList.remove('show'), 3000); 
+}
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
 
 async function apiFetch(url, method = 'GET', body = null) {
@@ -221,25 +332,26 @@ async function apiFetch(url, method = 'GET', body = null) {
     return await res.json();
 }
 
+// Authentication
 async function attemptLogin() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value.trim();
-    const btn = document.getElementById('login-btn'); const errEl = document.getElementById('login-error');
-    if (!username || !password) { errEl.innerText = "እባክዎ ሁለቱንም መስኮች ይሙሉ!"; errEl.style.display = 'block'; return; }
-    btn.disabled = true; btn.innerText = 'Loading...';
-    const basicAuth = 'Basic ' + btoa(username + ':' + password);
+    const user = document.getElementById('login-username').value.trim();
+    const pass = document.getElementById('login-password').value.trim();
+    const btn = document.getElementById('login-btn'); const err = document.getElementById('login-error');
+    if (!user || !pass) { err.innerText = "Fill all fields"; err.style.display = 'block'; return; }
+    
+    btn.disabled = true; btn.innerText = 'Authenticating...';
+    const basicAuth = 'Basic ' + btoa(user + ':' + pass);
+    
     try {
-        const res = await fetch('/api/admin/dashboard', { method: 'GET', headers: { 'Authorization': basicAuth } });
-        const data = await res.json();
-        if (res.ok && data.success) {
+        const res = await fetch('/api/admin/dashboard', { headers: { 'Authorization': basicAuth } });
+        if (res.ok) {
             AUTH_TOKEN = basicAuth; sessionStorage.setItem('admin_auth', basicAuth);
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-content').style.display = 'flex';
-            loadStats();
-            startGameStatusPolling();
-        } else { errEl.innerText = "የተሳሳተ የይለፍ ቃል!"; errEl.style.display = 'block'; }
-    } catch (e) { errEl.innerText = "የሰርቨር ስህተት!"; errEl.style.display = 'block'; }
-    finally { btn.disabled = false; btn.innerText = 'Login'; }
+            loadDashboardData();
+        } else { err.style.display = 'block'; }
+    } catch (e) { err.innerText = "Server error"; err.style.display = 'block'; }
+    finally { btn.disabled = false; btn.innerText = 'Login to Dashboard'; }
 }
 
 function logout() {
@@ -256,46 +368,44 @@ if (AUTH_TOKEN) {
             if (res.ok) { 
                 document.getElementById('login-screen').style.display = 'none'; 
                 document.getElementById('main-content').style.display = 'flex'; 
-                loadStats(); 
-                startGameStatusPolling();
-            }
-            else { sessionStorage.removeItem('admin_auth'); AUTH_TOKEN = ""; }
+                loadDashboardData(); 
+            } else { sessionStorage.removeItem('admin_auth'); AUTH_TOKEN = ""; }
         } catch (e) {}
     })();
 }
 
+// Navigation
 function switchPage(pageId, element) {
     currentPage = pageId;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-    const target = document.getElementById(`page-${pageId}`); if (target) target.classList.add('active');
+    document.getElementById(`page-${pageId}`).classList.add('active');
     if (element) element.classList.add('active');
-    refreshCurrentPage();
     
-    if (pageId !== 'game' && gameStatusInterval) {
-        clearInterval(gameStatusInterval);
-        gameStatusInterval = null;
-    } else if (pageId === 'game') {
-        startGameStatusPolling();
-    }
+    if (pageId === 'dashboard') loadDashboardData();
+    else if (pageId === 'players') loadPlayers();
+    else if (pageId === 'deposits') loadTransactions('deposit');
+    else if (pageId === 'withdrawals') loadTransactions('withdrawal');
+    else if (pageId === 'referrals') loadReferrals();
+    else if (pageId === 'game') startGameStatusPolling();
+    else if (pageId === 'history') loadGameHistory();
+    else if (pageId === 'settings') loadSettings();
+
+    if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
 }
 
-function startGameStatusPolling() {
-    if (gameStatusInterval) return;
-    loadGameStatus();
-    gameStatusInterval = setInterval(() => {
-        if (currentPage === 'game') loadGameStatus();
-    }, 3000);
-}
-
-function refreshCurrentPage() {
-    if (currentPage === 'dashboard') loadStats();
-    else if (currentPage === 'players') loadPlayers();
-    else if (currentPage === 'deposits') loadTransactions('deposit');
-    else if (currentPage === 'withdrawals') loadTransactions('withdrawal');
-    else if (currentPage === 'game') loadGameStatus();
-    else if (currentPage === 'history') loadGameHistory();
-    else if (currentPage === 'settings') loadSettings();
+function loadDashboardData() {
+    loadStats();
+    // Load recent txns for dashboard
+    apiFetch('/api/admin/transactions').then(d => {
+        if(d.success) {
+            const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = '';
+            d.data.slice(0, 5).forEach(txn => {
+                let color = txn.status === 'approved' ? 'var(--success)' : (txn.status === 'rejected' ? 'var(--danger)' : 'var(--primary)');
+                tbody.innerHTML += `<tr><td>${escapeHtml(txn.user_name)}</td><td style="text-transform:capitalize;">${txn.type}</td><td style="font-weight:bold;">${txn.amount} ETB</td><td><span style="color:${color}">${txn.status}</span></td><td>${new Date(txn.created).toLocaleDateString()}</td></tr>`;
+            });
+        }
+    });
 }
 
 async function loadStats() {
@@ -303,11 +413,228 @@ async function loadStats() {
         const d = await apiFetch('/api/admin/dashboard');
         if (d.success) {
             document.getElementById('stat-players').innerText = d.data.totalPlayers;
-            document.getElementById('stat-deposits').innerText = d.data.totalDeposits.toFixed(2) + ' ETB';
-            document.getElementById('stat-withdrawals').innerText = d.data.totalWithdrawals.toFixed(2) + ' ETB';
+            document.getElementById('stat-deposits').innerText = d.data.totalDeposits.toFixed(2);
+            document.getElementById('stat-withdrawals').innerText = d.data.totalWithdrawals.toFixed(2);
             document.getElementById('stat-pending').innerText = (d.data.pendingDeposits + d.data.pendingWithdrawals);
         }
     } catch (e) {}
+}
+
+// Users
+async function loadPlayers() {
+    const tbody = document.getElementById('players-table-body');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/users');
+        if (d.success) {
+            tbody.innerHTML = '';
+            d.data.forEach(u => {
+                tbody.innerHTML += `<tr>
+                    <td>${escapeHtml(u.name || '-')}</td>
+                    <td><code>${u.id}</code></td>
+                    <td>${escapeHtml(u.phone || '-')}</td>
+                    <td style="color:var(--primary); font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td>
+                    <td style="color:var(--success); font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td>
+                    <td>${new Date(u.registered_at).toLocaleDateString()}</td>
+                    <td><button class="btn btn-primary btn-sm" onclick="editBalance('${u.id}', ${u.play_balance}, ${u.win_balance})"><i class="fas fa-edit"></i></button></td>
+                </tr>`;
+            });
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger)">Error</td></tr>'; }
+}
+
+async function editBalance(id, play, win) {
+    let newPlay = prompt("New Play Balance:", play); if (newPlay === null) return;
+    let newWin = prompt("New Win Balance:", win); if (newWin === null) return;
+    try { 
+        const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
+        if (res.success) { showToast("Balance updated!"); loadPlayers(); } 
+    } catch (e) { showToast('Update failed', true); }
+}
+
+// Transactions
+async function loadTransactions(type) {
+    const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch(`/api/admin/transactions?type=${type}`);
+        if (d.success) {
+            tbody.innerHTML = '';
+            d.data.forEach(txn => {
+                let actions = txn.status === 'pending' 
+                    ? `<button class="btn btn-success btn-sm" onclick="actionTxn('${txn.id}', 'approve')"><i class="fas fa-check"></i></button> 
+                       <button class="btn btn-danger btn-sm" onclick="actionTxn('${txn.id}', 'reject')"><i class="fas fa-times"></i></button>` : '-';
+                let refInfo = type === 'deposit' ? (txn.reference || '-') : txn.phone;
+                tbody.innerHTML += `<tr>
+                    <td>${escapeHtml(txn.user_name)}<br><small style="color:var(--text-muted);">${txn.user_id}</small></td>
+                    <td style="font-weight:bold; color:var(--primary);">${txn.amount} ETB</td>
+                    <td>${escapeHtml(txn.method)} <br> <small>${escapeHtml(refInfo)}</small></td>
+                    <td>${new Date(txn.created).toLocaleString()}</td>
+                    <td><span class="badge ${txn.status}">${txn.status}</span></td>
+                    <td>${actions}</td>
+                </tr>`;
+            });
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger)">Error</td></tr>'; }
+}
+
+async function actionTxn(id, action) {
+    if (!confirm(`Are you sure you want to ${action}?`)) return;
+    try { 
+        const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); 
+        if (d.success) { showToast('Action successful!'); loadTransactions(currentPage === 'deposits' ? 'deposit' : 'withdrawal'); } 
+    } catch (e) { showToast('Action failed', true); }
+}
+
+// Referrals
+async function loadReferrals() {
+    const tbody = document.getElementById('referral-table-body');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/referrals');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No referrals yet.</td></tr>';
+            d.data.forEach(r => {
+                tbody.innerHTML += `<tr>
+                    <td>${escapeHtml(r.referrer_name)} <br><small>${r.referrer_id}</small></td>
+                    <td>${escapeHtml(r.new_user_name)} <br><small>${r.new_user_id}</small></td>
+                    <td>${new Date(r.created_at).toLocaleDateString()}</td>
+                    <td style="color:var(--success); font-weight:bold;">30 + 20 ETB</td>
+                </tr>`;
+            });
+            document.getElementById('stat-total-refs').innerText = d.data.length;
+            document.getElementById('stat-ref-bonus').innerText = d.data.length * 50;
+        }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; }
+}
+
+// Game Control
+function startGameStatusPolling() {
+    if (gameStatusInterval) return;
+    loadGameStatus();
+    gameStatusInterval = setInterval(() => { if (currentPage === 'game') loadGameStatus(); }, 3000);
+}
+
+async function loadGameStatus() {
+    try {
+        const d = await apiFetch('/api/admin/game-status');
+        if (d.success && d.data) {
+            const state = d.data;
+            document.getElementById('game-phase').innerText = state.phase.toUpperCase();
+            if (state.currentCall) {
+                let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
+                document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
+            } else document.getElementById('game-current-call').innerText = '--';
+            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards).length;
+
+            if (state.settings && state.settings.maxCards) document.getElementById('max-cards-input').value = state.settings.maxCards;
+
+            const playersList = document.getElementById('active-players-list');
+            if (state.takenCardsDetails && Object.keys(state.takenCardsDetails).length > 0) {
+                const uniquePlayers = new Set(); let html = '';
+                Object.values(state.takenCardsDetails).forEach(card => {
+                    if (!uniquePlayers.has(card.userId)) { 
+                        uniquePlayers.add(card.userId); 
+                        html += `<span style="display:inline-block; background:rgba(59,130,246,0.2); border:1px solid var(--blue); padding:6px 12px; border-radius:20px; margin:5px; font-size:13px;"><i class="fas fa-user"></i> ${escapeHtml(card.userName)}</span>`; 
+                    }
+                });
+                playersList.innerHTML = html;
+            } else playersList.innerHTML = '<span style="color:var(--text-muted);">No active players.</span>';
+
+            const btn = document.getElementById('auto-btn');
+            btn.innerHTML = state.isAutoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
+            btn.className = state.isAutoOn ? 'btn btn-success' : 'btn btn-warning';
+        }
+    } catch (e) {}
+}
+
+async function gameAction(action) { 
+    try { 
+        const d = await apiFetch(`/api/admin/${action}`, 'POST'); 
+        if (d.success) { showToast(`Action successful!`); loadGameStatus(); } 
+        else { showToast(d.message || d.error || 'Error', true); }
+    } catch (e) { showToast('Action failed', true); } 
+}
+
+async function toggleAuto() {
+    const btn = document.getElementById('auto-btn');
+    const speed = parseInt(document.getElementById('speed-select').value);
+    const isCurrentlyOn = btn.classList.contains('btn-success');
+    try {
+        await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: !isCurrentlyOn, speed: speed });
+        loadGameStatus();
+    } catch (e) { showToast('Auto toggle failed', true); }
+}
+
+function changeSpeed() { 
+    const speed = parseInt(document.getElementById('speed-select').value); 
+    apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); 
+}
+
+async function updateMaxCards() {
+    const maxCards = parseInt(document.getElementById('max-cards-input').value);
+    if (isNaN(maxCards) || maxCards < 10 || maxCards > 1000) return showToast('Must be between 10 and 1000', true);
+    try { 
+        const d = await apiFetch('/api/admin/settings', 'POST', { maxCards }); 
+        if (d.success) showToast(`Max cards updated to ${maxCards}`); 
+    } catch (e) { showToast('Update failed', true); }
+}
+
+// Broadcasting & Giveaway
+function toggleGiveawayFields() {
+    document.getElementById('giveaway-user-field').style.display = document.getElementById('giveaway-target').value === 'specific' ? 'block' : 'none';
+}
+
+async function executeGiveaway() {
+    const amount = parseFloat(document.getElementById('giveaway-amount').value);
+    const target = document.getElementById('giveaway-target').value;
+    const userId = document.getElementById('giveaway-user-id').value.trim();
+    
+    if (!amount || amount <= 0) return showToast('Enter valid amount', true);
+    if (target === 'specific' && !userId) return showToast('Enter User ID', true);
+    if (!confirm(`Are you sure you want to send ${amount} ETB?`)) return;
+
+    try {
+        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, target, userId });
+        if (res.success) { showToast(`Successfully sent ${amount} ETB!`); document.getElementById('giveaway-amount').value = ''; }
+        else showToast(res.error || 'Failed', true);
+    } catch(e) { showToast('Server Error', true); }
+}
+
+async function sendBroadcast() {
+    const msg = document.getElementById('broadcast-msg').value.trim();
+    if (!msg) return showToast('Enter a message', true);
+    if (!confirm('Send this message to ALL players?')) return;
+
+    try {
+        const res = await apiFetch('/api/admin/broadcast', 'POST', { message: msg });
+        if (res.success) { showToast(`Broadcast sent to ${res.count} users!`); document.getElementById('broadcast-msg').value = ''; }
+        else showToast(res.error || 'Failed', true);
+    } catch(e) { showToast('Server Error', true); }
+}
+
+// History & Settings
+async function loadGameHistory() {
+    const tbody = document.getElementById('history-table-body');
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/game-history');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No games played.</td></tr>';
+            d.data.forEach(g => {
+                let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 ${escapeHtml(w.name)} (Board ${w.cardNum})`).join('<br>') : 'No Winner';
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(g.createdAt).toLocaleString()}</td>
+                    <td>${winnersHtml}</td>
+                    <td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td>
+                    <td>${g.totalPlayers}</td>
+                </tr>`;
+            });
+        }
+    } catch(e) {}
 }
 
 async function loadSettings() {
@@ -333,169 +660,14 @@ async function saveSettings() {
     const cbe = document.getElementById('set-cbe').value;
     const cbe_name = document.getElementById('set-cbe-name').value;
     const enable_cbe = document.getElementById('enable-cbe').checked;
-    if (!telebirr || !telebirr_name) return showToast('Telebirr መረጃ ያስፈልጋል!', true);
-    if (enable_cbe && (!cbe || !cbe_name)) return showToast('CBE መረጃ ያስፈልጋል!', true);
+    if (!telebirr || !telebirr_name) return showToast('Telebirr info required!', true);
     try { 
         const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: telebirr, telebirr_name, cbe_number: cbe, cbe_name, enable_cbe }); 
-        if (d.success) showToast('✅ ሴቲንግስ ተቀይሯል!'); 
+        if (d.success) showToast('Settings saved!'); 
     } catch (e) { showToast('Save failed', true); }
 }
 
-async function updateMaxCards() {
-    const maxCards = parseInt(document.getElementById('max-cards-input').value);
-    if (isNaN(maxCards) || maxCards < 10 || maxCards > 1000) return showToast('ቁጥሩ ከ10 እስከ 1000 መሆን አለበት!', true);
-    try { 
-        const d = await apiFetch('/api/admin/settings', 'POST', { maxCards }); 
-        if (d.success) showToast(`✅ የካርቴላ ብዛት ወደ ${maxCards} ተቀይሯል!`); 
-    } catch (e) { showToast('Update failed', true); }
-}
-
-async function loadPlayers() {
-    const tbody = document.getElementById('players-table-body');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">በመጫን ላይ...</td></tr>';
-    try {
-        const d = await apiFetch('/api/admin/users');
-        if (d.success) {
-            playersData = d.data; tbody.innerHTML = '';
-            if (playersData.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">ምንም ተጫዋች አልተገኘም።</td></tr>'; return; }
-            const frag = document.createDocumentFragment();
-            playersData.forEach(u => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${escapeHtml(u.name || '-')}</td><td><code>${u.id}</code></td><td>${escapeHtml(u.phone || '-')}</td><td style="color:#facc15; font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td><td style="color:#22c55e; font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td><td><button class="btn btn-primary" style="padding:5px 10px; font-size:11px;" onclick="editBalance('${u.id}', ${u.play_balance}, ${u.win_balance})"><i class="fas fa-edit"></i> Edit</button></td>`;
-                frag.appendChild(tr);
-            });
-            tbody.appendChild(frag);
-        }
-    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
-}
-
-async function editBalance(id, currentPlay, currentWin) {
-    let newPlay = prompt("አዲስ Play Balance ያስገቡ:", currentPlay); if (newPlay === null) return;
-    let newWin = prompt("አዲስ Win Balance ያስገቡ:", currentWin); if (newWin === null) return;
-    if (isNaN(newPlay) || isNaN(newWin)) return showToast("ትክክለኛ ቁጥር ያስገቡ!", true);
-    try { 
-        const res = await apiFetch(`/api/admin/users/${id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
-        if (res.success) { showToast("ባላንስ ተስተካክሏል!"); loadPlayers(); } 
-    } catch (e) { showToast('Update failed', true); }
-}
-
-async function loadTransactions(type) {
-    const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
-    const tbody = document.getElementById(tbodyId);
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">በመጫን ላይ...</td></tr>';
-    try {
-        let url = `/api/admin/transactions?type=${type}`;
-        const d = await apiFetch(url);
-        if (d.success) {
-            tbody.innerHTML = '';
-            if (d.data.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">ምንም ጥያቄ አልተገኘም።</td></tr>`; return; }
-            const frag = document.createDocumentFragment();
-            d.data.forEach(txn => {
-                let dateStr = new Date(txn.created).toLocaleString();
-                let refOrPhone = type === 'deposit' ? (txn.reference || txn.method) : txn.phone;
-                let actions = txn.status === 'pending' ? `<button class="btn btn-success" onclick="actionTxn('${txn.id}', 'approve')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-check"></i></button> <button class="btn btn-danger" onclick="actionTxn('${txn.id}', 'reject')" style="padding:6px 10px; font-size:11px;"><i class="fas fa-times"></i></button>` : '-';
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${escapeHtml(txn.user_name)}<br><small style="color:#94a3b8;">${txn.user_id}</small></td><td style="font-weight:bold; color:var(--primary);">${Number(txn.amount).toFixed(2)} ETB</td><td>${escapeHtml(txn.method || '')} <br> <small>${escapeHtml(refOrPhone || '')}</small></td><td>${dateStr}</td><td><span class="badge ${txn.status}">${txn.status}</span></td><td>${actions}</td>`;
-                frag.appendChild(tr);
-            });
-            tbody.appendChild(frag);
-        }
-    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
-}
-
-async function actionTxn(id, action) {
-    if (!confirm(`እርግጠኛ ነዎት?`)) return;
-    try { 
-        const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); 
-        if (d.success) { showToast('ተሳክቷል!'); refreshCurrentPage(); loadStats(); } 
-        else { showToast(d.error || "ስህተት", true); } 
-    } catch (e) { showToast('Action failed', true); }
-}
-
-async function loadGameHistory() {
-    const tbody = document.getElementById('history-table-body');
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">በመጫን ላይ...</td></tr>';
-    try {
-        const d = await apiFetch('/api/admin/game-history');
-        if (d.success) {
-            tbody.innerHTML = '';
-            if (d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">ምንም ጨዋታ የለም።</td></tr>'; return; }
-            const frag = document.createDocumentFragment();
-            d.data.forEach(g => {
-                let dateStr = new Date(g.createdAt).toLocaleString();
-                let winnersHtml = g.winners && g.winners.length > 0 ? g.winners.map(w => `🏆 <b>${escapeHtml(w.name)}</b> (Board ${w.cardNum}) - ${w.prize} ETB`).join('<br>') : 'No Winner';
-                let tr = document.createElement('tr');
-                tr.innerHTML = `<td><small style="color:#94a3b8;">${g.gameId || 'N/A'}</small><br>${dateStr}</td><td>${winnersHtml}</td><td style="font-weight:bold; color:#facc15;">${g.totalPrize || 0} ETB</td><td>${g.totalPlayers || 0}</td>`;
-                frag.appendChild(tr);
-            });
-            tbody.appendChild(frag);
-        }
-    } catch (e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
-}
-
-async function gameAction(action) { 
-    try { 
-        const d = await apiFetch(`/api/admin/${action}`, 'POST'); 
-        if (d.success) { showToast(`✅ ${action} ተሳክቷል!`); loadGameStatus(); } 
-        else { showToast(d.message || d.error || 'ስህተት', true); }
-    } catch (e) { showToast('Game action failed', true); } 
-}
-
-let autoOn = false;
-async function toggleAuto() {
-    const btn = document.getElementById('auto-btn');
-    const speed = parseInt(document.getElementById('speed-select').value);
-    autoOn = !autoOn;
-    try {
-        await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: autoOn, speed: speed });
-        btn.innerHTML = autoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
-        btn.className = autoOn ? 'btn btn-success' : 'btn btn-warning';
-        showToast(autoOn ? '✅ Auto ON' : '⏸ Auto OFF');
-    } catch (e) { autoOn = !autoOn; showToast('Auto failed', true); }
-}
-
-function changeSpeed() { 
-    if (autoOn) { 
-        const speed = parseInt(document.getElementById('speed-select').value); 
-        apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); 
-        showToast(`⚡ Speed → ${speed}s`);
-    } 
-}
-
-async function loadGameStatus() {
-    try {
-        const d = await apiFetch('/api/admin/game-status');
-        if (d.success && d.data) {
-            const state = d.data;
-            document.getElementById('game-phase').innerText = state.phase.toUpperCase();
-            if (state.currentCall) {
-                let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
-                document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
-            } else document.getElementById('game-current-call').innerText = '--';
-            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards).length;
-
-            if (state.settings && state.settings.maxCards) document.getElementById('max-cards-input').value = state.settings.maxCards;
-
-            const playersList = document.getElementById('active-players-list');
-            if (state.takenCardsDetails && Object.keys(state.takenCardsDetails).length > 0) {
-                const uniquePlayers = new Set(); let html = '';
-                Object.values(state.takenCardsDetails).forEach(card => {
-                    if (!uniquePlayers.has(card.userId)) { uniquePlayers.add(card.userId); html += `<span class="player-tag"><i class="fas fa-user"></i> ${escapeHtml(card.userName)}</span>`; }
-                });
-                playersList.innerHTML = html;
-            } else playersList.innerHTML = '<span style="color:#64748b; font-size:12px;">ምንም ተጫዋች የለም</span>';
-
-            autoOn = state.isAutoOn;
-            const btn = document.getElementById('auto-btn');
-            btn.innerHTML = autoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
-            btn.className = autoOn ? 'btn btn-success' : 'btn btn-warning';
-        }
-    } catch (e) {}
-}
-
-window.addEventListener('beforeunload', () => {
-    if (gameStatusInterval) clearInterval(gameStatusInterval);
-});
+window.addEventListener('beforeunload', () => { if (gameStatusInterval) clearInterval(gameStatusInterval); });
 </script>
 </body>
 </html>

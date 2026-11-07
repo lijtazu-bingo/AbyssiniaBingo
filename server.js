@@ -136,7 +136,6 @@ function getCardCols(cardNum) {
     return cols;
 }
 
-// ✅ 100% Accurate Winning Line Check (No latestCall requirement)
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum);
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -265,6 +264,69 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ ADMIN: Giveaway / Bonus
+app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
+    try {
+        const { amount, target, userId } = req.body;
+        const amt = Number(amount);
+        if (!amt || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
+
+        if (target === 'all') {
+            await User.updateMany({}, { $inc: { play_balance: amt } });
+            io.emit('wallet_updated', {}); 
+            res.json({ success: true, message: 'Sent to all users' });
+        } else {
+            const user = await User.findOneAndUpdate({ id: String(userId) }, { $inc: { play_balance: amt } }, { new: true });
+            if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+            io.to(`user_${userId}`).emit('wallet_updated', {});
+            res.json({ success: true });
+        }
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ ADMIN: Broadcast Message
+app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ success: false, error: 'Message required' });
+
+        const users = await User.find({}, { id: 1 }).lean();
+        
+        // Send asynchronously to avoid blocking the response
+        users.forEach(async (u) => {
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' })
+                });
+            } catch (err) { /* Ignore individual user failures */ }
+        });
+
+        res.json({ success: true, count: users.length });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ ADMIN: Referrals List
+app.get('/api/admin/referrals', adminAuth, async (req, res) => {
+    try {
+        const referredUsers = await User.find({ referred_by: { $ne: null } }).lean();
+        const referrerIds = [...new Set(referredUsers.map(u => u.referred_by))];
+        const referrers = await User.find({ id: { $in: referrerIds } }, { id: 1, name: 1 }).lean();
+        const referrerMap = new Map(referrers.map(r => [r.id, r.name]));
+
+        const data = referredUsers.map(u => ({
+            referrer_id: u.referred_by,
+            referrer_name: referrerMap.get(u.referred_by) || 'Unknown',
+            new_user_id: u.id,
+            new_user_name: u.name || 'Player',
+            created_at: u.registered_at
+        }));
+
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.get('/api/wallet/me', async (req, res) => {
     try {
         const user = authFromHeaders(req);
@@ -275,7 +337,7 @@ app.get('/api/wallet/me', async (req, res) => {
         if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "" } });
         dbUser.play_balance = Number(dbUser.play_balance) || 0; 
         dbUser.win_balance = Number(dbUser.win_balance) || 0;
-        dbUser.referral_balance = Number(dbUser.referral_balance) || 0; // Support for referral balance
+        dbUser.referral_balance = Number(dbUser.referral_balance) || 0;
         res.json({ success: true, data: dbUser });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -381,7 +443,6 @@ app.post('/api/user/phone', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Referral System API
 app.post('/api/user/referral', async (req, res) => {
     try {
         const { new_user_id, referrer_id } = req.body;
@@ -395,10 +456,8 @@ app.post('/api/user/referral', async (req, res) => {
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
 
-        // 1. Give Referrer 30 ETB
         await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
         
-        // 2. Give New User 20 ETB and set referred_by
         await User.findOneAndUpdate(
             { id: String(new_user_id) },
             { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } },
