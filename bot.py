@@ -5,7 +5,6 @@ import threading
 import requests
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
-# ✅ CallbackQueryHandler እና ConversationHandler በ import ላይ ተጨምረዋል
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, ConversationHandler
 from dotenv import load_dotenv
 
@@ -28,7 +27,6 @@ def home():
 
 def run_web():
     port = int(os.environ.get("PORT", 8080))
-    # ✅ use_reloader=False ተጨምሯል እንዳይደጋገም
     app_web.run(host='0.0.0.0', port=port, use_reloader=False)
 
 # ─── የቦት ማስተካከያ ───
@@ -40,7 +38,7 @@ ADMIN_ID = os.getenv("ADMIN_ID")
 DB_FILE = "abisinya_bot.db"
 
 # ─── የውይይት ሁኔታዎች (Conversation States) ───
-DEPOSIT_AMOUNT, DEPOSIT_TXN_ID, DEPOSIT_METHOD = range(3)
+DEPOSIT_METHOD, DEPOSIT_TXN_ID, DEPOSIT_AMOUNT = range(3)
 WITHDRAW_AMOUNT, WITHDRAW_PHONE = range(3, 5)
 
 def init_db():
@@ -233,9 +231,9 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ ሂደቱ ተሰርዟል።", reply_markup=get_main_menu())
     return ConversationHandler.END
 
-# ─── 3. OTHER MENU BUTTONS ───
+# ─── 3. OTHER MENU BUTTONS (ይህ ክፍል ሙሉ በሙሉ ተስተካክሏል) ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+    text = update.message.text.strip()
     user = update.effective_user
 
     if "Balance" in text:
@@ -260,7 +258,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(f"👥 የእርስዎ የግብዣ ሊንክ፦\nhttps://t.me/Ethiobingo_bot?start={user.id}")
         
     elif "History" in text:
-        await update.message.reply_text("📜 የግብይት ታሪክዎን ለማየት በቅርቡ ይገኛል።")
+        await update.message.reply_text("📜 የግብይት ታሪክዎን ለማየት ወደ Bingo ገጽ ይግቡ ወይም /start ይጫኑ።")
         
     elif "Support" in text:
         await update.message.reply_text("💬 ለድጋፍ እባክዎ @AbyssiniaSupport ያግኙ።")
@@ -283,6 +281,10 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         
     elif "Rank" in text:
         await update.message.reply_text("🏆 ከፍተኛ አሸናፊዎችን ለማየት ወደ Bingo ገጽ ይግቡ።")
+        
+    elif "Abisinya Bingo" in text:
+        # የራሱን መልእክት ሲያገኝ
+        pass
 
 async def play_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     web_app_btn = InlineKeyboardButton(text="🎮 Play Bingo", web_app=WebAppInfo(url=WEBAPP_URL))
@@ -302,6 +304,7 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
     # ─── Conversation Handlers (Deposit & Withdraw) ───
+    # እዚህ ጋር የ አዝራሮቹን ስም በትክክል ማስገባት አለብን
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💰 Deposit$"), deposit_start)],
         states={
@@ -321,12 +324,21 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
+    # ✅ ቅደም ተከተሉ በጣም አስፈላጊ ነው!
+    # 1. Command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("play", play_game))
+    
+    # 2. Conversation handlers (ለ Deposit እና Withdraw)
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
+    
+    # 3. Contact handler
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
+    
+    # 4. General text handler (ለሌሎቹ አዝራሮች)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
+    
     application.add_error_handler(error_handler)
 
     print("🤖 Bot is running with full menu logic...")
