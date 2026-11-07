@@ -100,23 +100,34 @@ function adminAuth(req, res, next) {
 
 function authFromHeaders(req) { return verifyTelegramInitData(req.headers['x-telegram-init-data'], BOT_TOKEN); }
 
-/* ─── GAME LOGIC ─── */
+/* ─── GAME LOGIC (MUST MATCH CLIENT EXACTLY) ─── */
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
 const cardCache = new Map();
+
+// ✅ ይህ በ index.html ላይ ካለው generateCardLayout ጋር 100% አንድ አይነት መሆን አለበት
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
     const cols = [[], [], [], [], []];
+    let seedBase = cardNum * 100;
+    
     for (let c = 0; c < 5; c++) {
         const min = c * 15 + 1, max = c * 15 + 15; const avail = [];
         for (let n = min; n <= max; n++) avail.push(n);
-        let seed = cardNum * 100 + c; let rand = mulberry32(seed);
-        for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; }
+        
+        let seed = seedBase + c; 
+        let rand = mulberry32(seed);
+        
+        for (let i = avail.length - 1; i > 0; i--) { 
+            const j = Math.floor(rand() * (i + 1)); 
+            [avail[i], avail[j]] = [avail[j], avail[i]]; 
+        }
         cols[c] = avail.slice(0, 5).sort((a, b) => a - b);
     }
-    cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
+    cols[2][2] = 'FREE'; 
+    cardCache.set(cardNum, cols); 
+    return cols;
 }
 
-// ✅ ትክክለኛው የ Bingo ማረጋገጫ (ሁሉንም የተጠሩ ቁጥሮች አድርጎ ያሰላል)
 function checkWinningLine(cardNum, calledNumbers) {
     const n = Number(cardNum); 
     if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
@@ -134,7 +145,7 @@ function checkWinningLine(cardNum, calledNumbers) {
         m.push(row); 
     }
 
-    // Horizontal
+    // 1. Horizontal
     for (let r = 0; r < 5; r++) { 
         if (m[r][0] && m[r][1] && m[r][2] && m[r][3] && m[r][4]) { 
             let hasL = false; 
@@ -143,7 +154,7 @@ function checkWinningLine(cardNum, calledNumbers) {
         } 
     }
 
-    // Vertical
+    // 2. Vertical
     for (let c = 0; c < 5; c++) { 
         if (m[0][c] && m[1][c] && m[2][c] && m[3][c] && m[4][c]) { 
             let hasL = false; 
@@ -152,7 +163,7 @@ function checkWinningLine(cardNum, calledNumbers) {
         } 
     }
 
-    // Diagonals
+    // 3. Diagonals
     if (m[0][0] && m[1][1] && m[2][2] && m[3][3] && m[4][4]) { 
         let hasL = false; 
         for (let i = 0; i < 5; i++) if (cols[i][i] === latestCall) hasL = true; 
@@ -164,7 +175,7 @@ function checkWinningLine(cardNum, calledNumbers) {
         if (hasL) return { type: 'diag2', desc: 'Diag 2' }; 
     }
 
-    // 4 Corners
+    // 4. 4 Corners
     if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) { 
         let hasL = false; 
         if (cols[0][0] === latestCall) hasL = true; 
@@ -315,7 +326,6 @@ app.post('/api/admin/stop-game', adminAuth, (req, res) => {
     isEndingRound = false; roundWinners = []; io.emit('reset_game'); res.json({ success: true });
 });
 
-// ✅ የቁጥር መጥሪያ API (ቁጥር ሲጠራ ወዲያውኑ ያረጋግጣል እና ያቆማል)
 app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) {
         return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
@@ -329,7 +339,6 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     
     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
     
-    // ✅ ቁጥሩ እንደተጠራ ወዲያውኑ አሸናፊ መኖሩን አረጋግጥ
     const winnerFound = await checkForAutoWinner();
     if (winnerFound) {
         await endRound(roundWinners);
@@ -344,7 +353,7 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     gameState.isAutoOn = !!isAutoOn; if (Number(speed) > 0) gameState.settings.callInterval = Number(speed);
     if (isAutoOn && gameState.phase === 'calling') {
         callInterval = setInterval(async () => {
-            if (gameState.phase !== 'calling' || isEndingRound) return; // ✅ isEndingRound ሲሆን አይጥራም
+            if (gameState.phase !== 'calling' || isEndingRound) return;
             
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
             
@@ -355,7 +364,6 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
             gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
             
-            // ✅ ቁጥሩ እንደተጠራ ወዲያውኑ አሸናፊ መኖሩን አረጋግጥ
             const winnerFound = await checkForAutoWinner();
             if (winnerFound) {
                 clearInterval(callInterval);
@@ -435,7 +443,6 @@ function checkSocketRate(socketId, action, cooldownMs = 500) {
 }
 const socketCooldowns = new Map();
 
-// ✅ አሸናፊ መኖሩን የሚያረጋግጥ (Winner ካለ true ይመልሳል)
 async function checkForAutoWinner() {
     if (isEndingRound) return false;
     const entries = Object.entries(gameState.takenCards); 
@@ -447,7 +454,7 @@ async function checkForAutoWinner() {
         if (win) { potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win }); }
     }
     
-        if (potentialWinners.length === 0) return false;
+    if (potentialWinners.length === 0) return false;
     
     const userIds = [...new Set(potentialWinners.map(p => p.userId))];
     const users = await User.find({ id: { $in: userIds } }, { id: 1, name: 1 }).lean();
@@ -461,7 +468,7 @@ async function checkForAutoWinner() {
         isEndingRound = true; gameState.phase = 'claiming';
         if (callInterval) { clearInterval(callInterval); callInterval = null; }
         if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
-        return true; // ✅ አሸናፊ አለ
+        return true;
     }
     return false;
 }

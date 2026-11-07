@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Abyssinia Bingo</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root {
+    --bg-color: #0f172a;
+    --glass-bg: rgba(30, 41, 59, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-color: #f8fafc;
+    --text-muted: #94a3b8;
+    --btn-bg: rgba(30, 41, 59, 0.9);
+    --btn-border: #334155;
+    --card-bg: rgba(15, 23, 42, 0.9);
+    --gold: #facc15;
+    --blue: #3b82f6;
+}
+body.light-theme {
+    --bg-color: #e2e8f0;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --text-color: #0f172a;
+    --text-muted: #475569;
+    --btn-bg: rgba(255, 255, 255, 0.9);
+    --btn-border: #cbd5e1;
+    --card-bg: rgba(255, 255, 255, 0.95);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+body { 
+    background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%);
+}
+.hidden { display: none !important; }
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+
+#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
+#loading-screen.hide-loader { opacity: 0; pointer-events: none; }
+.loader-spinner { width: 60px; height: 60px; border: 6px solid #1e293b; border-top: 6px solid var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { color: var(--gold); font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
+
+.main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px; }
+#page-ticket { display: flex; flex-direction: column; height: 100%; }
+
+.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.dash-card { padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.dash-label { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+.dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
+.dash-value.wallet { color: var(--gold); }
+.dash-value.derash { color: #10b981; }
+.dash-value.selected { color: var(--blue); }
+.dash-value.timer { color: #f87171; }
+
+.instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
+
+.grid-container {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    flex: 1; overflow-y: auto; padding: 8px; align-content: start;
+}
+.number-btn { 
+    background: var(--btn-bg); border: 1px solid var(--btn-border);
+    color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 700; 
+    border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+}
+.number-btn:active { transform: scale(0.95); }
+.number-btn.taken-by-other { background: rgba(100, 116, 139, 0.3) !important; border-color: #475569; color: #64748b !important; opacity: 0.5; cursor: not-allowed; text-decoration: line-through; }
+.number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
+
+.footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
+
+/* Preview Section */
+.preview-section { height: 110px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 5px; margin-bottom: 5px; }
+.preview-card { display: inline-block; background: #fff; border-radius: 8px; padding: 6px; margin-right: 8px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); vertical-align: top; }
+.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 3px; border-radius: 4px; margin-bottom: 4px; }
+.preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+.preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 10px; font-weight: 800; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
+.preview-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
+
+.page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
+.sec-title { font-size: 14px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
+.profile-card { padding: 15px; margin-bottom: 15px; }
+.profile-row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--glass-border); }
+.profile-row:last-child { border-bottom: none; }
+.profile-val { color: var(--gold); font-weight: bold; }
+
+.theme-options { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.theme-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 1px solid var(--glass-border); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 30%; }
+.theme-btn.dark { background: #0f172a; color: #fff; border-color: #334155; }
+.theme-btn.light { background: #e2e8f0; color: #0f172a; }
+.theme-btn.ocean { background: #0ea5e9; color: #fff; }
+
+.wallet-balances-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+.balance-box { padding: 15px; text-align: center; }
+.balance-box-title { font-size: 11px; font-weight: 800; color: var(--text-muted); margin-bottom: 6px; }
+.balance-box-val { font-size: 24px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
+.wallet-action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+.action-btn-deposit { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; padding: 14px; font-size: 13px; font-weight: 900; border-radius: 10px; cursor: pointer; }
+.action-btn-withdraw { background: linear-gradient(135deg, #ca8a04, #a16207); color: #fff; border: none; padding: 14px; font-size: 13px; font-weight: 900; border-radius: 10px; cursor: pointer; }
+
+.deposit-options-box, .withdraw-options-box { padding: 15px; margin-bottom: 15px; }
+.sub-option-btn { background: var(--btn-bg); color: var(--text-color); border: 1px solid var(--btn-border); padding: 12px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 5px; }
+.deposit-info-display { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 13px; color: var(--gold); font-weight: bold; text-align: center; }
+.form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-color); padding: 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; outline: none; }
+.submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 14px; font-size: 14px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+.copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin-left: 5px; }
+
+/* Live Page */
+#page-live { display: flex; flex-direction: column; height: 100%; }
+.stats-header { display: flex; justify-content: space-around; padding: 10px; margin-bottom: 10px; border: 1px solid var(--blue); }
+.stat-item { text-align: center; }
+.stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
+.stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
+.game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
+
+/* Dark Bingo Board */
+.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 45%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
+.board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
+.board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
+
+.right-panel { width: 55%; display: flex; flex-direction: column; gap: 10px; }
+.current-call-container { text-align: center; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+.current-call-ball {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb);
+    color: white; font-size: 38px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3);
+    animation: bounceBall 1.5s infinite ease-in-out;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+@keyframes bounceBall {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+.recent-calls { display: flex; gap: 8px; justify-content: center; }
+.recent-ball {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.recent-ball:nth-child(1) { background: #10b981; }
+.recent-ball:nth-child(2) { background: #eab308; color: #000; }
+.recent-ball:nth-child(3) { background: #ef4444; }
+
+.live-cards-container { flex: 1; overflow-y: auto; padding: 10px; }
+.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+.card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
+.card-header-letters div { background: var(--gold); color: #000; text-align: center; font-size: 12px; font-weight: 900; border-radius: 4px; padding: 2px 0; }
+.interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 8px 0; font-size: 15px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
+.interactive-cell.free { background: var(--blue); color: #fff; font-size: 12px; }
+.interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
+
+/* Bottom Nav */
+.bottom-nav { height: 65px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 10px; font-weight: 700; gap: 4px; }
+.nav-item.active { color: var(--gold); }
+.nav-icon { font-size: 20px; }
+
+/* Game Over */
+#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+.game-over-title { font-size: 40px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px rgba(250,204,21,0.6); font-family: 'Courier New', Courier, monospace;}
+.winner-text { font-size: 22px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
+.prize-text { font-size: 32px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(16,185,129,0.5); }
+.winning-card-container { padding: 15px; width: 90%; max-width: 350px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); }
+.winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 12px 0; font-size: 16px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
+.winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
+.winning-cell.highlight { background: var(--gold) !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 15px rgba(250, 204, 21, 0.6); }
+
+@keyframes pulseLastNum {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); background: #10b981; color: white; }
+    50% { transform: scale(1.3); box-shadow: 0 0 20px 10px rgba(16, 185, 129, 0); background: #34d399; color: white; }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); background: #10b981; color: white; }
+}
+.winning-cell.last-call-blink { animation: pulseLastNum 1s infinite; border: 2px solid #fff; z-index: 10; position: relative; }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+    <div class="loader-spinner"></div>
+    <div class="loader-text">LOADING...</div>
+</div>
+
+<div class="main-content-area">
+  <!-- TICKET PAGE -->
+  <div id="page-ticket">
+    <div class="top-dashboard">
+      <div class="dash-card glass-panel"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
+      <div class="dash-card glass-panel"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
+      <div class="dash-card glass-panel"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
+      <div class="dash-card glass-panel">
+        <span class="dash-label">Time Left</span>
+        <span class="dash-value timer" id="timer-val">50ሰ</span>
+      </div>
+    </div>
+    <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
+    
+    <div class="grid-container" id="number-grid"></div>
+    
+    <div class="footer-notification" id="footer-notification"></div>
+    
+    <!-- Preview Section -->
+    <div class="preview-section glass-panel" id="preview-container">
+        <!-- ካርቴላዎች እዚህ ይመጣሉ -->
+    </div>
+  </div>
+
+  <!-- LIVE PAGE -->
+  <div id="page-live" class="hidden">
+    <div class="stats-header glass-panel">
+      <div class="stat-item"><span class="stat-label">DERASH</span><div class="stat-value" id="derash-val">0</div></div>
+      <div class="stat-item"><span class="stat-label">PLAYERS</span><div class="stat-value" id="players-val">0</div></div>
+      <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0</div></div>
+    </div>
+    <div class="game-main-layout">
+      <div class="bingo-board" id="bingo-board"></div>
+      <div class="right-panel">
+        
+        <div class="current-call-container glass-panel">
+          <div style="font-size:12px; color:var(--text-muted); font-weight:bold; margin-bottom:10px; letter-spacing:1px;">CURRENT CALL</div>
+          <div class="current-call-ball" id="current-call-display">--</div>
+          <div class="recent-calls" id="recent-calls-container"></div>
+        </div>
+
+        <div id="wait-message-box" class="wait-in-live glass-panel hidden">
+          <div style="font-size:32px; margin-bottom:10px;">⏳</div>
+          <div style="font-size:14px; font-weight:900; color:var(--gold);">እባክዎ ይጠብቁ</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">ይሄ ዙር ጨዋታ እስኪጠናቀቅ ይጠብቁ</div>
+        </div>
+        <div class="live-cards-container glass-panel" id="live-cards-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE PAGE -->
+  <div id="page-profile" class="page-inner-content hidden">
+    <div class="sec-title">የተጠቃሚ መገለጫ</div>
+    <div class="profile-card glass-panel">
+      <div class="profile-row"><span>ስም:</span><span class="profile-val" id="profile-name-val">--</span></div>
+      <div class="profile-row"><span>መለያ ቁጥር:</span><span class="profile-val" id="profile-id-val">--</span></div>
+      <div class="profile-row"><span>📱 ስልክ ቁጥር:</span><span class="profile-val" id="profile-phone-val">--</span></div>
+      <div class="profile-row"><span>የተጫወቱት ጨዋታ:</span><span class="profile-val" id="profile-games-val">0</span></div>
+      <div class="profile-row"><span>ያሸነፉት ጨዋታ:</span><span class="profile-val" id="profile-wins-val">0</span></div>
+    </div>
+    
+    <div class="sec-title">Theme Settings</div>
+    <div class="profile-card glass-panel">
+      <div style="font-size: 12px; margin-bottom: 8px; color:var(--text-muted);">የገጹን ቀለም ይምረጡ</div>
+      <div class="theme-options">
+          <button class="theme-btn dark" onclick="setTheme('dark')">🌙 Dark</button>
+          <button class="theme-btn light" onclick="setTheme('light')">☀️ Light</button>
+          <button class="theme-btn ocean" onclick="setTheme('ocean')">🌊 Ocean</button>
+      </div>
+    </div>
+
+    <div class="sec-title">የግብዣ ሊንክ</div>
+    <div class="profile-card glass-panel">
+      <div style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 8px;">✨ 30 ብር ያግኙ!</div>
+      <input type="text" id="invite-link-input" class="form-input" readonly>
+      <button class="submit-req-btn" style="margin-top: 8px;" onclick="copyInviteLink()">ሊንኩን ቅዳ</button>
+    </div>
+  </div>
+
+  <!-- WALLET PAGE -->
+  <div id="page-wallet" class="page-inner-content hidden">
+    <div class="sec-title">YOUR BALANCES</div>
+    <div class="wallet-balances-grid">
+      <div class="balance-box glass-panel"><div class="balance-box-title">🎮 PLAY</div><div class="balance-box-val" id="wallet-page-val">0.00</div></div>
+      <div class="balance-box glass-panel"><div class="balance-box-title">🏆 WIN</div><div class="balance-box-val" id="win-wallet-display">0.00</div></div>
+    </div>
+    <div class="wallet-action-buttons">
+      <button class="action-btn-deposit" onclick="toggleDepositOptions()">💳 DEPOSIT</button>
+      <button class="action-btn-withdraw" onclick="toggleWithdrawOptions()">💸 WITHDRAW</button>
+    </div>
+    
+    <div id="deposit-options-section" class="deposit-options-box glass-panel hidden">
+      <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የክፍያ አማራጭ ይምረጡ:</div>
+      <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
+      <button class="sub-option-btn" onclick="selectDepositMethod('cbe')">🏦 CBE</button>
+      <div id="deposit-info-box" class="deposit-info-display hidden"></div>
+    </div>
+
+    <div id="withdraw-options-section" class="withdraw-options-box glass-panel hidden">
+      <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የወጭ አማራጭ ይምረጡ:</div>
+      <button class="sub-option-btn" onclick="selectWithdrawMethod('self')">👤 በቴሌግራም</button>
+      <button class="sub-option-btn" onclick="selectWithdrawMethod('other')">👥 ወደ ሌላ ቁጥር</button>
+      <div id="withdraw-form-box" class="hidden" style="margin-top: 10px;">
+        <div id="withdraw-target-label" style="font-size: 12px; color: var(--gold); font-weight: bold; text-align: center; margin-bottom: 4px;"></div>
+        <input type="number" id="withdraw-amount-input" class="form-input" placeholder="የሚወጣውን መጠን (ETB)">
+        <input type="text" id="withdraw-phone-input" class="form-input hidden" placeholder="የቴሌብር ቁጥር">
+        <button class="submit-req-btn" onclick="submitWithdrawRequest(event)">SUBMIT REQUEST</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY PAGE -->
+  <div id="page-history" class="page-inner-content hidden">
+    <div class="sec-title">የግብይት ታሪክ (History)</div>
+    <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+
+  <!-- RANK PAGE -->
+  <div id="page-rank" class="page-inner-content hidden">
+    <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 10)</div>
+    <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="bottom-nav glass-panel">
+  <button class="nav-item active" id="nav-btn-ticket" onclick="switchTab('ticket')"><span class="nav-icon">🎮</span><span>BINGO</span></button>
+  <button class="nav-item" id="nav-btn-wallet" onclick="switchTab('wallet')"><span class="nav-icon">💳</span><span>WALLET</span></button>
+  <button class="nav-item" id="nav-btn-history" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>HISTORY</span></button>
+  <button class="nav-item" id="nav-btn-rank" onclick="switchTab('rank')"><span class="nav-icon">🏆</span><span>RANK</span></button>
+  <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
+</nav>
+
+<!-- GAME OVER OVERLAY -->
+<div id="game-over-overlay" class="hidden">
+  <div class="game-over-title">🏆 BINGO! 🏆</div>
+  <div class="winner-text" id="winner-text">--</div>
+  <div class="prize-text" id="prize-text">0 ETB</div>
+  <div class="winning-card-container glass-panel" id="winning-card-container"></div>
+  <div style="font-size: 28px; color: #3b82f6; font-weight: 900; margin-top: 15px; font-family:'Courier New', Courier, monospace;" id="board-number-text">BOARD --</div>
+  <div style="margin-top: 20px; text-align: center;">
+    <div style="font-size: 14px; color: #cbd5e1;">አዲስ ጨዋታ በ...</div>
+    <div style="font-size: 40px; color: var(--gold); font-weight: 900;" id="modal-countdown">10</div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+// ✅ Theme Management
+const savedTheme = localStorage.getItem('theme') || 'dark';
+if (savedTheme === 'light') document.body.classList.add('light-theme');
+if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
+
+function setTheme(theme) {
+    document.body.classList.remove('light-theme', 'ocean-theme');
+    if (theme === 'light') document.body.classList.add('light-theme');
+    if (theme === 'ocean') document.body.classList.add('ocean-theme');
+    localStorage.setItem('theme', theme);
+}
+
+let tg = window.Telegram?.WebApp;
+if (tg) { tg.expand(); tg.ready(); }
+
+let userProfile = { name: "ቴሌግራም ተጠቃሚ", username: "@user", id: "123456789" };
+try {
+    let tgUser = tg?.initDataUnsafe?.user;
+    if (tgUser && tgUser.id) {
+        let fullName = ((tgUser.first_name || '') + ' ' + (tgUser.last_name || '')).trim();
+        userProfile.name = fullName || (tgUser.username ? '@' + tgUser.username : 'ተጫዋች ' + tgUser.id);
+        userProfile.username = tgUser.username ? '@' + tgUser.username : 'የለም';
+        userProfile.id = String(tgUser.id);
+        localStorage.setItem('tg_user_profile', JSON.stringify(userProfile));
+    } else {
+        let savedProfile = localStorage.getItem('tg_user_profile');
+        if (savedProfile) userProfile = JSON.parse(savedProfile);
+    }
+} catch (e) {}
+
+const TG_INIT_DATA = tg?.initData || '';
+const originalFetch = window.fetch;
+window.fetch = function(url, opts = {}) { if (typeof url === 'string' && url.includes('/api/')) { opts.headers = opts.headers || {}; opts.headers['X-Telegram-Init-Data'] = TG_INIT_DATA; opts.headers['X-User-Id'] = String(userProfile.id); } return originalFetch(url, opts); };
+
+let currentWallet = 0, currentWinWallet = 0, userTotalGames = 0, userTotalWins = 0, userPhone = "";
+let paymentSettings = { telebirr_number: '0968940123', telebirr_name: 'Tazebew', cbe_number: '1000390803005', cbe_name: 'Tazebew', enable_cbe: true };
+let isVoiceOn = localStorage.getItem('abisinya_voice') !== 'off';
+let selectedCards = new Set(), calledNumbersSet = new Set();
+let currentLatestCalledNumber = null, notificationTimeout = null, gameEndedAlready = false, liveGameInitialized = false;
+let clientId = String(userProfile.id), gamePhase = 'waiting', isModalShown = false, lastAttemptedCard = null;
+let maxCards = 1000;
+let numberButtons = [];
+let _liveCardsRendered = new Set();
+let _lastWalletLoad = 0;
+const WALLET_LOAD_MIN_INTERVAL = 1000;
+
+function hideLoadingScreen() {
+    const loader = document.getElementById('loading-screen');
+    if (loader && !loader.classList.contains('hide-loader')) {
+        loader.classList.add('hide-loader');
+        setTimeout(() => { try { loader.remove(); } catch(e) {} }, 350);
+    }
+}
+
+function initGrid() {
+    const grid = document.getElementById('number-grid');
+    if (!grid) return;
+    grid.innerHTML = ''; numberButtons = [];
+    const frag = document.createDocumentFragment();
+    for (let i = 1; i <= maxCards; i++) { 
+        const btn = document.createElement('button'); 
+        btn.className = 'number-btn'; btn.id = 'grid-btn-' + i; btn.innerText = i; 
+        btn.onclick = (function(num) { return function() { toggleCard(num); }; })(i); 
+        frag.appendChild(btn); numberButtons[i] = btn; 
+    }
+    grid.appendChild(frag);
+}
+
+function updateWalletUI() { 
+    document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); 
+    document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); 
+    document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); 
+}
+function updateProfileUI() { 
+    document.getElementById('profile-name-val').innerText = userProfile.name; 
+    document.getElementById('profile-id-val').innerText = userProfile.id; 
+    document.getElementById('profile-games-val').innerText = userTotalGames; 
+    document.getElementById('profile-wins-val').innerText = userTotalWins; 
+    document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; 
+    document.getElementById('invite-link-input').value = 'https://t.me/Ethiobingo_bot?start=' + userProfile.id; 
+}
+
+function updateLiveStats(totalCards) {
+    document.getElementById('players-val-top').innerText = totalCards;
+    document.getElementById('derash-val-top').innerText = totalCards * 8;
+    document.getElementById('players-val').innerText = totalCards;
+    document.getElementById('derash-val').innerText = totalCards * 8;
+}
+
+async function loadWallet() {
+    const now = Date.now(); if ((now - _lastWalletLoad) < WALLET_LOAD_MIN_INTERVAL) return; _lastWalletLoad = now;
+    try { 
+        const res = await fetch('/api/wallet/me?t=' + now); 
+        const data = await res.json(); 
+        if (data.success && data.data) { 
+            currentWallet = Number(data.data.play_balance) || 0; 
+            currentWinWallet = Number(data.data.win_balance) || 0; 
+            userTotalGames = Number(data.data.total_games) || 0; 
+            userTotalWins = Number(data.data.total_wins) || 0; 
+            userPhone = data.data.phone || ""; 
+            updateWalletUI(); 
+            updateProfileUI(); 
+        } 
+    } catch (e) {}
+}
+
+async function loadSettings() {
+    try { 
+        const res = await fetch('/api/settings'); 
+        const data = await res.json(); 
+        if (data.success && data.data) { 
+            paymentSettings = data.data; 
+        } 
+    } catch (e) {}
+}
+
+async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) return null; return await res.json(); } catch (e) { return null; } }
+
+window.toggleCard = function(num) {
+    if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
+    
+    if (selectedCards.has(num)) { 
+        selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
+        updatePreviewUI();
+        socket.emit('select_card', { cardNum: num, action: 'deselect' }); 
+        return; 
+    }
+    if (numberButtons[num].classList.contains('taken-by-other')) {
+        showFooterNotification("❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!"); return;
+    }
+    selectedCards.add(num); numberButtons[num].className = 'number-btn selected'; 
+    updatePreviewUI();
+    socket.emit('select_card', { cardNum: num, action: 'select' });
+}
+
+function updatePreviewUI() {
+    const c = document.getElementById('preview-container');
+    if (selectedCards.size === 0) { c.innerHTML = ''; return; }
+    
+    c.innerHTML = ''; 
+    selectedCards.forEach(cn => { 
+        const cols = generateCardLayout(cn);
+        const d = document.createElement('div'); 
+        d.className = 'preview-card'; 
+        
+        let gridHtml = `<div class="preview-header">BOARD ${cn}</div><div class="preview-grid">`;
+        for(let r=0; r<5; r++) {
+            for(let col=0; col<5; col++) {
+                const v = cols[col][r];
+                if(v === 'FREE') gridHtml += `<div class="preview-cell free">F</div>`;
+                else gridHtml += `<div class="preview-cell">${v}</div>`;
+            }
+        }
+        gridHtml += `</div>`;
+        
+        d.innerHTML = gridHtml; 
+        c.appendChild(d); 
+    });
+}
+
+window.switchTab = function(tabName) {
+    if (gamePhase === 'calling' && tabName === 'ticket') tabName = 'live';
+    ['ticket', 'profile', 'wallet', 'rank', 'history', 'live'].forEach(t => { const el = document.getElementById('page-' + t); if (el) el.classList.add('hidden'); });
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById('page-' + tabName); if (target) target.classList.remove('hidden');
+    
+    const navName = (tabName === 'live') ? 'ticket' : tabName;
+    const nb = document.getElementById('nav-btn-' + navName); 
+    if (nb) nb.classList.add('active');
+    
+    if (tabName === 'wallet') loadWallet(); 
+    if (tabName === 'history') loadHistory(); 
+    if (tabName === 'rank') loadLeaderboard(); 
+    if (tabName === 'profile') loadWallet();
+    if (tabName === 'live') { if (selectedCards.size > 0) document.getElementById('wait-message-box').classList.add('hidden'); else document.getElementById('wait-message-box').classList.remove('hidden'); }
+}
+
+async function loadHistory() {
+    const container = document.getElementById('history-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
+    const data = await apiGet('/api/wallet/history'); if (!data || !data.success) { container.innerHTML = 'Error loading history.'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">📭 እስካሁን ግብይት የለም።</div>'; return; }
+    const frag = document.createDocumentFragment();
+    data.data.forEach(txn => { 
+        let icon = txn.type === 'deposit' ? '💰' : '💸'; 
+        let statusColor = txn.status === 'approved' ? '#10b981' : txn.status === 'rejected' ? '#ef4444' : '#f59e0b'; 
+        let div = document.createElement('div'); 
+        div.className = 'glass-panel';
+        div.style.cssText = "padding:12px; display:flex; flex-direction:column; gap:4px;"; 
+        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${icon} ${txn.type.toUpperCase()}</span><span style="color:var(--gold);">${txn.amount} ETB</span></div><div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8;"><span>${new Date(txn.created).toLocaleDateString()}</span><span style="color:${statusColor}; font-weight:bold;">${txn.status.toUpperCase()}</span></div>`; 
+        frag.appendChild(div); 
+    });
+    container.appendChild(frag);
+}
+
+async function loadLeaderboard() {
+    const container = document.getElementById('leaderboard-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
+    const data = await apiGet('/api/leaderboard'); if (!data || !data.success) { container.innerHTML = 'Error loading rank.'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">📭 እስካሁን አሸናፊ የለም።</div>'; return; }
+    let medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]; 
+    const frag = document.createDocumentFragment();
+    data.data.forEach((u, i) => { 
+        let div = document.createElement('div'); 
+        div.className = 'glass-panel';
+        div.style.cssText = "padding:12px; display:flex; justify-content:space-between; align-items:center;"; 
+        div.innerHTML = `<div style="display:flex; gap:10px; align-items:center;"><span style="font-size:20px;">${medals[i] || ''}</span><span style="font-weight:bold; color:var(--text-color);">${u.name}</span></div><span style="color:var(--gold); font-weight:900;">${Number(u.win_balance).toFixed(2)} ETB</span>`; 
+        frag.appendChild(div); 
+    });
+    container.appendChild(frag);
+}
+
+function copyNumberToClipboard(num) { navigator.clipboard.writeText(num).then(() => alert('ቁጥሩ ተቀድቷል: ' + num)).catch(() => alert('ኮፒ ማድረግ አልተቻለም')); }
+function toggleDepositOptions() { document.getElementById('withdraw-options-section').classList.add('hidden'); document.getElementById('deposit-options-section').classList.toggle('hidden'); }
+function toggleWithdrawOptions() { document.getElementById('deposit-options-section').classList.add('hidden'); document.getElementById('withdraw-options-section').classList.toggle('hidden'); }
+function selectDepositMethod(m) { 
+    const b = document.getElementById('deposit-info-box'); b.classList.remove('hidden'); 
+    if (m === 'telebirr') { 
+        b.innerHTML = `<div style="text-align:left; padding:10px;">📲 <b>Telebirr</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.telebirr_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.telebirr_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.telebirr_name || 'Tazebew'}</b></div></div>`; 
+    } else { 
+        b.innerHTML = `<div style="text-align:left; padding:10px;">🏦 <b>CBE</b><br><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>${paymentSettings.cbe_number}</span><button class="copy-btn" onclick="copyNumberToClipboard('${paymentSettings.cbe_number}')">📋 ኮፒ</button></div><div style="margin-top:5px;">ስም: <b>${paymentSettings.cbe_name || 'Tazebew'}</b></div></div>`; 
+    } 
+}
+function selectWithdrawMethod(t) { 
+    document.getElementById('withdraw-form-box').classList.remove('hidden'); 
+    const lbl = document.getElementById('withdraw-target-label'); const ph = document.getElementById('withdraw-phone-input'); 
+    if (t === 'self') { 
+        if (userPhone) { lbl.innerHTML = 'ስልክ: <b>' + userPhone + '</b>'; ph.classList.add('hidden'); } 
+        else { lbl.innerHTML = 'የቴሌብር ስልክ ቁጥርዎን ያስገቡ:'; ph.classList.remove('hidden'); } 
+    } else { 
+        lbl.innerHTML = 'የቴሌብር ቁጥር ያስገቡ:'; ph.classList.remove('hidden'); 
+    } 
+}
+async function submitWithdrawRequest(event) {
+    const btn = event?.target; if (!btn) return;
+    const amt = parseFloat(document.getElementById('withdraw-amount-input').value); 
+    if (!amt || amt <= 0) return alert("ትክክለኛ መጠን ያስገቡ!"); 
+    if (amt < 100) return alert("ዝቅተኛው የወጭ መጠን 100 ETB ነው!"); 
+    if (amt > currentWinWallet) return alert("የWin ባላንስ በቂ አይደለም!"); 
+    const phoneInput = document.getElementById('withdraw-phone-input'); 
+    let phone = phoneInput.classList.contains('hidden') ? (userPhone || '') : phoneInput.value.trim(); 
+    if (!phone || phone.replace(/\D/g, '').length < 9) return alert("ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ!"); 
+    const originalText = btn.innerText; btn.disabled = true; btn.innerText = 'በመላክ ላይ...'; 
+    try { 
+        const res = await fetch('/api/wallet/withdraw-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount: amt, phone }) }); 
+        const data = await res.json(); 
+        if (data.success) { 
+            alert(`✅ የወጭ ጥያቄ በተሳካ ሁኔታ ተልኳል!`); 
+            document.getElementById('withdraw-amount-input').value = ''; 
+            if (!phoneInput.classList.contains('hidden')) phoneInput.value = ''; 
+            document.getElementById('withdraw-options-section').classList.add('hidden'); 
+            await loadWallet(); 
+        } else { alert('❌ ' + (data.error || 'ስህተት ተከስቷል')); } 
+    } catch (e) { alert('❌ የኢንተርኔት ስህተት።'); } 
+    finally { btn.disabled = false; btn.innerText = originalText; } 
+}
+
+function buildBingoBoard() { 
+    const b = document.getElementById('bingo-board'); b.innerHTML = ''; const frag = document.createDocumentFragment(); 
+    [{t:'B',c:'#2563eb'},{t:'I',c:'#0d9488'},{t:'N',c:'#4f46e5'},{t:'G',c:'#d97706'},{t:'O',c:'#dc2626'}].forEach(h => { const d = document.createElement('div'); d.style.cssText = `background:${h.c}; color:white; text-align:center; font-weight:bold; padding:4px; border-radius:4px; font-size:10px;`; d.innerText = h.t; frag.appendChild(d); }); 
+    for (let row = 1; row <= 15; row++) for (let col = 0; col < 5; col++) { let num = col * 15 + row; const c = document.createElement('div'); c.className = 'board-cell'; c.id = 'cell-' + num; c.innerText = num; if (calledNumbersSet.has(num)) c.classList.add('marked'); frag.appendChild(c); } 
+    b.appendChild(frag); 
+}
+
+// ✅ ይህ በ server.js ላይ ካለው getCardCols ጋር 100% አንድ አይነት መሆን አለበት
+function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+function generateCardLayout(cn) {
+    let cols = [[],[],[],[],[]];
+    let seedBase = cn * 100;
+    for (let c = 0; c < 5; c++) {
+        let min = c * 15 + 1, max = c * 15 + 15;
+        let avail = []; for (let n = min; n <= max; n++) avail.push(n);
+        
+        let seed = seedBase + c;
+        let rand = mulberry32(seed);
+        
+        for (let i = avail.length - 1; i > 0; i--) { 
+            let j = Math.floor(rand() * (i + 1)); 
+            [avail[i], avail[j]] = [avail[j], avail[i]]; 
+        }
+        cols[c] = avail.slice(0, 5).sort((a, b) => a - b);
+    }
+    cols[2][2] = 'FREE';
+    return cols;
+}
+
+function updateLiveCardsContainer() {
+    const c = document.getElementById('live-cards-container'); 
+    if (selectedCards.size === 0) { 
+        c.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:10px;">ካርቴላ የለም</div>'; 
+        _liveCardsRendered.clear(); 
+        return; 
+    }
+    
+    if (!_liveCardsRendered.size) c.innerHTML = '';
+    
+    selectedCards.forEach(cn => { 
+        if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn); 
+        const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn; 
+        d.innerHTML = `
+            <div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div>
+            <div class="card-header-letters">
+                <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+            </div>
+            <div class="interactive-matrix" id="im-${cn}"></div>
+        `; 
+        c.appendChild(d); 
+    });
+    
+    for (const cn of [..._liveCardsRendered]) { 
+        if (!selectedCards.has(cn)) { 
+            const el = c.querySelector('[data-card="' + cn + '"]'); 
+            if (el) el.remove(); 
+            _liveCardsRendered.delete(cn); 
+        } 
+    }
+    
+    _liveCardsRendered.forEach(cn => {
+        const container = document.getElementById('im-' + cn);
+        if (!container) return;
+        
+        const cols = generateCardLayout(cn);
+        let html = '';
+        for(let r = 0; r < 5; r++) {
+            for(let c = 0; c < 5; c++) {
+                const v = cols[c][r];
+                const isFree = v === 'FREE';
+                const isCalled = !isFree && calledNumbersSet.has(v);
+                let cls = 'interactive-cell';
+                if (isFree) cls += ' free';
+                else if (isCalled) cls += ' marked-cell'; 
+                html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`;
+            }
+        }
+        container.innerHTML = html;
+    });
+}
+
+function updateCalledNumbersUI(allCalled) { 
+    if (!allCalled?.length) return; 
+    let last = allCalled[allCalled.length - 1]; 
+    
+    document.getElementById('current-call-display').innerText = last; 
+    
+    let rc = document.getElementById('recent-calls-container'); 
+    rc.innerHTML = ''; 
+    let recent = allCalled.slice(Math.max(0, allCalled.length - 4), allCalled.length - 1).reverse(); 
+    recent.forEach((n) => {
+        let c = document.createElement('div'); 
+        c.className = 'recent-ball'; 
+        c.innerText = n; 
+        rc.appendChild(c); 
+    }); 
+
+    document.getElementById('call-count').innerText = allCalled.length; 
+    allCalled.forEach(n => { let cell = document.getElementById('cell-' + n); if (cell) cell.classList.add('marked'); }); 
+}
+
+const socket = io({ transports: ['websocket', 'polling'] });
+socket.on('connect', () => { socket.emit('join_room', { clientId: clientId }); });
+
+socket.on('init_state', (state) => {
+    gamePhase = state.phase;
+    maxCards = state.maxCards || 1000;
+    selectedCards.clear(); state.myCards.forEach(n => selectedCards.add(n));
+    initGrid();
+    updatePreviewUI(); 
+    
+    updateLiveStats(state.totalCards);
+    
+    state.myCards.forEach(n => { if(numberButtons[n]) numberButtons[n].className = 'number-btn selected'; });
+    
+    if (state.calledNumbers?.length) { 
+        calledNumbersSet = new Set(state.calledNumbers); 
+        updateCalledNumbersUI(state.calledNumbers); 
+    }
+    if (state.remainingTime !== undefined) document.getElementById('timer-val').innerText = state.remainingTime + 'ሰ';
+    
+    loadWallet();
+    if (state.phase === 'calling' || state.phase === 'gameover') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
+    else { switchTab('ticket'); }
+    hideLoadingScreen();
+});
+
+socket.on('sync_taken_cards', (data) => {
+    updateLiveStats(data.totalCards);
+    
+    for(let i=1; i<=maxCards; i++) {
+        if(!numberButtons[i]) continue;
+        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
+        else if(data.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
+        else { numberButtons[i].className = 'number-btn'; }
+    }
+});
+
+socket.on('settings_updated', (data) => {
+    if (data.settings) {
+        paymentSettings = data.settings;
+        showFooterNotification("⚙️ የክፍያ መረጃ ተስተካክሏል!");
+    }
+});
+
+socket.on('wallet_updated', () => loadWallet());
+socket.on('card_error', (data) => { showFooterNotification(data.message); });
+socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
+socket.on('phase_change', (data) => { 
+    gamePhase = data.phase; 
+    if(data.phase === 'calling') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
+    else if(data.phase === 'countdown') { switchTab('ticket'); }
+});
+socket.on('new_number_called', (data) => {
+    calledNumbersSet.add(data.number); 
+    updateCalledNumbersUI(data.allCalled);
+    if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
+    updateLiveCardsContainer(); 
+});
+socket.on('reset_game', () => {
+    selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear();
+    initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden');
+    document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0';
+    document.getElementById('recent-calls-container').innerHTML = '';
+    updatePreviewUI(); 
+    loadWallet();
+});
+
+socket.on('game_over', (data) => { 
+    if (isModalShown) return; isModalShown = true;
+    document.getElementById('winner-text').innerHTML = data.winners.some(w => String(w.id) === String(userProfile.id)) ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 Cartela ${data.winningCard} አሸንፏል`;
+    document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
+    document.getElementById('board-number-text').innerText = `BOARD ${data.winningCard}`;
+    
+    const container = document.getElementById('winning-card-container');
+    const winningCard = data.winningCard;
+    const cols = generateCardLayout(winningCard);
+    const winInfo = data.winners[0]; 
+    const calledNumbersArray = data.calledNumbers || [];
+    
+    let html = `<div class="winning-matrix">`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">B</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">I</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">N</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">G</div>`;
+    html += `<div style="background:var(--gold);color:#000;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">O</div>`;
+
+    for(let r = 0; r < 5; r++) {
+        for(let c = 0; c < 5; c++) {
+            const v = cols[c][r];
+            const isFree = v === 'FREE';
+            const isCalled = !isFree && calledNumbersArray.includes(v); 
+            const isWin = winInfo?.allLines?.some(line => {
+                if(line.type === 'row') return line.index === r;
+                if(line.type === 'col') return line.index === c;
+                if(line.type === 'diag1') return r === c;
+                if(line.type === 'diag2') return r === (4 - c);
+                if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4);
+                return false;
+            });
+            const isLastCall = (v === data.lastCall);
+            
+            let cls = 'winning-cell';
+            if (isWin) cls += ' highlight';
+  
