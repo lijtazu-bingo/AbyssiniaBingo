@@ -66,7 +66,7 @@ body {
 
 .instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
 
-/* ✅ Fix 5: Disable Overlay for Card Selection */
+/* ✅ Fix 1: Hide empty grid space, dynamic preview */
 .grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 .grid-container {
     display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
@@ -86,8 +86,9 @@ body {
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 
-/* ✅ Fix 2: Remove Empty Space from Preview */
-.preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; min-height: 110px; align-items: center; }
+/* ✅ Dynamic Preview Section */
+.preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; align-items: center; }
+.preview-section:empty { display: none; padding: 0; margin: 0; min-height: 0; }
 .preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 .preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 9px; font-weight: 900; text-align: center; padding: 2px; border-radius: 4px; margin-bottom: 2px; }
 .preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
@@ -128,8 +129,6 @@ body {
 .stat-item { text-align: center; }
 .stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
 .stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
-
-/* ✅ Fix 3: Expand Live Cards Area */
 .game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
 .bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 40%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
 .board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
@@ -299,7 +298,6 @@ body {
     <div id="deposit-options-section" class="deposit-options-box glass-panel hidden">
       <div style="font-size: 12px; font-weight: bold; color: var(--text-muted); text-align: center; margin-bottom:10px;">የክፍያ አማራጭ ይምረጡ:</div>
       <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
-      <!-- CBE Option Removed -->
       <div id="deposit-info-box" class="deposit-info-display hidden"></div>
     </div>
 
@@ -536,7 +534,12 @@ window.toggleCard = function(num) {
 
 function updatePreviewUI() {
     const c = document.getElementById('preview-container');
-    if (selectedCards.size === 0) { c.innerHTML = ''; return; }
+    if (selectedCards.size === 0) { 
+        c.innerHTML = ''; 
+        c.style.display = 'none'; // ✅ Hide completely when empty
+        return; 
+    }
+    c.style.display = 'flex'; // ✅ Show when cards are selected
     c.innerHTML = ''; 
     selectedCards.forEach(cn => { 
         const cols = generateCardLayout(cn);
@@ -588,14 +591,14 @@ async function loadHistory() {
     container.appendChild(frag);
 }
 
-// ✅ Clear History Function
+// ✅ Clear History Function (Fixed Server Route)
 async function clearMyHistory() {
     if (!confirm("ታሪክዎን ማጥፋት ይፈልጋሉ? ይህ ተግባር አይመለስም።")) return;
     try {
-        const res = await fetch(`/api/admin/wallet/history/${userProfile.id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/wallet/history/clear`, { method: 'DELETE' });
         const data = await res.json();
         if (data.success) { alert("ታሪክዎ በተሳካ ሁኔታ ጠፍቷል!"); loadHistory(); }
-        else alert("ስህተት ተከስቷል።");
+        else alert("ስህተት ተከስቷል: " + (data.error || 'Unknown'));
     } catch (e) { alert("ሰርቨር ላይ ችግር ተፈጥሯል።"); }
 }
 
@@ -867,7 +870,6 @@ socket.on('game_over', (data) => {
     const container = document.getElementById('winning-card-container');
     container.innerHTML = '';
 
-    // ✅ Fix 6: Display correct prize amount for each board (avoid undefined)
     data.winners.forEach(winInfo => {
         const winningCard = winInfo.cardNum;
         const cols = generateCardLayout(winningCard);

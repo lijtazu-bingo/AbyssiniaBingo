@@ -458,13 +458,16 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Admin History Clear API
-app.delete('/api/admin/wallet/history/:userId', adminAuth, async (req, res) => {
+// ✅ Clear User History API
+app.delete('/api/wallet/history/clear', async (req, res) => {
     try {
-        const { userId } = req.params;
-        await Transaction.deleteMany({ user_id: String(userId) });
+        const user = authFromHeaders(req);
+        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
+        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
+        
+        await Transaction.deleteMany({ user_id: userId });
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ success: false }); }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.get('/api/wallet/history', async (req, res) => {
@@ -481,7 +484,6 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
         const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
         if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
         
-        // ✅ Fix 1: Deduct balance immediately and check
         const result = await User.findOneAndUpdate(
             { id: String(user.id), win_balance: { $gte: amt } }, 
             { $inc: { win_balance: -amt } }, 
@@ -821,7 +823,6 @@ async function endRound(winnersData) {
             return;
         }
         
-        // ✅ Fix 6: Multiple Winners Prize Allocation
         const prizePerWinner = Math.floor(totalPrize / winnersData.length); 
         const winnerIds = winnersData.map(w => String(w.id));
         
