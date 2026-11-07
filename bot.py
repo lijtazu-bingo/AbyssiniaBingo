@@ -3,6 +3,7 @@ import os
 import sqlite3
 import threading
 import requests
+import re
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler, ConversationHandler
@@ -74,17 +75,18 @@ TEXTS = {
         'already_registered': "✅ እርስዎ አስቀድመው ተመዝግበዋል!",
         'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         'welcome_back': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
+        
         'menu_play': "🎮 Play Abyssinia Bingo",
-        'menu_deposit': "💰 Deposit",
-        'menu_withdraw': "💸 Withdraw",
-        'menu_balance': "🏦 Balance",
-        'menu_invite': "👥 Invite",
-        'menu_history': "📜 History",
-        'menu_support': "💬 Support",
-        'menu_register': "🔢 Register",
-        'menu_lang': "🌐 Language",
-        'menu_help': "ℹ️ Help",
-        'menu_rank': "🏆 Rank",
+        'menu_deposit': "💰 ገቢ (Deposit)",
+        'menu_withdraw': "💸 ወጪ (Withdraw)",
+        'menu_balance': "🏦 ባላንስ (Balance)",
+        'menu_invite': "👥 ግብዣ (Invite)",
+        'menu_history': "📜 ታሪክ (History)",
+        'menu_support': "💬 ድጋፍ (Support)",
+        'menu_register': "🔢 ምዝገባ (Register)",
+        'menu_lang': "🌐 ቋንቋ (Language)",
+        'menu_help': "ℹ️ እርዳታ (Help)",
+        'menu_rank': "🏆 ደረጃ (Rank)",
         
         'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
         'play_inline_btn': "🎮 Play Bingo",
@@ -104,6 +106,7 @@ TEXTS = {
         'support_msg': "💬 ማንኛውም ጥያቄ ካለዎት በ @Tazikes ያግኙን።",
         'history_msg': "📜 ታሪክዎን ለማየት ከዚህ በታች ይጫኑ፦",
         'help_msg': "📚 <b>የቦት ትዕዛዞች እና አጋዥ መረጃ</b>\n\n/start - ቦቱን እንደገና ለመጀመር\n/play - ጨዋታውን ለመጫወት\n/balance - ባላንስዎን ለማየት\n/deposit - ገንዘብ ለማስገባት\n/withdraw - ገንዘብ ለማውጣት\n/invite - የግብዣ ሊንክ ለማግኘት\n/support - እርዳታ ለማግኘት\n/lang - ቋንቋ ለመቀየር\n\n💡 <i>ማንኛውንም አዝራር በመጫን ቦቱን መጠቀም ይችላሉ።</i>",
+        'leaderboard_msg': "🏆 የአሸናፊዎች ደረጃ ለማየት ከታች ይጫኑ፦",
         
         'lang_choose': "🌐 <b>እባክዎ ቋንቋ ይምረጡ፦</b>",
         'lang_changed': "✅ ቋንቋ ወደ አማርኛ ተቀይሯል!",
@@ -119,6 +122,7 @@ TEXTS = {
         'already_registered': "✅ You are already registered!",
         'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abisinya Bingo App!\n\n👇 Choose an option below",
         'welcome_back': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👇 Choose an option below",
+        
         'menu_play': "🎮 Play Abyssinia Bingo",
         'menu_deposit': "💰 Deposit",
         'menu_withdraw': "💸 Withdraw",
@@ -149,6 +153,7 @@ TEXTS = {
         'support_msg': "💬 For any questions contact @Tazikes.",
         'history_msg': "📜 Click below to view your history:",
         'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
+        'leaderboard_msg': "🏆 Click below to view the leaderboard:",
         
         'lang_choose': "🌐 <b>Choose a language:</b>",
         'lang_changed': "✅ Language changed to English!",
@@ -164,21 +169,24 @@ TEXTS = {
         'already_registered': "✅ ተመዝጊብኩም ኢኹም!",
         'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
         'welcome_back': "🎉 <b>እንቋዕ ናብ Abisinya Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        
         'menu_play': "🎮 Play Abyssinia Bingo",
-        'menu_deposit': "💰 Deposit",
-        'menu_withdraw': "💸 Withdraw",
-        'menu_balance': "🏦 Balance",
-        'menu_invite': "👥 Invite",
-        'menu_history': "📜 History",
-        'menu_support': "💬 Support",
-        'menu_register': "🔢 Register",
-        'menu_lang': "🌐 Language",
-        'menu_help': "ℹ️ Help",
-        'menu_rank': "🏆 Rank",
+        'menu_deposit': "💰 ኣታዊ (Deposit)",
+        'menu_withdraw': "💸 ወጻኢ (Withdraw)",
+        'menu_balance': "🏦 ተረፍ (Balance)",
+        'menu_invite': "👥 ዕድመ (Invite)",
+        'menu_history': "📜 ታሪኽ (History)",
+        'menu_support': "💬 ደገፍ (Support)",
+        'menu_register': "🔢 ምዝገባ (Register)",
+        'menu_lang': "🌐 ቋንቋ (Language)",
+        'menu_help': "ℹ️ ሓገዝ (Help)",
+        'menu_rank': "🏆 ደረጃ (Rank)",
+        
         'play_prompt': "🎲 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\nተጻወቱ ተዓወቱ!\n\n👇 ጸወታ ንምጅማር ኣብ ታሕቲ ዘሎ መጠወቒ ጠውቑ:",
         'play_inline_btn': "🎮 Play Bingo",
         'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>",
         'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
+        'leaderboard_msg': "🏆 ደረጃ ንምርኣይ ኣብ ታሕቲ ጠውቑ:",
     },
     'om': {
         'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
@@ -186,21 +194,24 @@ TEXTS = {
         'already_registered': "✅ Duraan galmeeffamtanii jirtu!",
         'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abisinya Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
         'welcome_back': "🎉 <b>Baga gara Abisinya Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
+        
         'menu_play': "🎮 Play Abyssinia Bingo",
-        'menu_deposit': "💰 Deposit",
-        'menu_withdraw': "💸 Withdraw",
-        'menu_balance': "🏦 Balance",
-        'menu_invite': "👥 Invite",
-        'menu_history': "📜 History",
-        'menu_support': "💬 Support",
-        'menu_register': "🔢 Register",
-        'menu_lang': "🌐 Language",
-        'menu_help': "ℹ️ Help",
-        'menu_rank': "🏆 Rank",
+        'menu_deposit': "💰 Galii (Deposit)",
+        'menu_withdraw': "💸 Baasii (Withdraw)",
+        'menu_balance': "🏦 Hajaa (Balance)",
+        'menu_invite': "👥 Affeera (Invite)",
+        'menu_history': "📜 Seenaa (History)",
+        'menu_support': "💬 Deeggarsa (Support)",
+        'menu_register': "🔢 Galmee (Register)",
+        'menu_lang': "🌐 Afaan (Language)",
+        'menu_help': "ℹ️ Gargaarsa (Help)",
+        'menu_rank': "🏆 Sadarkaa (Rank)",
+        
         'play_prompt': "🎲 Baga gara Abisinya Bingo dhuftan!\nTaphadhaa Mo'adhaa!\n\n👇 Taphni akka jalqabuuf button gadii tuqaa:",
         'play_inline_btn': "🎮 Play Bingo",
         'lang_choose': "🌐 <b>Afaan filadhaa:</b>",
         'lang_changed': "✅ Afaan gara Afaan Oromootti jijjiirameera!",
+        'leaderboard_msg': "🏆 Sadarkaa ilaaluuf gadii tuqaa:",
     }
 }
 
@@ -454,6 +465,8 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_user(user_id, query.from_user.username, query.from_user.first_name, lang=lang_code)
     
     await query.edit_message_text(get_text(user_id, 'lang_changed'), parse_mode='HTML')
+    
+    # ✅ Send a new message with the updated persistent menu
     await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
 # ─── Other Menu Buttons ───
@@ -465,9 +478,8 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     _, lang = get_user_data(user.id)
     texts = TEXTS.get(lang, TEXTS['en'])
 
-    # Determine which language the user is currently clicking from
-    # Since texts vary, we check if it matches any known translation
-    is_play = any(text == TEXTS[l].get('menu_play') for l in TEXTS)
+    # Check against all languages to ensure correct routing even if state is mixed
+    is_play = any(text == TEXTS[l].get('menu_play') for l in TEXTS) or "Play Abyssinia Bingo" in text
     is_balance = any(text == TEXTS[l].get('menu_balance') for l in TEXTS)
     is_invite = any(text == TEXTS[l].get('menu_invite') for l in TEXTS)
     is_support = any(text == TEXTS[l].get('menu_support') for l in TEXTS)
@@ -477,12 +489,12 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     is_history = any(text == TEXTS[l].get('menu_history') for l in TEXTS)
     is_rank = any(text == TEXTS[l].get('menu_rank') for l in TEXTS)
 
-    if is_play or "Play Abyssinia Bingo" in text:
+    if is_play:
         webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}"
         web_app_btn = InlineKeyboardButton(text=t('play_inline_btn'), web_app=WebAppInfo(url=webapp_url_with_lang))
         await update.message.reply_text(t('play_prompt'), parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
-    elif is_balance or "Balance" in text:
+    elif is_balance:
         await update.message.reply_text("⏳ Loading...")
         try:
             res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=10)
@@ -500,19 +512,21 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         except: 
             await update.message.reply_text("❌ Server Error")
 
-    elif is_invite or "Invite" in text:
+    elif is_invite:
         await update.message.reply_text(t('invite_msg').format(id=user.id), parse_mode='HTML')
         
-    elif is_support or "Support" in text:
+    elif is_support:
         await update.message.reply_text(t('support_msg'), parse_mode='HTML')
     
-    elif is_help or "Help" in text:
+    elif is_help:
         await update.message.reply_text(t('help_msg'), parse_mode='HTML')
 
-    elif is_rank or "Rank" in text:
-        await update.message.reply_text(t('leaderboard_msg') if 'leaderboard_msg' in texts else "🏆 Leaderboard coming soon!")
+    elif is_rank:
+        await update.message.reply_text(t('leaderboard_msg'))
+        web_app_btn = InlineKeyboardButton(text="🏆 Open Leaderboard", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=rank&lang={lang}"))
+        await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
-    elif is_register or "Register" in text:
+    elif is_register:
         phone, _ = get_user_data(user.id)
         if phone:
             await update.message.reply_text(t('already_registered'), parse_mode='HTML', reply_markup=get_main_menu(user.id))
@@ -521,10 +535,10 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
             reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
             await update.message.reply_text(t('register_first'), parse_mode='HTML', reply_markup=reply_markup)
 
-    elif is_lang or "Language" in text:
+    elif is_lang:
         await lang_menu(update, context)
 
-    elif is_history or "History" in text:
+    elif is_history:
         await update.message.reply_text(t('history_msg'))
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history&lang={lang}"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
@@ -537,17 +551,20 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # This regex catches ALL menu buttons across ALL languages to trigger the interrupt handler
-    menu_regex_parts = []
+    # Dynamic Regex to catch all possible menu buttons across all languages
+    all_menu_buttons = []
     for l in TEXTS:
         for k in ['menu_play', 'menu_deposit', 'menu_withdraw', 'menu_balance', 'menu_invite', 'menu_history', 'menu_support', 'menu_register', 'menu_lang', 'menu_help', 'menu_rank']:
             if k in TEXTS[l]:
-                menu_regex_parts.append(re.escape(TEXTS[l][k]))
+                all_menu_buttons.append(re.escape(TEXTS[l][k]))
                 
-    menu_filter = filters.Regex(f"^({'|'.join(menu_regex_parts)})$")
+    menu_filter = filters.Regex(f"^({'|'.join(all_menu_buttons)})$")
+    
+    dep_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_deposit', 'Deposit')) for l in TEXTS])})$")
+    wd_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_withdraw', 'Withdraw')) for l in TEXTS])})$")
 
     dep_conv = ConversationHandler(
-        entry_points=[MessageHandler(menu_filter, deposit_start) if False else MessageHandler(filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_deposit', 'Deposit')) for l in TEXTS])})$"), deposit_start)],
+        entry_points=[MessageHandler(dep_entry_filter, deposit_start)],
         states={
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
@@ -557,7 +574,7 @@ def main():
     )
     
     wd_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_withdraw', 'Withdraw')) for l in TEXTS])})$"), withdraw_start)],
+        entry_points=[MessageHandler(wd_entry_filter, withdraw_start)],
         states={
             WITHDRAW_METHOD: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")],
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
@@ -583,5 +600,4 @@ def main():
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    import re # Moved to top but needed for safety in main block if not loaded correctly
     main()
