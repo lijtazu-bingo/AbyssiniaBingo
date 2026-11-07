@@ -212,6 +212,7 @@ def get_text(user_id, key, **kwargs):
 
 def get_main_menu(user_id):
     t = lambda k: get_text(user_id, k)
+    # ✅ Layout fix applied: Play button is isolated, rest are paired.
     keyboard = [
         [KeyboardButton(text=t('menu_play'))],
         [KeyboardButton(text=t('menu_deposit')), KeyboardButton(text=t('menu_withdraw'))],
@@ -222,14 +223,12 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ─── Interrupt Handler (የተሳሳተ ፍሰትን ለማቋረጥ) ───
+# ─── Interrupt Handler ───
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # If user clicks any main menu button while inside a conversation, cancel it and process the new button
+    # ✅ Clear current state and immediately process the new menu button
+    context.user_data.clear()
     await handle_menu_buttons(update, context)
     return ConversationHandler.END
-
-async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Menu updated 👇", reply_markup=get_main_menu(update.effective_user.id))
 
 # ─── Commands ───
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -238,14 +237,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     phone, _ = get_user_data(user.id)
     
-    # Point 4: Check if registered. If not, ask for contact.
     if not phone:
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
         return
 
-    # Referral system
     args = context.args
     if args and len(args) > 0 and not user.is_bot:
         referrer_id = args[0]
@@ -417,7 +414,7 @@ async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_T
     if result and result.get('success'):
         msg = get_text(user.id, 'wd_success', name=user.first_name, method=method, amount=amount, phone=phone)
     else:
-        msg = get_text(user.id, 'dep_fail')
+        msg = "⚠️ Request failed. Please contact support."
         
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
     
@@ -512,8 +509,8 @@ def main():
     threading.Thread(target=run_web, daemon=True).start()
     application = Application.builder().token(BOT_TOKEN).build()
 
-    # Interrupt Fallback: If user types a menu button instead of the expected step
-    menu_filter = filters.Regex(r"^(💰 Deposit|📥 ገቢ \(Deposit\)|💸 Withdraw|📤 ወጪ \(Withdraw\)|🏦 Balance|💵 ሂሳብ|👥 Invite|📜 History|💬 Support|🔢 Register|🌐 Language|ℹ️ Help|🏆 Rank|🎮 Play Abyssinia Bingo)$")
+    # Strict filter to interrupt Deposit/Withdraw flow if user clicks a Menu Button
+    menu_filter = filters.Regex(r"^(🎮 Play Abyssinia Bingo|💰 Deposit|💸 Withdraw|🏦 Balance|👥 Invite|📜 History|💬 Support|🔢 Register|🌐 Language|ℹ️ Help|🏆 Rank|💵 ሂሳብ|🔗 ግብዣ እና አጋር|🆘 እርዳታ|🌐 ቋንቋ \(Language\))$")
 
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^(💰 Deposit|📥 ገቢ \(Deposit\))$"), deposit_start)],
