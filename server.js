@@ -70,11 +70,13 @@ const SettingsSchema = new mongoose.Schema({
 
 const GiveawaySchema = new mongoose.Schema({
     id: String, amount: Number, totalUsers: Number, claimedBy: [String],
-    status: { type: String, default: 'active' }, createdAt: { type: Date, default: Date.now }, expiresAt: Date 
+    status: { type: String, default: 'active' }, createdAt: { type: Date, default: Date.now }, expiresAt: Date,
+    message: String, sentMessages: [{ user_id: String, message_id: Number }]
 }, { collection: 'giveaways' });
 
 const BroadcastSchema = new mongoose.Schema({
-    id: String, message: String, sentAt: { type: Date, default: Date.now }, status: { type: String, default: 'active' }
+    id: String, message: String, sentAt: { type: Date, default: Date.now },
+    status: { type: String, default: 'active' }, sentMessages: [{ user_id: String, message_id: Number }]
 }, { collection: 'broadcasts' });
 
 const User = mongoose.model('User', UserSchema);
@@ -117,70 +119,36 @@ function authFromHeaders(req) { return verifyTelegramInitData(req.headers['x-tel
 /* ═══════════════════════════════════════════════════════════
    GAME LOGIC
    ═══════════════════════════════════════════════════════════ */
-function mulberry32(a) {
-    return function() {
-        a |= 0; a = a + 0x6D2B79F5 | 0;
-        var t = Math.imul(a ^ a >>> 15, 1 | a);
-        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-}
-
+function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const cardCache = new Map();
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
-    const cols = [[], [], [], [], []];
-    const seedBase = cardNum * 100;
+    const cols = [[], [], [], [], []]; const seedBase = cardNum * 100;
     for (let c = 0; c < 5; c++) {
-        const min = c * 15 + 1, max = c * 15 + 15;
-        const avail = [];
+        const min = c * 15 + 1, max = c * 15 + 15; const avail = [];
         for (let n = min; n <= max; n++) avail.push(n);
-        const seed = seedBase + c;
-        const rand = mulberry32(seed);
-        for (let i = avail.length - 1; i > 0; i--) {
-            const j = Math.floor(rand() * (i + 1));
-            [avail[i], avail[j]] = [avail[j], avail[i]];
-        }
+        const seed = seedBase + c; const rand = mulberry32(seed);
+        for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; }
         cols[c] = avail.slice(0, 5); 
     }
-    cols[2][2] = 'FREE';
-    cardCache.set(cardNum, cols);
-    return cols;
+    cols[2][2] = 'FREE'; cardCache.set(cardNum, cols); return cols;
 }
 
 function checkWinningLine(cardNum, calledNumbers) {
-    const n = Number(cardNum);
-    if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
-    const cols = getCardCols(n);
-    const calledSet = new Set(calledNumbers);
-    const m = [];
-    
-    for (let r = 0; r < 5; r++) {
-        const row = [];
-        for (let c = 0; c < 5; c++) {
-            const val = cols[c][r];
-            row.push(val === 'FREE' || calledSet.has(val));
-        }
-        m.push(row);
-    }
-
+    const n = Number(cardNum); if (!Number.isFinite(n) || n < 1 || calledNumbers.length === 0) return null;
+    const cols = getCardCols(n); const calledSet = new Set(calledNumbers); const m = [];
+    for (let r = 0; r < 5; r++) { const row = []; for (let c = 0; c < 5; c++) { const val = cols[c][r]; row.push(val === 'FREE' || calledSet.has(val)); } m.push(row); }
     for (let r = 0; r < 5; r++) if (m[r].every(v => v)) return { type: 'row', index: r, desc: 'Row ' + (r + 1) };
     for (let c = 0; c < 5; c++) if (m.every(row => row[c])) return { type: 'col', index: c, desc: 'Col ' + (c + 1) };
-    
     let d1 = true; for (let i = 0; i < 5; i++) if (!m[i][i]) { d1 = false; break; }
     if (d1) return { type: 'diag1', desc: 'Diag 1' };
-    
     let d2 = true; for (let i = 0; i < 5; i++) if (!m[i][4 - i]) { d2 = false; break; }
     if (d2) return { type: 'diag2', desc: 'Diag 2' };
-    
     if (m[0][0] && m[0][4] && m[4][0] && m[4][4]) return { type: 'corners', desc: '4 Corners' };
     return null;
 }
 
-const gameState = {
-    phase: 'waiting', currentCall: null, calledNumbers: [], takenCards: {},
-    isAutoOn: true, isRunning: false, settings: { callInterval: 5, maxCards: 1000 }
-};
+const gameState = { phase: 'waiting', currentCall: null, calledNumbers: [], takenCards: {}, isAutoOn: true, isRunning: false, settings: { callInterval: 5, maxCards: 1000 } };
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null;
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
 const CARD_PRICE = 10, DERASH_PER_CARD = 8;
@@ -267,7 +235,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'approved' } }, { new: true });
         if (!txn) return res.status(400).json({ success: false });
-        
         let msgText = '';
         if (txn.type === 'deposit') { 
             await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: txn.amount } }); 
@@ -290,7 +257,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'rejected' } }, { new: true });
         if (!txn) return res.status(400).json({ success: false });
-        
         let msgText = '';
         if (txn.type === 'withdrawal') { 
             await User.updateOne({ id: String(txn.user_id) }, { $inc: { win_balance: txn.amount } }); 
@@ -309,32 +275,76 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ ADMIN: GIVEAWAY (Create, Read, Delete)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message, durationMinutes } = req.body;
         const amt = Number(amount); const limit = Number(totalUsers); const duration = Number(durationMinutes) || 60; 
         if (!amt || amt <= 0 || !limit || limit <= 0) return res.status(400).json({ success: false, error: 'Invalid amount or user limit' });
+        
         const expiresAt = new Date(Date.now() + duration * 60 * 1000);
-        const giveaway = await Giveaway.create({ id: 'gw_' + Date.now(), amount: amt, totalUsers: limit, expiresAt: expiresAt });
+        const giveaway = await Giveaway.create({ 
+            id: 'gw_' + Date.now(), amount: amt, totalUsers: limit, expiresAt: expiresAt,
+            message: message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ።`
+        });
+
         const users = await User.find({}, { id: 1 }).lean();
         let sentCount = 0;
-        const text = message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ። ለማግኘት ከታች ያለውን ቁልፍ ይጫኑ!\n\n⏳ <i>ይህ ቦነስ በ ${duration} ደቂቃ ውስጥ ያበቃል።</i>`;
+        let sentMessages = [];
+        
+        const text = giveaway.message + `\n\n⏳ <i>ይህ ቦነስ በ ${duration} ደቂቃ ውስጥ ያበቃል።</i>`;
+        
         users.forEach(async (u) => {
             try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         chat_id: u.id, text: text, parse_mode: 'HTML',
                         reply_markup: { inline_keyboard: [[{ text: `🎁 Claim ${amt} ETB Bonus`, callback_data: `claim_gw_${giveaway.id}` }]] }
                     })
                 });
+                const data = await response.json();
+                if (data.ok) sentMessages.push({ user_id: u.id, message_id: data.result.message_id });
                 sentCount++;
             } catch (err) { }
         });
+
+        giveaway.sentMessages = sentMessages;
+        await giveaway.save();
+
         res.json({ success: true, count: sentCount, giveawayId: giveaway.id, expiresAt });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+app.get('/api/admin/giveaways', adminAuth, async (req, res) => {
+    try {
+        const giveaways = await Giveaway.find({}).sort({ createdAt: -1 }).limit(20).lean();
+        res.json({ success: true, data: giveaways });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.delete('/api/admin/giveaways/:id', adminAuth, async (req, res) => {
+    try {
+        const giveaway = await Giveaway.findOne({ id: req.params.id });
+        if (!giveaway) return res.status(404).json({ success: false, error: 'Giveaway not found' });
+
+        // Delete from Telegram for all users
+        giveaway.sentMessages.forEach(async (msg) => {
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id })
+                });
+            } catch (e) {}
+        });
+
+        giveaway.status = 'deleted';
+        await giveaway.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ ADMIN: BROADCAST (Create, Read, Update, Delete)
 app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
     try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); }
     catch (e) { res.status(500).json({ success: false }); }
@@ -361,10 +371,34 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ ADMIN: EDIT BROADCAST
+app.put('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
+    try {
+        const { message } = req.body;
+        const broadcast = await Broadcast.findOne({ id: req.params.id });
+        if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
+
+        // Edit on Telegram for all users
+        broadcast.sentMessages.forEach(async (msg) => {
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id, text: message, parse_mode: 'HTML' })
+                });
+            } catch (e) {}
+        });
+
+        broadcast.message = message;
+        await broadcast.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
     try {
         const broadcast = await Broadcast.findOne({ id: req.params.id });
         if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
+
         broadcast.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
@@ -373,7 +407,9 @@ app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
                 });
             } catch (e) {}
         });
-        broadcast.status = 'deleted'; await broadcast.save();
+
+        broadcast.status = 'deleted';
+        await broadcast.save();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -553,7 +589,6 @@ app.post('/api/user/referral', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ✅ Auto Deposit Approval & Duplicate Prevention
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
@@ -574,7 +609,6 @@ app.post('/api/bot/create-txn', async (req, res) => {
         }
 
         const txnId = (type === 'deposit' ? 'dep_' : 'wdr_') + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        
         let txnStatus = 'pending';
         if (type === 'deposit' && amt <= AUTO_DEPOSIT_LIMIT) txnStatus = 'approved'; 
 
@@ -616,7 +650,6 @@ app.post('/api/bot/giveaway-claim', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ Background Job to expire giveaways automatically
 setInterval(async () => {
     try {
         const now = new Date();
@@ -647,12 +680,10 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ✅ REMOVED RATE LIMIT: Players can select cards instantly as long as they have balance
     socket.on('select_card', async (data) => {
         try {
             if (!socket.verifiedId) return socket.emit('card_error', { message: 'ያልተረጋገጠ ተጠቃሚ' });
             if (gameState.phase !== 'waiting' && gameState.phase !== 'countdown') return socket.emit('card_error', { message: 'ጨዋታ ተጀምሯል' });
-            
             const cardNum = Number(data?.cardNum);
             if (!cardNum || isNaN(cardNum)) return;
 
@@ -661,13 +692,10 @@ io.on('connection', (socket) => {
                     if (gameState.takenCards[cardNum].userId === socket.verifiedId) return;
                     return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 }
-                
                 let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
-                
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
-                
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
                 socket.emit('wallet_updated', {});
             } else if (data.action === 'deselect') {

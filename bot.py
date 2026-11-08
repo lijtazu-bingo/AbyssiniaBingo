@@ -14,7 +14,7 @@ load_dotenv()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ─── Flask Web Server ───
+# ─── Flask Web Server (ለ Render) ───
 app_web = Flask(__name__)
 @app_web.route('/')
 def home(): return "Abisinya Bingo Bot is running!"
@@ -82,7 +82,7 @@ def mark_txn_used(txn_id):
     conn.commit()
     conn.close()
 
-# ─── ሙሉ ትርጉሞች (Translations) ───
+# ─── ሙሉ ትርጉሞች ───
 TEXTS = {
     'am': {
         'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ። (ይህ ለደህንነትዎ ነው)",
@@ -103,7 +103,7 @@ TEXTS = {
         'dep_enter_amt': "💸 እባክዎ ማስገባት የሚፈልጉትን <b>የብር መጠን</b> ያስገቡ (ለምሳሌ፦ 100)፦",
         'dep_instructions': "🏦 <b>የክፍያ መረጃ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 አካውንት፦ <code>{acc}</code>\n\n⚠️ ከተላከ በኋላ የመጣውን የSMS ሙሉ ጽሁፍ (Transaction ID) ኮፒ አድርገው ከታች 👇 ፓስት ያድርጉት፦",
         'dep_success': "✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ አድሚን እስኪያጸድቅ ይጠብቁ።",
-        'dep_duplicate': "❌ ይህ የግብይት ቁጥር (Transaction ID) ቀድሞ ጥቅም ላይ ውሏል! እባክዎ አዲስ የሆነ የግብይት ቁጥር ያስገቡ።",
+        'dep_duplicate': "❌ ይህ የግብይት ቁጥር (Transaction ID) ቀድሞ ጥቅም ላይ ውሏል!",
         
         'wd_choose': "🏦 <b>ወደ የትኛው ባንክ/አካውንት ማውጣት ይፈልጋሉ?</b>",
         'wd_enter_amt': "💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን</b> ያስገቡ (ዝቅተኛው 100 ETB)፦",
@@ -218,11 +218,13 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
+# ✅ INTERRUPT HANDLER: ያለበትን ሂደት ሰርዞ ወደ አዲሱ ቁልፍ እንዲሄድ
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
     return ConversationHandler.END
 
+# ─── Commands ───
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -260,6 +262,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except: pass
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
+# ─── Deposit Flow ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
@@ -321,6 +324,7 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
         except: pass
     return ConversationHandler.END
 
+# ─── Withdraw Flow ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     keyboard = [
@@ -396,6 +400,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'cancelled'), reply_markup=get_main_menu(update.effective_user.id))
     return ConversationHandler.END
 
+# ─── Language ───
 async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am")],
@@ -414,6 +419,7 @@ async def lang_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(get_text(user_id, 'lang_changed'), parse_mode='HTML')
     await query.message.reply_text("👇", reply_markup=get_main_menu(user_id))
 
+# ─── Other Menu Buttons ───
 async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user = update.effective_user
@@ -490,6 +496,7 @@ def main():
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
+        # ✅ INTERRUPTS: If user clicks any menu button, cancel deposit process
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
@@ -501,6 +508,7 @@ def main():
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
+        # ✅ INTERRUPTS: If user clicks any menu button, cancel withdraw process
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
