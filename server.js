@@ -238,8 +238,8 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
                 totalDeposits: depAgg[0]?.total || 0, 
                 totalWithdrawals: wdAgg[0]?.total || 0, 
                 netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
-                systemUptime: process.uptime(), // ✅ New: System Uptime
-                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 // ✅ New: RAM usage in MB
+                systemUptime: process.uptime(), 
+                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 
             } 
         });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -328,7 +328,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ New Giveaway Logic (With Timer)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message, durationMinutes } = req.body;
@@ -477,7 +476,6 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-/* ✅ HISTORY MANAGEMENT APIs */
 app.get('/api/wallet/history', async (req, res) => {
     try {
         const user = authFromHeaders(req); 
@@ -751,35 +749,73 @@ io.on('connection', (socket) => {
         });
     });
 
+    // ✅ FIXED select_card event (Prevents balance duplication)
     socket.on('select_card', async (data) => {
         try {
             if (!socket.verifiedId) return socket.emit('card_error', { message: 'ያልተረጋገጠ ተጠቃሚ' });
             if (gameState.phase !== 'waiting' && gameState.phase !== 'countdown') return socket.emit('card_error', { message: 'ጨዋታ ተጀምሯል' });
-            const cardNum = Number(data?.cardNum);
             
+            const cardNum = Number(data?.cardNum);
+            if (!cardNum || isNaN(cardNum)) return;
+
             if (data.action === 'select') {
+                // Check if card is taken
                 if (gameState.takenCards[cardNum]) {
-                    if (gameState.takenCards[cardNum].userId === socket.verifiedId) return;
+                    if (gameState.takenCards[cardNum].userId === socket.verifiedId) {
+                        // Already yours, ignore silently
+                        return;
+                    }
                     return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 }
-                let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
-                if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
-                if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
+                
+                // Deduct balance atomically (Play -> Win -> Referral)
+                let updated = await User.findOneAndUpdate(
+                    { id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, 
+                    { $inc: { play_balance: -CARD_PRICE } }, 
+                    { new: true }
+                );
+                if (!updated) {
+                    updated = await User.findOneAndUpdate(
+                        { id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, 
+                        { $inc: { win_balance: -CARD_PRICE } }, 
+                        { new: true }
+                    );
+                }
+                if (!updated) {
+                    updated = await User.findOneAndUpdate(
+                        { id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, 
+                        { $inc: { referral_balance: -CARD_PRICE } }, 
+                        { new: true }
+                    );
+                }
                 
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
                 
+                // Assign card
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
                 socket.emit('wallet_updated', {});
+                
             } else if (data.action === 'deselect') {
+                // Check if the user actually owns this card
                 if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) { 
                     delete gameState.takenCards[cardNum]; 
-                    await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } }); 
+                    // Refund ONLY ONCE
+                    await User.updateOne(
+                        { id: String(socket.verifiedId) }, 
+                        { $inc: { play_balance: CARD_PRICE } }
+                    ); 
                     socket.emit('wallet_updated', {}); 
+                } else {
+                    return; // User doesn't own this card, ignore
                 }
             }
+            
             const totalCards = Object.keys(gameState.takenCards).length;
             io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: totalCards, totalCards });
-        } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
+        } catch (err) { 
+            console.error("select_card error:", err);
+            socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); 
+        }
     });
 });
 
