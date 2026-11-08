@@ -39,7 +39,6 @@ def init_db():
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS users
                  (user_id TEXT PRIMARY KEY, username TEXT, first_name TEXT, phone TEXT, lang TEXT DEFAULT 'am', registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    # ✅ አዲስ ሰንጠረዥ ለተመዘገቡ የባንክ ግብይቶች (ለድግግሞሽ መከላከያ)
     c.execute('''CREATE TABLE IF NOT EXISTS used_txns (txn_id TEXT PRIMARY KEY)''')
     conn.commit()
     conn.close()
@@ -134,53 +133,52 @@ TEXTS = {
         'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።",
         'cancelled': "❌ ሂደቱ ተሰርዟል።"
     },
-    # ... (English, Tigrinya, Oromo translations remain the same)
+    'en': {
+        'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number. (This is for security)",
+        'share_contact': "📱 Share Phone Number",
+        'already_registered': "✅ You are already registered!",
+        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abisinya Bingo App!\n\n👇 Choose an option below",
+        'welcome_back': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👇 Choose an option below",
+        'menu_play': "🎮 Play Abyssinia Bingo",
+        'menu_deposit': "💰 Deposit",
+        'menu_withdraw': "💸 Withdraw",
+        'menu_balance': "🏦 Balance",
+        'menu_invite': "👥 Invite",
+        'menu_history': "📜 History",
+        'menu_support': "💬 Support",
+        'menu_register': "🔢 Register",
+        'menu_lang': "🌐 Language",
+        'menu_help': "ℹ️ Help",
+        'menu_rank': "🏆 Rank",
+        'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
+        'play_inline_btn': "🎮 Play Bingo",
+        'dep_choose': "💳 <b>Choose a payment method:</b>",
+        'dep_enter_amt': "💸 Please enter the <b>amount</b> you want to deposit (e.g., 100):",
+        'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ After sending, copy the full SMS (Transaction ID) and paste it below 👇",
+        'dep_success': "✅ <b>Deposit Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n⏳ Wait for Admin approval.",
+        'dep_duplicate': "❌ This Transaction ID has already been used! Please enter a new one.",
+        'wd_choose': "🏦 <b>Choose a bank/account to withdraw:</b>",
+        'wd_enter_amt': "💸 Enter the <b>amount</b> to withdraw (minimum 100 ETB):",
+        'wd_enter_phone': "📱 Enter the Phone/Account <b>number</b> to withdraw to:",
+        'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n\n⏳ <b>Please wait for Admin approval.</b>",
+        'bal_msg': "💵 <b>Balance Summary</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Total Balance: {total} ETB</b>",
+        'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
+        'support_msg': "💬 For any questions contact @Tazikes.",
+        'history_msg': "📜 Click below to view your history:",
+        'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
+        'leaderboard_msg': "🏆 Click below to view the leaderboard:",
+        'lang_choose': "🌐 <b>Choose a language:</b>",
+        'lang_changed': "✅ Language changed to English!",
+        'invalid_amt': "❌ Please enter a valid number.",
+        'min_wd': "❌ Minimum withdrawal is 100 ETB.",
+        'min_dep': "❌ Minimum deposit is 10 ETB.",
+        'invalid_phone': "❌ Please enter a valid phone number.",
+        'cancelled': "❌ Process cancelled."
+    }
 }
 
-TEXTS['en'] = {
-    'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number. (This is for security)",
-    'share_contact': "📱 Share Phone Number",
-    'already_registered': "✅ You are already registered!",
-    'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abisinya Bingo App!\n\n👇 Choose an option below",
-    'welcome_back': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👇 Choose an option below",
-    'menu_play': "🎮 Play Abyssinia Bingo",
-    'menu_deposit': "💰 Deposit",
-    'menu_withdraw': "💸 Withdraw",
-    'menu_balance': "🏦 Balance",
-    'menu_invite': "👥 Invite",
-    'menu_history': "📜 History",
-    'menu_support': "💬 Support",
-    'menu_register': "🔢 Register",
-    'menu_lang': "🌐 Language",
-    'menu_help': "ℹ️ Help",
-    'menu_rank': "🏆 Rank",
-    'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win! May victory be yours!\n\n👇 Tap the button below to start playing:",
-    'play_inline_btn': "🎮 Play Bingo",
-    'dep_choose': "💳 <b>Choose a payment method:</b>",
-    'dep_enter_amt': "💸 Please enter the <b>amount</b> you want to deposit (e.g., 100):",
-    'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ After sending, copy the full SMS (Transaction ID) and paste it below 👇",
-    'dep_success': "✅ <b>Deposit Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n⏳ Wait for Admin approval.",
-    'dep_duplicate': "❌ This Transaction ID has already been used! Please enter a new one.",
-    'wd_choose': "🏦 <b>Choose a bank/account to withdraw:</b>",
-    'wd_enter_amt': "💸 Enter the <b>amount</b> to withdraw (minimum 100 ETB):",
-    'wd_enter_phone': "📱 Enter the Phone/Account <b>number</b> to withdraw to:",
-    'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n\n⏳ <b>Please wait for Admin approval.</b>",
-    'bal_msg': "💵 <b>Balance Summary</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Total Balance: {total} ETB</b>",
-    'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
-    'support_msg': "💬 For any questions contact @Tazikes.",
-    'history_msg': "📜 Click below to view your history:",
-    'help_msg': "📚 <b>Bot Commands & Guide</b>\n\n/start - Restart the bot\n/play - Play the game\n/balance - Check your balance\n/deposit - Make a deposit\n/withdraw - Make a withdrawal\n/invite - Get your invite link\n/support - Get help\n/lang - Change language\n\n💡 <i>You can also use the buttons below.</i>",
-    'leaderboard_msg': "🏆 Click below to view the leaderboard:",
-    'lang_choose': "🌐 <b>Choose a language:</b>",
-    'lang_changed': "✅ Language changed to English!",
-    'invalid_amt': "❌ Please enter a valid number.",
-    'min_wd': "❌ Minimum withdrawal is 100 ETB.",
-    'min_dep': "❌ Minimum deposit is 10 ETB.",
-    'invalid_phone': "❌ Please enter a valid phone number.",
-    'cancelled': "❌ Process cancelled."
-}
-TEXTS['ti'] = TEXTS['am'] # Fallback
-TEXTS['om'] = TEXTS['am'] # Fallback
+TEXTS['ti'] = TEXTS['am'] 
+TEXTS['om'] = TEXTS['am'] 
 
 def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
@@ -206,7 +204,7 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ✅ INTERRUPT HANDLER: ያለበትን ሂደት ሰርዞ ወደ አዲሱ ቁልፍ እንዲሄድ
+# ✅ INTERRUPT HANDLER
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
@@ -302,7 +300,6 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     txn_ref = update.message.text.strip()
     amount = context.user_data.get('deposit_amount', 0)
     
-    # ✅ ድግግሞሽ መከላከያ ፍተሻ
     if is_txn_used(txn_ref):
         await update.message.reply_text(get_text(user.id, 'dep_duplicate'), reply_markup=get_main_menu(user.id))
         return ConversationHandler.END
@@ -316,7 +313,6 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     except: pass
     
     if result and result.get('success'):
-        # ✅ ትክክለኛ ሲሆን ብቻ ወደ ዳታቤዝ መዝግብ
         mark_txn_used(txn_ref) 
         msg = get_text(user.id, 'dep_success', name=user.first_name, method="Telebirr", amount=amount)
     else:
@@ -537,7 +533,6 @@ def main():
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
-        # ✅ FIX: ማንኛውም ሜኑ ቁልፍ ሲጫን ሂደቱን ሰርዞ ወደ አዲሱ ያልፋል
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
@@ -549,7 +544,6 @@ def main():
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
-        # ✅ FIX: ማንኛውም ሜኑ ቁልፍ ሲጫን ሂደቱን ሰርዞ ወደ አዲሱ ያልፋል
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
