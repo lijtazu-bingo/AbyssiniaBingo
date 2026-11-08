@@ -60,12 +60,9 @@ const GameHistorySchema = new mongoose.Schema({
 
 const SettingsSchema = new mongoose.Schema({
     key: { type: String, default: 'payment_accounts', unique: true },
-    telebirr_number: { type: String, default: '0968940123' },
-    telebirr_name: { type: String, default: 'tazebew' },
-    cbe_number: { type: String, default: '1000390803005' },
-    cbe_name: { type: String, default: 'tazebew' },
-    enable_cbe: { type: Boolean, default: true },
-    maxCards: { type: Number, default: 1000 }
+    telebirr_number: { type: String, default: '0968940123' }, telebirr_name: { type: String, default: 'tazebew' },
+    cbe_number: { type: String, default: '1000390803005' }, cbe_name: { type: String, default: 'tazebew' },
+    enable_cbe: { type: Boolean, default: true }, maxCards: { type: Number, default: 1000 }
 }, { collection: 'settings' });
 
 const GiveawaySchema = new mongoose.Schema({
@@ -182,21 +179,11 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
         const [totalPlayers, pendingDeposits, pendingWithdrawals, depAgg, wdAgg] = await Promise.all([
-            User.countDocuments(),
-            Transaction.countDocuments({ type: 'deposit', status: 'pending' }),
-            Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
+            User.countDocuments(), Transaction.countDocuments({ type: 'deposit', status: 'pending' }), Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
             Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
             Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
         ]);
-        res.json({ 
-            success: true, 
-            data: { 
-                totalPlayers, pendingDeposits, pendingWithdrawals, 
-                totalDeposits: depAgg[0]?.total || 0, totalWithdrawals: wdAgg[0]?.total || 0, 
-                netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
-                systemUptime: process.uptime(), memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 
-            } 
-        });
+        res.json({ success: true, data: { totalPlayers, pendingDeposits, pendingWithdrawals, totalDeposits: depAgg[0]?.total || 0, totalWithdrawals: wdAgg[0]?.total || 0, netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0), systemUptime: process.uptime(), memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -275,7 +262,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: GIVEAWAY (Create, Read, Delete)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message, durationMinutes } = req.body;
@@ -289,9 +275,7 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
         });
 
         const users = await User.find({}, { id: 1 }).lean();
-        let sentCount = 0;
-        let sentMessages = [];
-        
+        let sentCount = 0; let sentMessages = [];
         const text = giveaway.message + `\n\n⏳ <i>ይህ ቦነስ በ ${duration} ደቂቃ ውስጥ ያበቃል።</i>`;
         
         users.forEach(async (u) => {
@@ -317,18 +301,14 @@ app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
 });
 
 app.get('/api/admin/giveaways', adminAuth, async (req, res) => {
-    try {
-        const giveaways = await Giveaway.find({}).sort({ createdAt: -1 }).limit(20).lean();
-        res.json({ success: true, data: giveaways });
-    } catch (e) { res.status(500).json({ success: false }); }
+    try { const giveaways = await Giveaway.find({}).sort({ createdAt: -1 }).limit(20).lean(); res.json({ success: true, data: giveaways }); }
+    catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.delete('/api/admin/giveaways/:id', adminAuth, async (req, res) => {
     try {
         const giveaway = await Giveaway.findOne({ id: req.params.id });
         if (!giveaway) return res.status(404).json({ success: false, error: 'Giveaway not found' });
-
-        // Delete from Telegram for all users
         giveaway.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
@@ -337,14 +317,12 @@ app.delete('/api/admin/giveaways/:id', adminAuth, async (req, res) => {
                 });
             } catch (e) {}
         });
-
         giveaway.status = 'deleted';
         await giveaway.save();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: BROADCAST (Create, Read, Update, Delete)
 app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
     try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); }
     catch (e) { res.status(500).json({ success: false }); }
@@ -371,14 +349,12 @@ app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ ADMIN: EDIT BROADCAST
 app.put('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
     try {
         const { message } = req.body;
         const broadcast = await Broadcast.findOne({ id: req.params.id });
         if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
 
-        // Edit on Telegram for all users
         broadcast.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
@@ -398,7 +374,6 @@ app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
     try {
         const broadcast = await Broadcast.findOne({ id: req.params.id });
         if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
-
         broadcast.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
@@ -407,7 +382,6 @@ app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
                 });
             } catch (e) {}
         });
-
         broadcast.status = 'deleted';
         await broadcast.save();
         res.json({ success: true });

@@ -14,7 +14,7 @@ load_dotenv()
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ─── Flask Web Server (ለ Render) ───
+# ─── Flask Web Server ───
 app_web = Flask(__name__)
 @app_web.route('/')
 def home(): return "Abisinya Bingo Bot is running!"
@@ -85,9 +85,8 @@ def mark_txn_used(txn_id):
 # ─── ሙሉ ትርጉሞች ───
 TEXTS = {
     'am': {
-        'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ። (ይህ ለደህንነትዎ ነው)",
-        'share_contact': "📱 ስልክ ቁጥሬን አጋራ",
-        'already_registered': "✅ እርስዎ አስቀድመው ተመዝግበዋል!",
+        'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ።",
+        'share_contact': "📱 ስልክ ቁጥሬን አጋራ", 'already_registered': "✅ እርስዎ አስቀድመው ተመዝግበዋል!",
         'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         'welcome_back': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         
@@ -96,7 +95,7 @@ TEXTS = {
         'menu_support': "💬 ድጋፍ (Support)", 'menu_register': "🔢 ምዝገባ (Register)", 'menu_lang': "🌐 ቋንቋ (Language)",
         'menu_help': "ℹ️ እርዳታ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)",
         
-        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\nይጫወቱ ያሸንፉ ድል በድል ይሁኑ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
+        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
         'play_inline_btn': "🎮 Play Bingo",
         
         'dep_choose': "💳 <b>የክፍያ አማራጭ ይምረጡ፦</b>",
@@ -118,7 +117,11 @@ TEXTS = {
         'leaderboard_msg': "🏆 የአሸናፊዎች ደረጃ ለማየት ከታች ይጫኑ፦",
         'lang_choose': "🌐 <b>እባክዎ ቋንቋ ይምረጡ፦</b>", 'lang_changed': "✅ ቋንቋ ወደ አማርኛ ተቀይሯል!",
         'invalid_amt': "❌ እባክዎ ትክክለኛ ቁጥር ያስገቡ።", 'min_wd': "❌ ዝቅተኛው የወጭ መጠን 100 ETB ነው።",
-        'min_dep': "❌ ዝቅተኛው የገቢ መጠን 10 ETB ነው።", 'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።", 'cancelled': "❌ ሂደቱ ተሰርዟል።"
+        'min_dep': "❌ ዝቅተኛው የገቢ መጠን 10 ETB ነው።", 'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።", 'cancelled': "❌ ሂደቱ ተሰርዟል።",
+        'gw_success': "🎉 <b>እንኳን ደስ አለዎት!</b>\n\nየ {amount} ETB ቦነስ በተሳካ ሁኔታ አግኝተዋል። በ Play Walletዎ ውስጥ ይገኛል።",
+        'gw_expired': "⏳ <b>ይቅርታ!</b>\n\nይህ ቦነስ ጊዜው አልፎበታል ወይም ተጠቃሚዎች ሙሉውን ወስደዋል። በሚቀጥለው ጊዜ ይሞክሩ!",
+        'gw_claimed': "⚠️ ይህን ቦነስ አስቀድመው አግኝተዋል።",
+        'gw_error': "❌ ስህተት ተከስቷል። እባክዎ በኋላ ይሞክሩ።"
     },
     'en': {
         'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number.",
@@ -144,7 +147,10 @@ TEXTS = {
         'leaderboard_msg': "🏆 Click below to view the leaderboard:",
         'lang_choose': "🌐 <b>Choose a language:</b>", 'lang_changed': "✅ Language changed to English!",
         'invalid_amt': "❌ Please enter a valid number.", 'min_wd': "❌ Minimum withdrawal is 100 ETB.",
-        'min_dep': "❌ Minimum deposit is 10 ETB.", 'invalid_phone': "❌ Please enter a valid phone number.", 'cancelled': "❌ Process cancelled."
+        'min_dep': "❌ Minimum deposit is 10 ETB.", 'invalid_phone': "❌ Please enter a valid phone number.", 'cancelled': "❌ Process cancelled.",
+        'gw_success': "🎉 <b>Congratulations!</b>\n\nYou have successfully claimed {amount} ETB bonus. It is now in your Play Wallet.",
+        'gw_expired': "⏳ <b>Sorry!</b>\n\nThis giveaway has expired or all bonuses have been claimed. Try again next time!",
+        'gw_claimed': "⚠️ You already claimed this bonus.", 'gw_error': "❌ Error occurred. Try again later."
     },
     'ti': {
         'register_first': "👋 <b>እንቋዕ ደሓን መጻእኩም!</b>\n\nንምጅማር በጃኹም ቁጽሪ ተሌፎንኩም ኣካፍሉ።",
@@ -170,7 +176,10 @@ TEXTS = {
         'leaderboard_msg': "🏆 ደረጃ ንምርኣይ ኣብ ታሕቲ ጠውቑ፦",
         'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>", 'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
         'invalid_amt': "❌ ትኽክለኛ ቁጽሪ ኣእትዉ።", 'min_wd': "❌ ዝቕነይ ወጻኢ 100 ETB እዩ።",
-        'min_dep': "❌ ዝቕነይ ኣታዊ 10 ETB እዩ።", 'invalid_phone': "❌ ትኽክለኛ ቁጽሪ ተሌፎን ኣእትዉ።", 'cancelled': "❌ መስርሕ ተሰሪዙ።"
+        'min_dep': "❌ ዝቕነይ ኣታዊ 10 ETB እዩ።", 'invalid_phone': "❌ ትኽክለኛ ቁጽሪ ተሌፎን ኣእትዉ።", 'cancelled': "❌ መስርሕ ተሰሪዙ።",
+        'gw_success': "🎉 <b>እንቋዕ ደስ ኣለኩም!</b>\n\nናይ {amount} ETB ቦነስ ብዓወት ረኺብኩም። ኣብ Play Walletኩም ይርከብ።",
+        'gw_expired': "⏳ <b>ይቕሬታ!</b>\n\nእዚ ቦነስ ግዜኡ ሓሊፉ ወይ ተጠቀምቲ ኩሉ ወሲዶምዎ። ኣብ ዝቕጽል ግዜ ፈትኑ!",
+        'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።"
     },
     'om': {
         'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
@@ -196,7 +205,10 @@ TEXTS = {
         'leaderboard_msg': "🏆 Sadarkaa ilaaluuf gadii tuqaa:",
         'lang_choose': "🌐 <b>Afaan filadhaa:</b>", 'lang_changed': "✅ Afaan gara Afaan Oromootti jijjiirameera!",
         'invalid_amt': "❌ Lakkoofsa sirrii galchaa.", 'min_wd': "❌ Baasiin xiqqaan 100 ETB dha.",
-        'min_dep': "❌ Galiin xiqqaan 10 ETB dha.", 'invalid_phone': "❌ Lakkoofsa bilbila sirrii galchaa.", 'cancelled': "❌ Adeemsi haqameera."
+        'min_dep': "❌ Galiin xiqqaan 10 ETB dha.", 'invalid_phone': "❌ Lakkoofsa bilbila sirrii galchaa.", 'cancelled': "❌ Adeemsi haqameera.",
+        'gw_success': "🎉 <b>Baga gammaddan!</b>\n\nBoonsii {amount} ETB milkaa'inaan argattan. Play Wallet keessan keessa jira.",
+        'gw_expired': "⏳ <b>Dhiifama!</b>\n\nBoonsiin kun yeroon isaa darbeera ykn hunda fudhatameera. Yeroo biraa yaalaa!",
+        'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa."
     }
 }
 
@@ -425,6 +437,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     user = update.effective_user
     t = lambda key: get_text(user.id, key)
     _, lang = get_user_data(user.id)
+    
     is_play = any(text == TEXTS[l].get('menu_play') for l in TEXTS) or "Play Abyssinia Bingo" in text
     is_balance = any(text == TEXTS[l].get('menu_balance') for l in TEXTS)
     is_invite = any(text == TEXTS[l].get('menu_invite') for l in TEXTS)
@@ -473,6 +486,35 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history&lang={lang}"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
 
+# ✅ GIVEAWAY CLAIM CALLBACK
+async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user = query.from_user
+    giveaway_id = query.data.replace("claim_gw_", "")
+    
+    try:
+        res = requests.post(f"{SERVER_API_URL}/api/bot/giveaway-claim", json={
+            "giveaway_id": giveaway_id,
+            "user_id": str(user.id)
+        }, timeout=10).json()
+        
+        if res.get('success'):
+            success_msg = get_text(user.id, 'gw_success', amount=res.get('amount'))
+            await query.edit_message_text(success_msg, parse_mode='HTML')
+        else:
+            error_msg = res.get('error', '').lower()
+            if 'expired' in error_msg or 'all bonuses' in error_msg:
+                txt = get_text(user.id, 'gw_expired')
+            elif 'already' in error_msg:
+                txt = get_text(user.id, 'gw_claimed')
+            else:
+                txt = get_text(user.id, 'gw_error')
+            await query.edit_message_text(txt, parse_mode='HTML')
+    except Exception as e:
+        logger.error(f"Giveaway claim error: {e}")
+        await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
+
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
@@ -496,7 +538,6 @@ def main():
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
-        # ✅ INTERRUPTS: If user clicks any menu button, cancel deposit process
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
@@ -508,7 +549,6 @@ def main():
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
-        # ✅ INTERRUPTS: If user clicks any menu button, cancel withdraw process
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
@@ -518,6 +558,10 @@ def main():
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
+    
+    # ✅ ADD: Giveaway Claim Callback
+    application.add_handler(CallbackQueryHandler(claim_giveaway_callback, pattern="^claim_gw_"))
+    
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))

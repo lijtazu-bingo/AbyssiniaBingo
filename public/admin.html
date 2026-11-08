@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- PLAYERS DIRECTORY (CRUD) -->
+            <!-- PLAYERS DIRECTORY -->
             <div id="page-players" class="page">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -255,7 +255,7 @@
                 </div>
             </div>
 
-            <!-- REFERRALS (With Top Inviter) -->
+            <!-- REFERRALS -->
             <div id="page-referrals" class="page">
                 <div class="top-inviter-card" id="top-inviter-card">
                     <div class="top-inviter-info">
@@ -324,7 +324,7 @@
                 </div>
             </div>
 
-            <!-- GIVEAWAY / BONUS -->
+            <!-- GIVEAWAY -->
             <div id="page-giveaway" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 600px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
@@ -406,7 +406,7 @@
     </div>
 </div>
 
-<!-- ✅ Slide-over Player Details Modal -->
+<!-- Player Details Side Panel -->
 <div class="side-panel-overlay" id="player-overlay" onclick="closePlayerPanel()"></div>
 <div class="side-panel" id="player-panel">
     <div class="side-panel-header">
@@ -439,7 +439,6 @@
         <div class="info-group" style="display: flex; gap: 10px; flex-direction: column;">
             <button class="btn btn-warning" style="width: 100%; justify-content: center;" onclick="editPlayerBalance()"><i class="fas fa-edit"></i> Edit Balance</button>
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="sendMessageToPlayer()"><i class="fas fa-paper-plane"></i> Send Direct Message</button>
-            <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="deletePlayerAccount()"><i class="fas fa-trash"></i> Delete Account</button>
         </div>
     </div>
 </div>
@@ -661,12 +660,6 @@ async function sendMessageToPlayer() {
     } catch (e) { showToast('Failed to send', true); }
 }
 
-async function deletePlayerAccount() {
-    if (!currentSelectedPlayer) return;
-    if (!confirm(`Are you sure you want to delete ${currentSelectedPlayer.name}? This cannot be undone.`)) return;
-    showToast("Delete operation requires server API implementation.", true);
-}
-
 async function loadTransactions(type) {
     const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
     const tbody = document.getElementById(tbodyId);
@@ -713,9 +706,7 @@ async function loadReferrals() {
                 document.getElementById('top-inviter-card').style.display = 'none';
                 return;
             }
-
             document.getElementById('top-inviter-card').style.display = 'flex';
-
             const counts = {};
             d.data.forEach(r => { counts[r.referrer_id] = (counts[r.referrer_id] || 0) + 1; });
             let topId = null, topCount = 0;
