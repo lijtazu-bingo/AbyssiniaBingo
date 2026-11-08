@@ -20,6 +20,7 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const REQUIRE_TG_AUTH = process.env.REQUIRE_TG_AUTH === 'true';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+const AUTO_DEPOSIT_LIMIT = 500;
 
 if (!BOT_TOKEN || !MONGODB_URI) { console.error('Missing env'); process.exit(1); }
 
@@ -68,20 +69,12 @@ const SettingsSchema = new mongoose.Schema({
 }, { collection: 'settings' });
 
 const GiveawaySchema = new mongoose.Schema({
-    id: String,
-    amount: Number,
-    totalUsers: Number,
-    claimedBy: [String],
-    status: { type: String, default: 'active' }, 
-    createdAt: { type: Date, default: Date.now },
-    expiresAt: Date 
+    id: String, amount: Number, totalUsers: Number, claimedBy: [String],
+    status: { type: String, default: 'active' }, createdAt: { type: Date, default: Date.now }, expiresAt: Date 
 }, { collection: 'giveaways' });
 
 const BroadcastSchema = new mongoose.Schema({
-    id: String,
-    message: String,
-    sentAt: { type: Date, default: Date.now },
-    status: { type: String, default: 'active' }
+    id: String, message: String, sentAt: { type: Date, default: Date.now }, status: { type: String, default: 'active' }
 }, { collection: 'broadcasts' });
 
 const User = mongoose.model('User', UserSchema);
@@ -134,7 +127,6 @@ function mulberry32(a) {
 }
 
 const cardCache = new Map();
-
 function getCardCols(cardNum) {
     if (cardCache.has(cardNum)) return cardCache.get(cardNum);
     const cols = [[], [], [], [], []];
@@ -172,12 +164,9 @@ function checkWinningLine(cardNum, calledNumbers) {
         m.push(row);
     }
 
-    for (let r = 0; r < 5; r++) {
-        if (m[r].every(v => v)) return { type: 'row', index: r, desc: 'Row ' + (r + 1) };
-    }
-    for (let c = 0; c < 5; c++) {
-        if (m.every(row => row[c])) return { type: 'col', index: c, desc: 'Col ' + (c + 1) };
-    }
+    for (let r = 0; r < 5; r++) if (m[r].every(v => v)) return { type: 'row', index: r, desc: 'Row ' + (r + 1) };
+    for (let c = 0; c < 5; c++) if (m.every(row => row[c])) return { type: 'col', index: c, desc: 'Col ' + (c + 1) };
+    
     let d1 = true; for (let i = 0; i < 5; i++) if (!m[i][i]) { d1 = false; break; }
     if (d1) return { type: 'diag1', desc: 'Diag 1' };
     
@@ -235,11 +224,9 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             success: true, 
             data: { 
                 totalPlayers, pendingDeposits, pendingWithdrawals, 
-                totalDeposits: depAgg[0]?.total || 0, 
-                totalWithdrawals: wdAgg[0]?.total || 0, 
+                totalDeposits: depAgg[0]?.total || 0, totalWithdrawals: wdAgg[0]?.total || 0, 
                 netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
-                systemUptime: process.uptime(), 
-                memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 
+                systemUptime: process.uptime(), memoryUsage: process.memoryUsage().heapUsed / 1024 / 1024 
             } 
         });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -289,15 +276,12 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         } else if (txn.type === 'withdrawal') {
             msgText = `✅ <b>Withdrawal Approved!</b>\n\nYour withdrawal of ${txn.amount} ETB has been approved.`;
         }
-
         if (msgText) {
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: txn.user_id, text: msgText, parse_mode: 'HTML' })
             }).catch(err => console.error('TG notify error', err));
         }
-
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -315,15 +299,12 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
         } else if (txn.type === 'deposit') {
             msgText = `❌ <b>Deposit Rejected!</b>\n\nYour deposit of ${txn.amount} ETB was rejected.`;
         }
-
         if (msgText) {
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: txn.user_id, text: msgText, parse_mode: 'HTML' })
             }).catch(err => console.error('TG notify error', err));
         }
-
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -331,91 +312,51 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message, durationMinutes } = req.body;
-        const amt = Number(amount);
-        const limit = Number(totalUsers);
-        const duration = Number(durationMinutes) || 60; 
-        
-        if (!amt || amt <= 0 || !limit || limit <= 0) {
-            return res.status(400).json({ success: false, error: 'Invalid amount or user limit' });
-        }
-
+        const amt = Number(amount); const limit = Number(totalUsers); const duration = Number(durationMinutes) || 60; 
+        if (!amt || amt <= 0 || !limit || limit <= 0) return res.status(400).json({ success: false, error: 'Invalid amount or user limit' });
         const expiresAt = new Date(Date.now() + duration * 60 * 1000);
-
-        const giveaway = await Giveaway.create({
-            id: 'gw_' + Date.now(),
-            amount: amt,
-            totalUsers: limit,
-            expiresAt: expiresAt
-        });
-
+        const giveaway = await Giveaway.create({ id: 'gw_' + Date.now(), amount: amt, totalUsers: limit, expiresAt: expiresAt });
         const users = await User.find({}, { id: 1 }).lean();
         let sentCount = 0;
-        
         const text = message || `🎁 <b>የመጫወቻ ቦነስ!</b>\n\n${limit} ተጫዋቾች ብቻ የ ${amt} ETB ቦነስ ማግኘት ይችላሉ። ለማግኘት ከታች ያለውን ቁልፍ ይጫኑ!\n\n⏳ <i>ይህ ቦነስ በ ${duration} ደቂቃ ውስጥ ያበቃል።</i>`;
-        
         users.forEach(async (u) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        chat_id: u.id, 
-                        text: text, 
-                        parse_mode: 'HTML',
-                        reply_markup: {
-                            inline_keyboard: [[{ text: `🎁 Claim ${amt} ETB Bonus`, callback_data: `claim_gw_${giveaway.id}` }]]
-                        }
+                        chat_id: u.id, text: text, parse_mode: 'HTML',
+                        reply_markup: { inline_keyboard: [[{ text: `🎁 Claim ${amt} ETB Bonus`, callback_data: `claim_gw_${giveaway.id}` }]] }
                     })
                 });
                 sentCount++;
             } catch (err) { }
         });
-
         res.json({ success: true, count: sentCount, giveawayId: giveaway.id, expiresAt });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
-    try {
-        const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean();
-        res.json({ success: true, data: broadcasts });
-    } catch (e) { res.status(500).json({ success: false }); }
+    try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); }
+    catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
     try {
         const { message, targetUserId } = req.body;
         if (!message) return res.status(400).json({ success: false, error: 'Message required' });
-
-        let users = [];
-        if (targetUserId) {
-            users = [{ id: targetUserId }]; 
-        } else {
-            users = await User.find({}, { id: 1 }).lean(); 
-        }
-        
+        let users = targetUserId ? [{ id: targetUserId }] : await User.find({}, { id: 1 }).lean();
         let sentMessages = []; 
-        
         for (const u of users) {
             try {
                 const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' })
                 });
                 const data = await response.json();
                 if (data.ok) sentMessages.push({ user_id: u.id, message_id: data.result.message_id });
             } catch (err) { }
         }
-
-        if (!targetUserId) {
-            await Broadcast.create({
-                id: 'bc_' + Date.now(),
-                message: message,
-                sentMessages: sentMessages
-            });
-        }
-
+        if (!targetUserId) await Broadcast.create({ id: 'bc_' + Date.now(), message: message, sentMessages: sentMessages });
         res.json({ success: true, count: users.length });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -424,20 +365,15 @@ app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
     try {
         const broadcast = await Broadcast.findOne({ id: req.params.id });
         if (!broadcast) return res.status(404).json({ success: false, error: 'Broadcast not found' });
-
         broadcast.sentMessages.forEach(async (msg) => {
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id })
                 });
             } catch (e) {}
         });
-
-        broadcast.status = 'deleted';
-        await broadcast.save();
-
+        broadcast.status = 'deleted'; await broadcast.save();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -448,15 +384,10 @@ app.get('/api/admin/referrals', adminAuth, async (req, res) => {
         const referrerIds = [...new Set(referredUsers.map(u => u.referred_by))];
         const referrers = await User.find({ id: { $in: referrerIds } }, { id: 1, name: 1 }).lean();
         const referrerMap = new Map(referrers.map(r => [r.id, r.name]));
-
         const data = referredUsers.map(u => ({
-            referrer_id: u.referred_by,
-            referrer_name: referrerMap.get(u.referred_by) || 'Unknown',
-            new_user_id: u.id,
-            new_user_name: u.name || 'Player',
-            created_at: u.registered_at
+            referrer_id: u.referred_by, referrer_name: referrerMap.get(u.referred_by) || 'Unknown',
+            new_user_id: u.id, new_user_name: u.name || 'Player', created_at: u.registered_at
         }));
-
         res.json({ success: true, data });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -466,7 +397,6 @@ app.get('/api/wallet/me', async (req, res) => {
         const user = authFromHeaders(req);
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        
         const dbUser = await User.findOne({ id: userId }).lean();
         if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "", referral_balance: 0 } });
         dbUser.play_balance = Number(dbUser.play_balance) || 0; 
@@ -481,11 +411,9 @@ app.get('/api/wallet/history', async (req, res) => {
         const user = authFromHeaders(req); 
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        
         const includeHidden = req.query.includeHidden === 'true';
         const query = { user_id: userId };
         if (!includeHidden) query.hidden_by_user = false;
-
         const history = await Transaction.find(query).sort({ created: -1 }).limit(50).lean();
         res.json({ success: true, data: history });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -497,7 +425,6 @@ app.post('/api/wallet/history/hide', async (req, res) => {
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         const { txnId, hide } = req.body;
-        
         await Transaction.updateOne({ id: txnId, user_id: userId }, { $set: { hidden_by_user: hide } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -509,7 +436,6 @@ app.post('/api/wallet/history/delete-selected', async (req, res) => {
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         const { txnIds } = req.body; 
-        
         await Transaction.deleteMany({ id: { $in: txnIds }, user_id: userId });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
@@ -520,7 +446,6 @@ app.delete('/api/wallet/history/clear', async (req, res) => {
         const user = authFromHeaders(req);
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        
         await Transaction.deleteMany({ user_id: userId });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
@@ -531,14 +456,8 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
         if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        
-        const result = await User.findOneAndUpdate(
-            { id: String(user.id), win_balance: { $gte: amt } }, 
-            { $inc: { win_balance: -amt } }, 
-            { new: true }
-        );
+        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
         if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
-        
         const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
         io.to(`user_${user.id}`).emit('wallet_updated', {});
@@ -549,10 +468,8 @@ app.post('/api/wallet/withdraw-request', async (req, res) => {
 app.get('/api/leaderboard', async (req, res) => { try { const top = await User.find().sort({ win_balance: -1 }).limit(10).select({ name: 1, win_balance: 1, _id: 0 }).lean(); res.json({ success: true, data: top }); } catch (e) { res.status(500).json({ success: false }); } });
 
 app.get('/api/admin/game-history', adminAuth, async (req, res) => {
-    try {
-        const history = await GameHistory.find({}).sort({ createdAt: -1 }).limit(50).lean();
-        res.json({ success: true, data: history });
-    } catch (e) { res.status(500).json({ success: false }); }
+    try { const history = await GameHistory.find({}).sort({ createdAt: -1 }).limit(50).lean(); res.json({ success: true, data: history }); }
+    catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/admin/game-status', adminAuth, async (req, res) => {
@@ -584,8 +501,7 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
         return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
     }
     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-    gameState.calledNumbers.push(num);
-    gameState.currentCall = num;
+    gameState.calledNumbers.push(num); gameState.currentCall = num;
     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
     const winnerFound = await checkForAutoWinner();
     if (winnerFound) await endRound(roundWinners);
@@ -602,8 +518,7 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
             let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-            gameState.calledNumbers.push(num);
-            gameState.currentCall = num;
+            gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
             const winnerFound = await checkForAutoWinner();
             if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
@@ -625,50 +540,31 @@ app.post('/api/user/phone', async (req, res) => {
 app.post('/api/user/referral', async (req, res) => {
     try {
         const { new_user_id, referrer_id } = req.body;
-        if (!new_user_id || !referrer_id || new_user_id === referrer_id) {
-            return res.status(400).json({ success: false, error: 'Invalid referral' });
-        }
-
+        if (!new_user_id || !referrer_id || new_user_id === referrer_id) return res.status(400).json({ success: false, error: 'Invalid referral' });
         const newUser = await User.findOne({ id: String(new_user_id) });
         if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' });
-
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
-
         await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
-        
-        await User.findOneAndUpdate(
-            { id: String(new_user_id) },
-            { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } },
-            { upsert: true }
-        );
-
+        await User.findOneAndUpdate({ id: String(new_user_id) }, { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } }, { upsert: true });
         io.to(`user_${referrer_id}`).emit('wallet_updated', {});
         io.to(`user_${new_user_id}`).emit('wallet_updated', {});
-
         res.json({ success: true, message: 'Referral bonus applied' });
-    } catch (e) {
-        console.error('Referral error:', e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ✅ FIXED: Prevent duplicate transactions
+// ✅ Auto Deposit Approval & Duplicate Prevention
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
         if (!type || !user_id || !amount) return res.status(400).json({ success: false, error: 'Missing required fields' });
         if (!['deposit', 'withdrawal'].includes(type)) return res.status(400).json({ success: false, error: 'Invalid type' });
-        
         const amt = Number(amount);
         if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
 
-        // ✅ ድግግሞሽ መከላከያ (Duplicate Reference Check)
         if (type === 'deposit' && reference) {
             const existingTxn = await Transaction.findOne({ type: 'deposit', reference: reference });
-            if (existingTxn) {
-                return res.status(400).json({ success: false, error: 'This Transaction ID has already been submitted!' });
-            }
+            if (existingTxn) return res.status(400).json({ success: false, error: 'This Transaction ID has already been submitted!' });
         }
 
         if (type === 'withdrawal') {
@@ -678,48 +574,44 @@ app.post('/api/bot/create-txn', async (req, res) => {
         }
 
         const txnId = (type === 'deposit' ? 'dep_' : 'wdr_') + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        
+        let txnStatus = 'pending';
+        if (type === 'deposit' && amt <= AUTO_DEPOSIT_LIMIT) txnStatus = 'approved'; 
+
         await Transaction.create({
             id: txnId, type, user_id: String(user_id), user_name: user_name || 'Unknown',
             amount: amt, method: method || 'telebirr', reference: reference || '', phone: phone || '',
-            status: 'pending', created: new Date().toISOString(), notified: false
+            status: txnStatus, created: new Date().toISOString(), notified: false
         });
+
+        if (txnStatus === 'approved') {
+            await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: amt } });
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: user_id, text: `✅ <b>Deposit Auto-Approved!</b>\n\nYour deposit of ${amt} ETB has been automatically approved and added to your Play Wallet.`, parse_mode: 'HTML' })
+            }).catch(() => {});
+        }
+
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-        res.json({ success: true, txnId });
+        res.json({ success: true, txnId, autoApproved: txnStatus === 'approved' });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
 app.post('/api/bot/giveaway-claim', async (req, res) => {
     try {
         const { giveaway_id, user_id } = req.body;
-        
         const giveaway = await Giveaway.findOne({ id: giveaway_id, status: 'active' });
         if (!giveaway) return res.status(400).json({ success: false, error: 'Giveaway expired or invalid' });
-        
         if (new Date() > giveaway.expiresAt) {
-            giveaway.status = 'expired';
-            await giveaway.save();
+            giveaway.status = 'expired'; await giveaway.save();
             return res.status(400).json({ success: false, error: 'This giveaway has expired!' });
         }
-
-        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
-            return res.status(400).json({ success: false, error: 'All bonuses have been claimed' });
-        }
-        
-        if (giveaway.claimedBy.includes(String(user_id))) {
-            return res.status(400).json({ success: false, error: 'You already claimed this bonus' });
-        }
-        
-        giveaway.claimedBy.push(String(user_id));
-        await giveaway.save();
-        
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) return res.status(400).json({ success: false, error: 'All bonuses have been claimed' });
+        if (giveaway.claimedBy.includes(String(user_id))) return res.status(400).json({ success: false, error: 'You already claimed this bonus' });
+        giveaway.claimedBy.push(String(user_id)); await giveaway.save();
         await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: giveaway.amount } });
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-        
-        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
-            giveaway.status = 'completed';
-            await giveaway.save();
-        }
-        
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) { giveaway.status = 'completed'; await giveaway.save(); }
         res.json({ success: true, amount: giveaway.amount });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -728,10 +620,7 @@ app.post('/api/bot/giveaway-claim', async (req, res) => {
 setInterval(async () => {
     try {
         const now = new Date();
-        const expired = await Giveaway.updateMany(
-            { status: 'active', expiresAt: { $lt: now } },
-            { $set: { status: 'expired' } }
-        );
+        const expired = await Giveaway.updateMany({ status: 'active', expiresAt: { $lt: now } }, { $set: { status: 'expired' } });
         if (expired.modifiedCount > 0) console.log(`⏳ Expired ${expired.modifiedCount} giveaways`);
     } catch (e) { console.error('Giveaway expiration error:', e); }
 }, 60000);
@@ -744,7 +633,6 @@ io.on('connection', (socket) => {
         if (!userId && REQUIRE_TG_AUTH) { socket.emit('auth_error'); return socket.disconnect(); }
         if (!userId && payload?.clientId) userId = String(payload.clientId);
         socket.verifiedId = userId; if (userId) socket.join(`user_${userId}`);
-        
         const myCards = [];
         if (socket.verifiedId) {
             for (const [num, data] of Object.entries(gameState.takenCards)) {
@@ -759,7 +647,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ✅ FIXED: Prevent duplicate balance bug when selecting/deselecting rapidly
+    // ✅ REMOVED RATE LIMIT: Players can select cards instantly as long as they have balance
     socket.on('select_card', async (data) => {
         try {
             if (!socket.verifiedId) return socket.emit('card_error', { message: 'ያልተረጋገጠ ተጠቃሚ' });
@@ -769,62 +657,29 @@ io.on('connection', (socket) => {
             if (!cardNum || isNaN(cardNum)) return;
 
             if (data.action === 'select') {
-                // Check if card is taken
                 if (gameState.takenCards[cardNum]) {
-                    if (gameState.takenCards[cardNum].userId === socket.verifiedId) {
-                        return; // Already yours
-                    }
+                    if (gameState.takenCards[cardNum].userId === socket.verifiedId) return;
                     return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 }
                 
-                // Deduct balance atomically (Play -> Win -> Referral)
-                let updated = await User.findOneAndUpdate(
-                    { id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, 
-                    { $inc: { play_balance: -CARD_PRICE } }, 
-                    { new: true }
-                );
-                if (!updated) {
-                    updated = await User.findOneAndUpdate(
-                        { id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, 
-                        { $inc: { win_balance: -CARD_PRICE } }, 
-                        { new: true }
-                    );
-                }
-                if (!updated) {
-                    updated = await User.findOneAndUpdate(
-                        { id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, 
-                        { $inc: { referral_balance: -CARD_PRICE } }, 
-                        { new: true }
-                    );
-                }
+                let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
+                if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
+                if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
                 
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
                 
-                // Assign card
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
                 socket.emit('wallet_updated', {});
-                
             } else if (data.action === 'deselect') {
-                // Check if the user actually owns this card
                 if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) { 
                     delete gameState.takenCards[cardNum]; 
-                    // Refund ONLY ONCE
-                    await User.updateOne(
-                        { id: String(socket.verifiedId) }, 
-                        { $inc: { play_balance: CARD_PRICE } }
-                    ); 
+                    await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } }); 
                     socket.emit('wallet_updated', {}); 
-                } else {
-                    return; // User doesn't own this card, ignore
                 }
             }
-            
             const totalCards = Object.keys(gameState.takenCards).length;
             io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: totalCards, totalCards });
-        } catch (err) { 
-            console.error("select_card error:", err);
-            socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); 
-        }
+        } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
     });
 });
 
@@ -832,33 +687,20 @@ async function checkForAutoWinner() {
     if (isEndingRound || gameState.phase !== 'calling') return false;
     const entries = Object.entries(gameState.takenCards); 
     if (entries.length === 0) return false;
-    
     let potentialWinners = [];
     for (const [cardNum, data] of entries) {
         const win = checkWinningLine(cardNum, gameState.calledNumbers);
-        if (win) {
-            potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win });
-        }
+        if (win) potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win });
     }
-    
     if (potentialWinners.length === 0) return false;
-    
     const userIds = [...new Set(potentialWinners.map(p => p.userId))];
     const users = await User.find({ id: { $in: userIds } }, { id: 1, name: 1 }).lean();
     const userMap = new Map(users.map(u => [u.id, u.name]));
-    
     roundWinners = potentialWinners.map(p => ({
-        id: p.userId,
-        name: userMap.get(p.userId) || 'Player',
-        cardNum: p.cardNum,
-        winDesc: p.win.desc,
-        winType: p.win.type,
-        winIndex: p.win.index,
-        allLines: [p.win]
+        id: p.userId, name: userMap.get(p.userId) || 'Player', cardNum: p.cardNum,
+        winDesc: p.win.desc, winType: p.win.type, winIndex: p.win.index, allLines: [p.win]
     }));
-    
-    isEndingRound = true; 
-    gameState.phase = 'claiming';
+    isEndingRound = true; gameState.phase = 'claiming';
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
     if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
     return true;
@@ -869,42 +711,29 @@ function startRound() {
     if (gameTimerInterval) clearInterval(gameTimerInterval); 
     if (callInterval) clearInterval(callInterval); 
     if (autoRestartTimer) clearTimeout(autoRestartTimer); 
-    
     gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; 
     roundWinners = []; isEndingRound = false; remainingTime = 50;
-    
-    io.emit('phase_change', { phase: 'countdown' }); 
-    io.emit('timer_tick', { remaining: remainingTime });
-    
+    io.emit('phase_change', { phase: 'countdown' }); io.emit('timer_tick', { remaining: remainingTime });
     gameTimerInterval = setInterval(() => {
         if (!gameState.isRunning) return;
         remainingTime--; io.emit('timer_tick', { remaining: remainingTime });
         if (remainingTime <= 0) {
             const totalCards = Object.keys(gameState.takenCards).length;
             if (totalCards < 3) { 
-                remainingTime = 50; 
-                io.emit('timer_tick', { remaining: remainingTime }); 
-                io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); 
-                return; 
+                remainingTime = 50; io.emit('timer_tick', { remaining: remainingTime }); 
+                io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); return; 
             }
             clearInterval(gameTimerInterval); gameTimerInterval = null; 
             gameState.phase = 'calling'; io.emit('phase_change', { phase: 'calling' });
-            
             if (gameState.isAutoOn) {
                 callInterval = setInterval(async () => {
                     if (gameState.phase !== 'calling' || isEndingRound) return;
                     if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-                    
                     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
                     gameState.calledNumbers.push(num); gameState.currentCall = num;
-                    
                     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-                    
                     const winnerFound = await checkForAutoWinner();
-                    if (winnerFound) {
-                        clearInterval(callInterval); callInterval = null;
-                        await endRound(roundWinners);
-                    }
+                    if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
                 }, gameState.settings.callInterval * 1000);
             }
         }
@@ -913,60 +742,38 @@ function startRound() {
 
 async function endRound(winnersData) {
     if (gameState.phase === 'gameover') return; 
-    isEndingRound = true;
-    gameState.phase = 'gameover';
+    isEndingRound = true; gameState.phase = 'gameover';
     if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    
     try {
         const playersInRound = [...new Set(Object.values(gameState.takenCards).map(c => c.userId))];
         const totalCards = Object.keys(gameState.takenCards).length; 
         const totalPrize = totalCards * DERASH_PER_CARD; 
         const promises = [];
-        
         if (playersInRound.length > 0) promises.push(User.updateMany({ id: { $in: playersInRound } }, { $inc: { total_games: 1 } }));
-        
         if (!winnersData || winnersData.length === 0) {
             await Promise.all(promises); io.emit('reset_game');
             autoRestartTimer = setTimeout(() => {
                 autoRestartTimer = null; gameState.takenCards = {}; gameState.phase = 'waiting'; 
                 gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
                 if (gameState.isRunning) startRound();
-            }, 3000); 
-            return;
+            }, 3000); return;
         }
-        
         const prizePerWinner = Math.floor(totalPrize / winnersData.length); 
         const winnerIds = winnersData.map(w => String(w.id));
-        
         promises.push(User.updateMany({ id: { $in: winnerIds } }, { $inc: { win_balance: prizePerWinner, total_wins: 1 } }));
-        
         promises.push(GameHistory.create({
-            gameId: 'game_' + Date.now(),
-            winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: prizePerWinner })),
+            gameId: 'game_' + Date.now(), winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: prizePerWinner })),
             totalPrize, totalPlayers: totalCards, calledNumbers: gameState.calledNumbers
         }));
-        
         await Promise.all(promises);
-        
         for (const w of winnersData) io.to(`user_${w.id}`).emit('wallet_updated', {});
-        
         const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1]; 
-        
-        io.emit('game_over', { 
-            reason: 'bingo', 
-            winners: winnersData, 
-            totalPrize, 
-            prizePerWinner, 
-            lastCall, 
-            calledNumbers: gameState.calledNumbers 
-        });
-        
+        io.emit('game_over', { reason: 'bingo', winners: winnersData, totalPrize, prizePerWinner, lastCall, calledNumbers: gameState.calledNumbers });
         autoRestartTimer = setTimeout(() => {
             autoRestartTimer = null; gameState.takenCards = {}; gameState.phase = 'waiting'; 
             gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
-            io.emit('reset_game'); 
-            if (gameState.isRunning) startRound();
+            io.emit('reset_game'); if (gameState.isRunning) startRound();
         }, 10000);
     } catch (err) { console.error('❌ endRound error:', err); }
 }
