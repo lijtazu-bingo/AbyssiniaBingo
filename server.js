@@ -653,13 +653,23 @@ app.post('/api/user/referral', async (req, res) => {
     }
 });
 
+// ✅ FIXED: Prevent duplicate transactions
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
         if (!type || !user_id || !amount) return res.status(400).json({ success: false, error: 'Missing required fields' });
         if (!['deposit', 'withdrawal'].includes(type)) return res.status(400).json({ success: false, error: 'Invalid type' });
+        
         const amt = Number(amount);
         if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
+
+        // ✅ ድግግሞሽ መከላከያ (Duplicate Reference Check)
+        if (type === 'deposit' && reference) {
+            const existingTxn = await Transaction.findOne({ type: 'deposit', reference: reference });
+            if (existingTxn) {
+                return res.status(400).json({ success: false, error: 'This Transaction ID has already been submitted!' });
+            }
+        }
 
         if (type === 'withdrawal') {
             const user = await User.findOne({ id: String(user_id) });
@@ -749,7 +759,7 @@ io.on('connection', (socket) => {
         });
     });
 
-    // ✅ FIXED select_card event (Prevents balance duplication)
+    // ✅ FIXED: Prevent duplicate balance bug when selecting/deselecting rapidly
     socket.on('select_card', async (data) => {
         try {
             if (!socket.verifiedId) return socket.emit('card_error', { message: 'ያልተረጋገጠ ተጠቃሚ' });
@@ -762,8 +772,7 @@ io.on('connection', (socket) => {
                 // Check if card is taken
                 if (gameState.takenCards[cardNum]) {
                     if (gameState.takenCards[cardNum].userId === socket.verifiedId) {
-                        // Already yours, ignore silently
-                        return;
+                        return; // Already yours
                     }
                     return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 }
