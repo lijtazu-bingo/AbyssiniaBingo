@@ -40,8 +40,9 @@ body {
 .dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
 .dash-value.wallet { color: var(--gold); } .dash-value.derash { color: #10b981; } .dash-value.selected { color: var(--blue); } .dash-value.timer { color: #f87171; }
 
-.instruction-text { text-align: center; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted); }
-.grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+/* ✅ REMOVED: .instruction-text */
+
+.grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-top: 5px; }
 .grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; flex: 1; overflow-y: auto; padding: 8px; align-content: start; }
 .grid-container.disabled { opacity: 0.3; pointer-events: none; }
 .disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
@@ -161,7 +162,6 @@ body {
         <span class="dash-value timer" id="timer-val">50ሰ</span>
       </div>
     </div>
-    <div class="instruction-text">እባክዎ የፈለጉትን ያህል ካርቴላዎች ይምረጡ</div>
     
     <!-- ✅ Selected Cards Counter -->
     <div class="selected-count" id="selected-count-display">የተመረጡ ካርቴላዎች፦ 0</div>
@@ -508,8 +508,12 @@ async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) re
 
 window.toggleCard = function(num) {
     if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
+    
+    // ✅ FIX: Prevent selection if no balance
     const totalBalance = currentWallet + currentWinWallet + currentReferralWallet;
-    if (totalBalance < 10 && selectedCards.size === 0 && !selectedCards.has(num)) return showFooterNotification("❌ ካርቴላ ለመግዛት በቂ ባላንስ የለዎትም! (ዝቅተኛ 10 ብር)");
+    if (totalBalance < 10) {
+        return showFooterNotification("❌ ካርቴላ ለመግዛት በቂ ባላንስ የለዎትም! (ዝቅተኛ 10 ብር)");
+    }
     
     if (selectedCards.has(num)) { 
         selectedCards.delete(num); numberButtons[num].className = 'number-btn'; 
@@ -752,7 +756,7 @@ socket.on('new_number_called', (data) => {
     calledNumbersSet.add(data.number); updateCalledNumbersUI(data.allCalled);
     if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
     updateLiveCardsContainer(); 
-    speakNumber(data.number); // ✅ Play Voice
+    speakNumber(data.number); 
 });
 
 socket.on('bingo_result', (data) => {
@@ -770,20 +774,25 @@ socket.on('reset_game', () => {
 
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
+    
+    // ✅ FIX: Winner Text Logic
     const totalWinners = data.winners.length;
     const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
     
-    document.getElementById('winner-text').innerHTML = isMeWinner ? '🎉 አንተ አሸንፈሃል! 🎉' : `🏆 ${totalWinners} ተጫዋቾች አሸንፈዋል!`;
-    document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
-    
-    // ✅ Confetti Animation for Winners
-    if (isMeWinner) {
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#facc15', '#3b82f6', '#10b981', '#ef4444'] });
-        setTimeout(() => {
-            confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } });
-            confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } });
-        }, 250);
+    if (totalWinners === 1) {
+        document.getElementById('winner-text').innerHTML = `🏆 ካርቴላ ቁጥር ${data.winners[0].cardNum} አሸንፏል`;
+    } else {
+        document.getElementById('winner-text').innerHTML = `🏆 ${totalWinners} ተጫዋቾች አሸንፈዋል!`;
     }
+    
+    // Optional: Show "You Won" if user is one of the winners
+    if (isMeWinner) {
+        document.getElementById('winner-text').innerHTML = `🎉 አንተ አሸንፈሃል! 🎉`; 
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#facc15', '#3b82f6', '#10b981', '#ef4444'] });
+        setTimeout(() => { confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } }); confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } }); }, 250);
+    }
+
+    document.getElementById('prize-text').innerText = data.totalPrize + ' ETB';
 
     const container = document.getElementById('winning-card-container'); container.innerHTML = '';
     data.winners.forEach(winInfo => {
