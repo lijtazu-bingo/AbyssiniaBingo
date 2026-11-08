@@ -204,7 +204,7 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ✅ INTERRUPT HANDLER
+# ✅ INTERRUPT HANDLER: ያለበትን ሂደት ሰርዞ ወደ አዲሱ ቁልፍ እንዲሄድ
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
@@ -217,6 +217,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     phone, _ = get_user_data(user.id)
     
+    # ✅ Force Registration on first start
     if not phone:
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -533,6 +534,7 @@ def main():
             DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
             DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
         },
+        # ✅ Interrupts the deposit flow if any other menu button is clicked
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
@@ -544,6 +546,7 @@ def main():
             WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
             WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
         },
+        # ✅ Interrupts the withdraw flow if any other menu button is clicked
         fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
