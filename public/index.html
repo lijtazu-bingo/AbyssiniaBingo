@@ -40,7 +40,17 @@ body {
 .dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
 .dash-value.wallet { color: var(--gold); } .dash-value.derash { color: #10b981; } .dash-value.selected { color: var(--blue); } .dash-value.timer { color: #f87171; }
 
-/* ✅ REMOVED: .instruction-text */
+/* ✅ NEW: Timer Countdown Bar */
+.countdown-bar-container { background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px; margin-bottom: 10px; text-align: center; font-size: 12px; font-weight: 800; color: var(--gold); display: flex; justify-content: center; align-items: center; gap: 15px; }
+.countdown-bar-container span { display: flex; align-items: center; gap: 5px; }
+.countdown-bar-container span b { color: #fff; font-size: 14px; }
+
+/* Promo & Bonus Banners */
+.promo-input-group { display: flex; gap: 5px; margin-top: 5px; }
+.promo-input-group input { flex: 1; }
+.promo-input-group button { flex-shrink: 0; width: auto; padding: 0 15px; margin-top: 8px; }
+.bonus-banner { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 10px; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.9; } }
 
 .grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-top: 5px; }
 .grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; flex: 1; overflow-y: auto; padding: 8px; align-content: start; }
@@ -61,7 +71,6 @@ body {
 .preview-cell { background: #1e293b; color: #f8fafc; text-align: center; font-size: 9px; font-weight: 800; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 2px; }
 .preview-cell.free { background: var(--blue); color: #fff; font-size: 7px; }
 
-/* Selected Cards Counter */
 .selected-count { text-align: center; font-size: 12px; color: var(--gold); font-weight: bold; margin-bottom: 5px; }
 
 .page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
@@ -162,8 +171,12 @@ body {
         <span class="dash-value timer" id="timer-val">50ሰ</span>
       </div>
     </div>
+
+    <!-- ✅ NEW: Timer Countdown Bar -->
+    <div class="countdown-bar-container glass-panel" id="countdown-bar">
+        <span>⏱️ ቀሪ ጊዜ፦ <b id="countdown-text">50</b> ሰከንድ</span>
+    </div>
     
-    <!-- ✅ Selected Cards Counter -->
     <div class="selected-count" id="selected-count-display">የተመረጡ ካርቴላዎች፦ 0</div>
 
     <div class="grid-wrapper">
@@ -234,6 +247,21 @@ body {
   </div>
 
   <div id="page-wallet" class="page-inner-content hidden">
+    <!-- ✅ NEW: Double Deposit Banner -->
+    <div id="double-deposit-banner" class="bonus-banner hidden">
+        🔥 ድርብ የገቢ ቦነስ ነቅቷል! ዛሬ ያስገቡት ገንዘብ በእጥፍ ይጨመራል!
+    </div>
+
+    <!-- ✅ NEW: Promo Code Section -->
+    <div class="sec-title">🎁 Promo Code</div>
+    <div class="glass-panel" style="padding: 12px; margin-bottom: 15px;">
+        <div style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 4px;">Promo Code ካለዎት እዚህ ያስገቡ</div>
+        <div class="promo-input-group">
+            <input type="text" id="promo-code-input" class="form-input" placeholder="ለምሳሌ: WELCOME50">
+            <button class="submit-req-btn" onclick="claimPromoCode()" style="width: auto; padding: 0 15px; margin-top: 8px;">Apply</button>
+        </div>
+    </div>
+
     <div class="sec-title">YOUR BALANCES</div>
     <div class="wallet-balances-grid">
       <div class="balance-box glass-panel"><div class="balance-box-title">🎮 PLAY</div><div class="balance-box-val" id="wallet-page-val">0.00</div></div>
@@ -500,16 +528,51 @@ async function loadSettings() {
     try { 
         const res = await fetch('/api/settings'); 
         const data = await res.json(); 
-        if (data.success && data.data) paymentSettings = data.data; 
+        if (data.success && data.data) {
+            paymentSettings = data.data; 
+            // ✅ NEW: Check Double Deposit Bonus
+            if (paymentSettings.doubleDepositActive) {
+                document.getElementById('double-deposit-banner').classList.remove('hidden');
+            }
+        }
     } catch (e) {}
 }
 
 async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) return null; return await res.json(); } catch (e) { return null; } }
 
+// ✅ NEW: Promo Code Claim
+async function claimPromoCode() {
+    const code = document.getElementById('promo-code-input').value.trim();
+    if (!code) return alert("እባክዎ የፕሮሞ ኮድ ያስገቡ");
+
+    const btn = event.target; const origText = btn.innerText;
+    btn.innerText = '...'; btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/promo/claim', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(`🎉 እንኳን ደስ አለዎት! ${data.amount} ETB ቦነስ አግኝተዋል!`);
+            document.getElementById('promo-code-input').value = '';
+            loadWallet();
+        } else {
+            alert('❌ ' + (data.error || 'የተሳሳተ ኮድ'));
+        }
+    } catch (e) {
+        alert('❌ የኢንተርኔት ስህተት');
+    } finally {
+        btn.innerText = origText; btn.disabled = false;
+    }
+}
+
 window.toggleCard = function(num) {
     if (gamePhase === 'calling' || gamePhase === 'gameover') return showFooterNotification("ጨዋታ ተጀምሯል! ካርቴላ መምረጥ አይቻልም።");
     
-    // ✅ FIX: Prevent selection if no balance
     const totalBalance = currentWallet + currentWinWallet + currentReferralWallet;
     if (totalBalance < 10) {
         return showFooterNotification("❌ ካርቴላ ለመግዛት በቂ ባላንስ የለዎትም! (ዝቅተኛ 10 ብር)");
@@ -745,7 +808,11 @@ socket.on('settings_updated', (data) => {
 
 socket.on('wallet_updated', () => loadWallet());
 socket.on('card_error', (data) => { showFooterNotification(data.message); });
-socket.on('timer_tick', (data) => { document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; });
+socket.on('timer_tick', (data) => { 
+    document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; 
+    // ✅ NEW: Update Countdown Bar text
+    document.getElementById('countdown-text').innerText = data.remaining;
+});
 socket.on('phase_change', (data) => { 
     gamePhase = data.phase; 
     if(data.phase === 'calling') { switchTab('live'); buildBingoBoard(); updateLiveCardsContainer(); } 
@@ -775,7 +842,6 @@ socket.on('reset_game', () => {
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
     
-    // ✅ FIX: Winner Text Logic
     const totalWinners = data.winners.length;
     const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
     
@@ -785,7 +851,6 @@ socket.on('game_over', (data) => {
         document.getElementById('winner-text').innerHTML = `🏆 ${totalWinners} ተጫዋቾች አሸንፈዋል!`;
     }
     
-    // Optional: Show "You Won" if user is one of the winners
     if (isMeWinner) {
         document.getElementById('winner-text').innerHTML = `🎉 አንተ አሸንፈሃል! 🎉`; 
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#facc15', '#3b82f6', '#10b981', '#ef4444'] });

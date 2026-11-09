@@ -168,6 +168,7 @@
             <div class="menu-label mt-3">Management</div>
             <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
             <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Giveaway / Bonus</div>
+            <div class="menu-item" onclick="switchPage('promo', this)"><i class="fas fa-tags"></i> Promo Codes</div> <!-- ✅ NEW: Promo Code Tab -->
             <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
             <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
             <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
@@ -356,6 +357,39 @@
                 </div>
             </div>
 
+            <!-- ✅ PROMO CODES (NEW) -->
+            <div id="page-promo" class="page">
+                <div class="table-wrapper" style="padding: 25px; max-width: 600px; margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-tags"></i> Create Promo Code</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                        <div>
+                            <label style="color:var(--text-muted); font-size:13px;">Code</label>
+                            <input type="text" id="promo-code" class="form-control mt-1" placeholder="e.g. BINGO100" style="text-transform:uppercase;">
+                        </div>
+                        <div>
+                            <label style="color:var(--text-muted); font-size:13px;">Amount (ETB)</label>
+                            <input type="number" id="promo-amount" class="form-control mt-1" placeholder="e.g. 50">
+                        </div>
+                        <div>
+                            <label style="color:var(--text-muted); font-size:13px;">Max Uses</label>
+                            <input type="number" id="promo-max-uses" class="form-control mt-1" placeholder="e.g. 100">
+                        </div>
+                        <div>
+                            <label style="color:var(--text-muted); font-size:13px;">Duration (Minutes)</label>
+                            <input type="number" id="promo-duration" class="form-control mt-1" placeholder="e.g. 1440" value="1440">
+                        </div>
+                    </div>
+                    <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="createPromoCode()"><i class="fas fa-plus"></i> Create Promo Code</button>
+                </div>
+
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Active Promo Codes</h3><button class="btn btn-primary btn-sm" onclick="loadPromoCodes()"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Code</th><th>Amount</th><th>Used / Max</th><th>Expires At</th><th>Status</th><th>Action</th></tr></thead><tbody id="promo-table-body"></tbody></table>
+                    </div>
+                </div>
+            </div>
+
             <!-- BROADCAST -->
             <div id="page-broadcast" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
@@ -388,7 +422,7 @@
             <!-- SETTINGS -->
             <div id="page-settings" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
-                    <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-cog"></i> Payment Settings</h3>
+                    <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-cog"></i> Settings</h3>
                     <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="enable-cbe" style="width: 18px; height: 18px;">
                         <label for="enable-cbe" style="font-size: 14px;">Enable CBE Option in Bot</label>
@@ -399,6 +433,29 @@
                         <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Number</label><input type="text" id="set-cbe" class="form-control mt-1"></div>
                         <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Name</label><input type="text" id="set-cbe-name" class="form-control mt-1"></div>
                     </div>
+
+                    <!-- ✅ NEW: Double Deposit Toggle -->
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="enable-double-deposit" style="width: 18px; height: 18px;">
+                            <label for="enable-double-deposit" style="font-size: 14px; font-weight: bold; color: var(--primary);">🔥 Enable Double Deposit Bonus</label>
+                        </div>
+                        <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:5px;">When active, any deposit will be doubled (x2) upon admin approval.</small>
+                    </div>
+
+                    <!-- ✅ NEW: Countdown Timer Select -->
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: var(--gold); font-weight: bold;">
+                            ⏱️ Game Countdown Timer (Seconds)
+                        </label>
+                        <select id="set-countdown-time" class="form-control">
+                            <option value="50">50 ሰከንድ</option>
+                            <option value="40">40 ሰከንድ</option>
+                            <option value="30">30 ሰከንድ</option>
+                        </select>
+                        <small style="color:var(--text-muted); font-size:11px; display:block; margin-top:5px;">Time before the game starts calling numbers.</small>
+                    </div>
+
                     <button class="btn btn-success" onclick="saveSettings()" style="width: 100%;"><i class="fas fa-save"></i> Save Changes</button>
                 </div>
             </div>
@@ -530,6 +587,7 @@ function switchPage(pageId, element) {
     else if (pageId === 'referrals') loadReferrals();
     else if (pageId === 'game') startGameStatusPolling();
     else if (pageId === 'giveaway') loadGiveaways();
+    else if (pageId === 'promo') loadPromoCodes(); // ✅ NEW
     else if (pageId === 'broadcast') loadBroadcasts();
     else if (pageId === 'history') loadGameHistory();
     else if (pageId === 'settings') loadSettings();
@@ -863,6 +921,55 @@ async function deleteGiveaway(id) {
     } catch(e) { showToast('Failed to delete', true); }
 }
 
+// ✅ PROMO CODE Functions
+async function createPromoCode() {
+    const code = document.getElementById('promo-code').value.trim();
+    const amount = document.getElementById('promo-amount').value;
+    const maxUses = document.getElementById('promo-max-uses').value;
+    const durationMinutes = document.getElementById('promo-duration').value;
+
+    if (!code || !amount || !maxUses) return showToast('Fill all fields', true);
+
+    try {
+        const d = await apiFetch('/api/admin/promo-codes', 'POST', { code, amount, maxUses, durationMinutes });
+        if (d.success) {
+            showToast('✅ Promo Code created!');
+            document.getElementById('promo-code').value = '';
+            document.getElementById('promo-amount').value = '';
+            document.getElementById('promo-max-uses').value = '';
+            loadPromoCodes();
+        }
+    } catch (e) { showToast(e.message, true); }
+}
+
+async function loadPromoCodes() {
+    const tbody = document.getElementById('promo-table-body');
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/promo-codes');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if (d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No codes found.</td></tr>'; return; }
+            d.data.forEach(p => {
+                let tr = document.createElement('tr');
+                let dateStr = new Date(p.expiresAt).toLocaleString();
+                let statusClass = p.usedCount >= p.maxUses ? 'rejected' : (new Date() > new Date(p.expiresAt) ? 'pending' : 'approved');
+                tr.innerHTML = `<td><b>${p.code}</b></td><td>${p.amount} ETB</td><td>${p.usedCount} / ${p.maxUses}</td><td>${dateStr}</td><td><span class="badge ${statusClass}">${p.status}</span></td>
+                <td><button class="btn btn-danger btn-sm" onclick="deletePromoCode('${p._id}')"><i class="fas fa-trash"></i></button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+}
+
+async function deletePromoCode(id) {
+    if (!confirm('Are you sure?')) return;
+    try { 
+        const d = await apiFetch('/api/admin/promo-codes/' + id, 'DELETE'); 
+        if (d.success) { showToast('Deleted!'); loadPromoCodes(); } 
+    } catch (e) { showToast(e.message, true); }
+}
+
 // ✅ Broadcast Functions
 async function sendBroadcast() {
     const msg = document.getElementById('broadcast-msg').value.trim();
@@ -951,6 +1058,11 @@ async function loadSettings() {
             const enableCbe = d.data.enable_cbe !== false;
             document.getElementById('enable-cbe').checked = enableCbe;
             document.getElementById('cbe-settings-section').style.display = enableCbe ? 'block' : 'none';
+            
+            // ✅ NEW: Load Double Deposit and Countdown Time
+            document.getElementById('enable-double-deposit').checked = d.data.doubleDepositActive || false;
+            const countdownEl = document.getElementById('set-countdown-time');
+            if (countdownEl) countdownEl.value = d.data.countdownTime || 50;
         }
     } catch (e) {}
 }
@@ -963,9 +1075,21 @@ async function saveSettings() {
     const cbe = document.getElementById('set-cbe').value;
     const cbe_name = document.getElementById('set-cbe-name').value;
     const enable_cbe = document.getElementById('enable-cbe').checked;
+    const doubleDepositActive = document.getElementById('enable-double-deposit').checked;
+    const countdownTime = document.getElementById('set-countdown-time').value;
+    
     if (!telebirr || !telebirr_name) return showToast('Telebirr info required!', true);
     try { 
-        const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: telebirr, telebirr_name, cbe_number: cbe, cbe_name, enable_cbe }); 
+        const d = await apiFetch('/api/admin/settings', 'POST', { 
+            telebirr_number: telebirr, 
+            telebirr_name, 
+            cbe_number: cbe, 
+            cbe_name, 
+            enable_cbe,
+            doubleDepositActive: doubleDepositActive,
+            doubleDepositMultiplier: 2,
+            countdownTime: Number(countdownTime)
+        }); 
         if (d.success) showToast('Settings saved!'); 
     } catch (e) { showToast('Save failed', true); }
 }

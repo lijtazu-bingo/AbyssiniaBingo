@@ -30,7 +30,14 @@ app.use(express.static('public', { maxAge: '1d' }));
 
 /* ─── MONGODB ─── */
 mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20, dbName: 'abisinya' })
-.then(() => console.log('✅ MongoDB connected'))
+.then(async () => {
+    console.log('✅ MongoDB connected');
+    const s = await Settings.findOne({ key: 'payment_accounts' }).lean();
+    if (s) {
+        if (s.maxCards) gameState.settings.maxCards = s.maxCards;
+        if (s.countdownTime) gameState.settings.countdownTime = s.countdownTime;
+    }
+})
 .catch(err => { console.error('❌ DB Error:', err.message); process.exit(1); });
 
 /* ─── SCHEMAS ─── */
@@ -49,7 +56,8 @@ const TransactionSchema = new mongoose.Schema({
     user_id: { type: String, index: true }, user_name: String, amount: Number,
     method: String, reference: { type: String, index: true }, phone: String,
     status: { type: String, index: true }, created: { type: String, index: true }, notified: Boolean,
-    hidden_by_user: { type: Boolean, default: false } 
+    hidden_by_user: { type: Boolean, default: false },
+    is_bonus: { type: Boolean, default: false }
 }, { collection: 'transactions' });
 
 const GameHistorySchema = new mongoose.Schema({
@@ -61,7 +69,10 @@ const SettingsSchema = new mongoose.Schema({
     key: { type: String, default: 'payment_accounts', unique: true },
     telebirr_number: { type: String, default: '0968940123' }, telebirr_name: { type: String, default: 'tazebew' },
     cbe_number: { type: String, default: '1000390803005' }, cbe_name: { type: String, default: 'tazebew' },
-    enable_cbe: { type: Boolean, default: true }, maxCards: { type: Number, default: 1000 }
+    enable_cbe: { type: Boolean, default: true }, maxCards: { type: Number, default: 1000 },
+    doubleDepositActive: { type: Boolean, default: false },
+    doubleDepositMultiplier: { type: Number, default: 2 },
+    countdownTime: { type: Number, default: 50 }
 }, { collection: 'settings' });
 
 const GiveawaySchema = new mongoose.Schema({
@@ -75,12 +86,24 @@ const BroadcastSchema = new mongoose.Schema({
     status: { type: String, default: 'active' }, sentMessages: [{ user_id: String, message_id: Number }]
 }, { collection: 'broadcasts' });
 
+const PromoCodeSchema = new mongoose.Schema({
+    code: { type: String, unique: true, index: true },
+    amount: Number,
+    maxUses: Number,
+    usedCount: { type: Number, default: 0 },
+    usedBy: [String],
+    expiresAt: Date,
+    status: { type: String, default: 'active' },
+    createdAt: { type: Date, default: Date.now }
+}, { collection: 'promo_codes' });
+
 const User = mongoose.model('User', UserSchema);
 const Transaction = mongoose.model('Transaction', TransactionSchema);
 const GameHistory = mongoose.model('GameHistory', GameHistorySchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
 const Giveaway = mongoose.model('Giveaway', GiveawaySchema);
 const Broadcast = mongoose.model('Broadcast', BroadcastSchema);
+const PromoCode = mongoose.model('PromoCode', PromoCodeSchema);
 
 /* ─── AUTH ─── */
 function verifyTelegramInitData(initData, botToken) {
@@ -144,7 +167,19 @@ function checkWinningLine(cardNum, calledNumbers) {
     return null;
 }
 
-const gameState = { phase: 'waiting', currentCall: null, calledNumbers: [], takenCards: {}, isAutoOn: true, isRunning: false, settings: { callInterval: 5, maxCards: 1000 } };
+const gameState = { 
+    phase: 'waiting', 
+    currentCall: null, 
+    calledNumbers: [], 
+    takenCards: {}, 
+    isAutoOn: true, 
+    isRunning: false, 
+    settings: { 
+        callInterval: 5, 
+        maxCards: 1000,
+        countdownTime: 50
+    } 
+};
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null;
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
 const CARD_PRICE = 10, DERASH_PER_CARD = 8;
@@ -155,13 +190,14 @@ app.get('/api/settings', async (req, res) => {
         let settings = await Settings.findOne({ key: 'payment_accounts' }).lean();
         if (!settings) settings = await Settings.create({ key: 'payment_accounts' });
         if (settings.maxCards) gameState.settings.maxCards = settings.maxCards;
+        if (settings.countdownTime) gameState.settings.countdownTime = settings.countdownTime;
         res.json({ success: true, data: settings });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/admin/settings', adminAuth, async (req, res) => {
     try {
-        const { telebirr_number, telebirr_name, cbe_number, cbe_name, enable_cbe, maxCards } = req.body;
+        const { telebirr_number, telebirr_name, cbe_number, cbe_name, enable_cbe, maxCards, doubleDepositActive, doubleDepositMultiplier, countdownTime } = req.body;
         const update = {};
         if (telebirr_number) update.telebirr_number = telebirr_number;
         if (telebirr_name) update.telebirr_name = telebirr_name;
@@ -169,9 +205,63 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
         if (cbe_name) update.cbe_name = cbe_name;
         if (typeof enable_cbe === 'boolean') update.enable_cbe = enable_cbe;
         if (maxCards) { update.maxCards = Number(maxCards); gameState.settings.maxCards = Number(maxCards); io.emit('update_max_cards', { maxCards: Number(maxCards) }); }
+        if (typeof doubleDepositActive === 'boolean') update.doubleDepositActive = doubleDepositActive;
+        if (doubleDepositMultiplier) update.doubleDepositMultiplier = Number(doubleDepositMultiplier);
+        if (countdownTime) { 
+            update.countdownTime = Number(countdownTime); 
+            gameState.settings.countdownTime = Number(countdownTime); 
+            io.emit('update_countdown_time', { countdownTime: Number(countdownTime) });
+        }
+        
         const updatedSettings = await Settings.findOneAndUpdate({ key: 'payment_accounts' }, update, { upsert: true, new: true });
         io.emit('settings_updated', { settings: updatedSettings });
         res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// 🎁 PROMO CODE API
+app.get('/api/admin/promo-codes', adminAuth, async (req, res) => {
+    try { const codes = await PromoCode.find({}).sort({ createdAt: -1 }).limit(50).lean(); res.json({ success: true, data: codes }); }
+    catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/admin/promo-codes', adminAuth, async (req, res) => {
+    try {
+        const { code, amount, maxUses, durationMinutes } = req.body;
+        if (!code || !amount || !maxUses) return res.status(400).json({ success: false, error: 'Missing fields' });
+        const expiresAt = new Date(Date.now() + (Number(durationMinutes) || 1440) * 60000);
+        const newPromo = await PromoCode.create({ code: code.toUpperCase(), amount: Number(amount), maxUses: Number(maxUses), expiresAt });
+        res.json({ success: true, data: newPromo });
+    } catch (e) { res.status(400).json({ success: false, error: 'Code already exists or invalid data' }); }
+});
+
+app.delete('/api/admin/promo-codes/:id', adminAuth, async (req, res) => {
+    try { await PromoCode.findByIdAndDelete(req.params.id); res.json({ success: true }); }
+    catch (e) { res.status(500).json({ success: false }); }
+});
+
+app.post('/api/promo/claim', async (req, res) => {
+    try {
+        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
+        const { code } = req.body;
+        const promo = await PromoCode.findOne({ code: code.toUpperCase(), status: 'active' });
+        
+        if (!promo) return res.json({ success: false, error: 'Invalid or expired promo code' });
+        if (new Date() > promo.expiresAt) {
+            promo.status = 'expired'; await promo.save();
+            return res.json({ success: false, error: 'This promo code has expired' });
+        }
+        if (promo.usedCount >= promo.maxUses) return res.json({ success: false, error: 'This promo code has reached its limit' });
+        if (promo.usedBy.includes(String(user.id))) return res.json({ success: false, error: 'You have already used this code' });
+        
+        promo.usedBy.push(String(user.id));
+        promo.usedCount += 1;
+        await promo.save();
+
+        await User.updateOne({ id: String(user.id) }, { $inc: { play_balance: promo.amount } });
+        io.to(`user_${user.id}`).emit('wallet_updated', {});
+        
+        res.json({ success: true, amount: promo.amount });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -222,13 +312,30 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'approved' } }, { new: true });
         if (!txn) return res.status(400).json({ success: false });
         let msgText = '';
-        if (txn.type === 'deposit') { 
-            await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: txn.amount } }); 
+        
+        if (txn.type === 'deposit') {
+            // 🔥 DOUBLE DEPOSIT LOGIC
+            let bonusAmount = 0;
+            let totalToAdd = txn.amount;
+            
+            const settings = await Settings.findOne({ key: 'payment_accounts' }).lean();
+            if (settings && settings.doubleDepositActive) {
+                bonusAmount = txn.amount * (settings.doubleDepositMultiplier - 1);
+                totalToAdd = txn.amount + bonusAmount;
+            }
+
+            await User.updateOne({ id: String(txn.user_id) }, { $inc: { play_balance: totalToAdd } }); 
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {}); 
-            msgText = `✅ <b>Deposit Approved!</b>\n\nYour deposit of ${txn.amount} ETB has been approved.`;
+            
+            if (bonusAmount > 0) {
+                msgText = `✅ <b>Deposit Approved!</b>\n\n💰 Deposit: ${txn.amount} ETB\n🎁 Bonus: +${bonusAmount} ETB\n➖➖➖➖➖➖➖➖\n💵 Total Added: ${totalToAdd} ETB`;
+            } else {
+                msgText = `✅ <b>Deposit Approved!</b>\n\nYour deposit of ${txn.amount} ETB has been approved.`;
+            }
         } else if (txn.type === 'withdrawal') {
             msgText = `✅ <b>Withdrawal Approved!</b>\n\nYour withdrawal of ${txn.amount} ETB has been approved.`;
         }
+        
         if (msgText) {
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -583,7 +690,7 @@ app.post('/api/bot/create-txn', async (req, res) => {
         }
 
         const txnId = (type === 'deposit' ? 'dep_' : 'wdr_') + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        let txnStatus = 'pending'; // ሁልጊዜ Pending
+        let txnStatus = 'pending';
 
         await Transaction.create({
             id: txnId, type, user_id: String(user_id), user_name: user_name || 'Unknown',
@@ -592,7 +699,7 @@ app.post('/api/bot/create-txn', async (req, res) => {
         });
 
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-        res.json({ success: true, txnId, autoApproved: false }); // autoApproved ሁልጊዜ false ነው
+        res.json({ success: true, txnId, autoApproved: false });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -705,7 +812,10 @@ function startRound() {
     if (callInterval) clearInterval(callInterval); 
     if (autoRestartTimer) clearTimeout(autoRestartTimer); 
     gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; 
-    roundWinners = []; isEndingRound = false; remainingTime = 50;
+    roundWinners = []; isEndingRound = false; 
+    
+    remainingTime = gameState.settings.countdownTime || 50;
+    
     io.emit('phase_change', { phase: 'countdown' }); io.emit('timer_tick', { remaining: remainingTime });
     gameTimerInterval = setInterval(() => {
         if (!gameState.isRunning) return;
@@ -713,7 +823,8 @@ function startRound() {
         if (remainingTime <= 0) {
             const totalCards = Object.keys(gameState.takenCards).length;
             if (totalCards < 3) { 
-                remainingTime = 50; io.emit('timer_tick', { remaining: remainingTime }); 
+                remainingTime = gameState.settings.countdownTime || 50; 
+                io.emit('timer_tick', { remaining: remainingTime }); 
                 io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); return; 
             }
             clearInterval(gameTimerInterval); gameTimerInterval = null; 
