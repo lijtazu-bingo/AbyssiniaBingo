@@ -40,17 +40,7 @@ body {
 .dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
 .dash-value.wallet { color: var(--gold); } .dash-value.derash { color: #10b981; } .dash-value.selected { color: var(--blue); } .dash-value.timer { color: #f87171; }
 
-/* ✅ NEW: Timer Countdown Bar */
-.countdown-bar-container { background: rgba(15, 23, 42, 0.8); border: 1px solid var(--glass-border); border-radius: 8px; padding: 6px; margin-bottom: 10px; text-align: center; font-size: 12px; font-weight: 800; color: var(--gold); display: flex; justify-content: center; align-items: center; gap: 15px; }
-.countdown-bar-container span { display: flex; align-items: center; gap: 5px; }
-.countdown-bar-container span b { color: #fff; font-size: 14px; }
-
-/* Promo & Bonus Banners */
-.promo-input-group { display: flex; gap: 5px; margin-top: 5px; }
-.promo-input-group input { flex: 1; }
-.promo-input-group button { flex-shrink: 0; width: auto; padding: 0 15px; margin-top: 8px; }
-.bonus-banner { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 10px; animation: pulse 2s infinite; }
-@keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.9; } }
+/* ✅ REMOVED: .instruction-text and countdown-bar-container */
 
 .grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-top: 5px; }
 .grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; flex: 1; overflow-y: auto; padding: 8px; align-content: start; }
@@ -98,6 +88,13 @@ body {
 .form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-color); padding: 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; outline: none; }
 .submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 14px; font-size: 14px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 .copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin-left: 5px; }
+
+/* Promo Code */
+.promo-input-group { display: flex; gap: 5px; margin-top: 5px; }
+.promo-input-group input { flex: 1; }
+.promo-input-group button { flex-shrink: 0; width: auto; padding: 0 15px; margin-top: 8px; }
+.bonus-banner { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 10px; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { opacity: 0.9; } 50% { opacity: 1; transform: scale(1.02); } 100% { opacity: 0.9; } }
 
 /* Live Page */
 #page-live { display: flex; flex-direction: column; height: 100%; }
@@ -171,11 +168,6 @@ body {
         <span class="dash-value timer" id="timer-val">50ሰ</span>
       </div>
     </div>
-
-    <!-- ✅ NEW: Timer Countdown Bar -->
-    <div class="countdown-bar-container glass-panel" id="countdown-bar">
-        <span>⏱️ ቀሪ ጊዜ፦ <b id="countdown-text">50</b> ሰከንድ</span>
-    </div>
     
     <div class="selected-count" id="selected-count-display">የተመረጡ ካርቴላዎች፦ 0</div>
 
@@ -247,12 +239,10 @@ body {
   </div>
 
   <div id="page-wallet" class="page-inner-content hidden">
-    <!-- ✅ NEW: Double Deposit Banner -->
     <div id="double-deposit-banner" class="bonus-banner hidden">
         🔥 ድርብ የገቢ ቦነስ ነቅቷል! ዛሬ ያስገቡት ገንዘብ በእጥፍ ይጨመራል!
     </div>
 
-    <!-- ✅ NEW: Promo Code Section -->
     <div class="sec-title">🎁 Promo Code</div>
     <div class="glass-panel" style="padding: 12px; margin-bottom: 15px;">
         <div style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 4px;">Promo Code ካለዎት እዚህ ያስገቡ</div>
@@ -530,7 +520,6 @@ async function loadSettings() {
         const data = await res.json(); 
         if (data.success && data.data) {
             paymentSettings = data.data; 
-            // ✅ NEW: Check Double Deposit Bonus
             if (paymentSettings.doubleDepositActive) {
                 document.getElementById('double-deposit-banner').classList.remove('hidden');
             }
@@ -540,7 +529,6 @@ async function loadSettings() {
 
 async function apiGet(url) { try { const res = await fetch(url); if (!res.ok) return null; return await res.json(); } catch (e) { return null; } }
 
-// ✅ NEW: Promo Code Claim
 async function claimPromoCode() {
     const code = document.getElementById('promo-code-input').value.trim();
     if (!code) return alert("እባክዎ የፕሮሞ ኮድ ያስገቡ");
@@ -810,8 +798,6 @@ socket.on('wallet_updated', () => loadWallet());
 socket.on('card_error', (data) => { showFooterNotification(data.message); });
 socket.on('timer_tick', (data) => { 
     document.getElementById('timer-val').innerText = data.remaining + 'ሰ'; 
-    // ✅ NEW: Update Countdown Bar text
-    document.getElementById('countdown-text').innerText = data.remaining;
 });
 socket.on('phase_change', (data) => { 
     gamePhase = data.phase; 
@@ -824,6 +810,10 @@ socket.on('new_number_called', (data) => {
     if(gamePhase !== 'calling') { gamePhase = 'calling'; switchTab('live'); buildBingoBoard(); }
     updateLiveCardsContainer(); 
     speakNumber(data.number); 
+});
+
+socket.on('daily_bonus_claimed', (data) => {
+    showFooterNotification(`🎉 የዕለት ቦነስ ${data.amount} ብር አግኝተዋል!`);
 });
 
 socket.on('bingo_result', (data) => {

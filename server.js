@@ -48,7 +48,8 @@ const UserSchema = new mongoose.Schema({
     total_games: { type: Number, default: 0 }, total_wins: { type: Number, default: 0 },
     referral_code: String, referred_by: { type: String, default: null, index: true },
     pending_referrer: { type: String, default: null }, registered: { type: Boolean, default: false, index: true },
-    lang: String, registered_at: { type: String, default: () => new Date().toISOString(), index: true }
+    lang: String, registered_at: { type: String, default: () => new Date().toISOString(), index: true },
+    last_daily_bonus: { type: String, default: null } // ✅ NEW
 }, { collection: 'users' });
 
 const TransactionSchema = new mongoose.Schema({
@@ -314,7 +315,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         let msgText = '';
         
         if (txn.type === 'deposit') {
-            // 🔥 DOUBLE DEPOSIT LOGIC
             let bonusAmount = 0;
             let totalToAdd = txn.amount;
             
@@ -513,12 +513,27 @@ app.get('/api/wallet/me', async (req, res) => {
         const user = authFromHeaders(req);
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        const dbUser = await User.findOne({ id: userId }).lean();
-        if (!dbUser) return res.json({ success: true, data: { play_balance: 0, win_balance: 0, total_games: 0, total_wins: 0, phone: "", referral_balance: 0 } });
-        dbUser.play_balance = Number(dbUser.play_balance) || 0; 
-        dbUser.win_balance = Number(dbUser.win_balance) || 0;
-        dbUser.referral_balance = Number(dbUser.referral_balance) || 0;
-        res.json({ success: true, data: dbUser });
+        
+        // ✅ NEW: Daily Bonus Logic
+        const todayStr = new Date().toISOString().split('T')[0];
+        let dbUser = await User.findOne({ id: userId });
+        
+        if (!dbUser) {
+            dbUser = new User({ id: userId });
+        }
+
+        if (dbUser.last_daily_bonus !== todayStr) {
+            dbUser.last_daily_bonus = todayStr;
+            dbUser.play_balance = (Number(dbUser.play_balance) || 0) + 5;
+            await dbUser.save();
+            io.to(`user_${userId}`).emit('daily_bonus_claimed', { amount: 5 });
+        }
+
+        const userData = dbUser.toObject();
+        userData.play_balance = Number(userData.play_balance) || 0; 
+        userData.win_balance = Number(userData.win_balance) || 0;
+        userData.referral_balance = Number(userData.referral_balance) || 0;
+        res.json({ success: true, data: userData });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -661,15 +676,21 @@ app.post('/api/user/referral', async (req, res) => {
         if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' });
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
+        
+        // ✅ Referral Fix: 30 for referrer, 20 for new user
         await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
         await User.findOneAndUpdate({ id: String(new_user_id) }, { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } }, { upsert: true });
+        
         io.to(`user_${referrer_id}`).emit('wallet_updated', {});
         io.to(`user_${new_user_id}`).emit('wallet_updated', {});
         res.json({ success: true, message: 'Referral bonus applied' });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// 🔥 AUTO-APPROVE ሙሉ በሙሉ ተወግዷል - ሁልጊዜ ወደ Pending ይሄዳል 🔥
+// 🔥 Anti-Spam System
+const userTxnCooldowns = new Map();
+const TXN_COOLDOWN_MS = 2 * 60 * 1000; // 2 Minutes
+
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
@@ -677,6 +698,12 @@ app.post('/api/bot/create-txn', async (req, res) => {
         if (!['deposit', 'withdrawal'].includes(type)) return res.status(400).json({ success: false, error: 'Invalid type' });
         const amt = Number(amount);
         if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
+
+        // ✅ Anti-Spam Check
+        const lastTxnTime = userTxnCooldowns.get(String(user_id)) || 0;
+        if (Date.now() - lastTxnTime < TXN_COOLDOWN_MS) {
+            return res.status(429).json({ success: false, error: 'እባክዎ ትንሽ ይጠብቁ! በ2 ደቂቃ ውስጥ አዲስ ጥያቄ ማስገባት አይችሉም።' });
+        }
 
         if (type === 'deposit' && reference) {
             const existingTxn = await Transaction.findOne({ type: 'deposit', reference: reference });
@@ -697,6 +724,8 @@ app.post('/api/bot/create-txn', async (req, res) => {
             amount: amt, method: method || 'telebirr', reference: reference || '', phone: phone || '',
             status: txnStatus, created: new Date().toISOString(), notified: false
         });
+
+        userTxnCooldowns.set(String(user_id), Date.now()); // Update cooldown
 
         io.to(`user_${user_id}`).emit('wallet_updated', {});
         res.json({ success: true, txnId, autoApproved: false });
