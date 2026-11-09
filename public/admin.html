@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#061a0d">
 <title>Flash Bingo ⚡</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -52,7 +52,7 @@ body {
 .grid-container.disabled { opacity: 0.3; pointer-events: none; }
 .disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
 
-/* ✅ የካርቴላ ቁልፎች ቀለም */
+/* ✅ መደበኛ ያልተመረጠ ካርቴላ (Dark Gray) */
 .number-btn { 
     background: linear-gradient(135deg, #475569, #334155); 
     border: 1px solid #64748b; 
@@ -67,7 +67,7 @@ body {
 }
 .number-btn:active { transform: scale(0.95); }
 
-/* ✅ የራስህ የተመረጠ ካርቴላ (ቢጫ) */
+/* ✅ የራስህ የተመረጠ ካርቴላ (Yellow) */
 .number-btn.selected { 
     background: linear-gradient(135deg, #facc15, #eab308) !important; 
     color: #000 !important; 
@@ -76,7 +76,7 @@ body {
     transform: scale(1.05); 
 }
 
-/* ✅ በሌሎች ተጫዋቾች የተያዙ ካርቴላዎች (Gold Theme) */
+/* ✅ በሌሎች ተጫዋቾች የተያዙ ካርቴላዎች (Gold) */
 .number-btn.taken-by-other {
     background: linear-gradient(135deg, #92400e, #b45309) !important;
     border: 2px solid #facc15 !important;
@@ -297,14 +297,6 @@ body {
         <button class="submit-req-btn" onclick="submitWithdrawRequest(event)">SUBMIT REQUEST</button>
       </div>
     </div>
-  </div>
-
-  <div id="page-history" class="page-inner-content hidden">
-    <div class="sec-title" style="display:flex; justify-content:space-between;">
-      <span>የግብይት ታሪክ (History)</span>
-      <button onclick="clearMyHistory()" style="background:var(--danger); color:white; border:none; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;"><i class="fas fa-trash"></i> አጥፋ</button>
-    </div>
-    <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 
   <div id="page-rank" class="page-inner-content hidden">
@@ -749,7 +741,7 @@ socket.on('init_state', (state) => {
         } else if(state.takenCards.includes(i)) { 
             numberButtons[i].className = 'number-btn taken-by-other'; // ወርቃማ (የሌሎች)
         } else {
-            numberButtons[i].className = 'number-btn'; // ነፃ
+            numberButtons[i].className = 'number-btn'; // ግራጫ (ያልተመረጠ)
         }
     }
     if (state.calledNumbers?.length) { calledNumbersSet = new Set(state.calledNumbers); updateCalledNumbersUI(state.calledNumbers); }
@@ -764,9 +756,13 @@ socket.on('sync_taken_cards', (data) => {
     updateLiveStats(data.totalCards);
     for(let i=1; i<=maxCards; i++) {
         if(!numberButtons[i]) continue;
-        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
-        else if(data.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
-        else { numberButtons[i].className = 'number-btn'; }
+        if(selectedCards.has(i)) {
+            numberButtons[i].className = 'number-btn selected'; // ቢጫ (የአንተ)
+        } else if(data.takenCards.includes(i)) { 
+            numberButtons[i].className = 'number-btn taken-by-other'; // ወርቃማ (የሌሎች)
+        } else {
+            numberButtons[i].className = 'number-btn'; // ግራጫ (ያልተመረጠ)
+        }
     }
     updateCardClickability();
 });
