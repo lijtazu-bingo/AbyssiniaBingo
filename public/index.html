@@ -3,54 +3,89 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0f172a">
-<title>Abyssinia Bingo</title>
+<meta name="theme-color" content="#061a0d">
+<title>Flash Bingo ⚡</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <style>
 :root {
-    --bg-color: #0f172a; --glass-bg: rgba(30, 41, 59, 0.75); --glass-border: rgba(255, 255, 255, 0.1);
-    --text-color: #f8fafc; --text-muted: #94a3b8; --btn-bg: rgba(30, 41, 59, 0.9);
-    --btn-border: #334155; --card-bg: rgba(15, 23, 42, 0.9); --gold: #facc15; --blue: #3b82f6;
+    --bg-color: #061a0d; /* Deep Forest Green Background */
+    --glass-bg: rgba(15, 46, 26, 0.75);
+    --glass-border: rgba(34, 197, 94, 0.2);
+    --text-color: #f8fafc; 
+    --text-muted: #86efac; 
+    --btn-bg: #1e293b; 
+    --btn-border: #334155; 
+    --card-bg: #0f2e1a; 
+    --gold: #facc15; 
+    --blue: #3b82f6;
+    --green: #22c55e;
 }
-body.light-theme {
-    --bg-color: #e2e8f0; --glass-bg: rgba(255, 255, 255, 0.8); --glass-border: rgba(0, 0, 0, 0.1);
-    --text-color: #0f172a; --text-muted: #475569; --btn-bg: rgba(255, 255, 255, 0.9);
-    --btn-border: #cbd5e1; --card-bg: rgba(255, 255, 255, 0.95);
-}
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
 body { 
     background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
-    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%);
+    background-image: radial-gradient(circle at 10% 20%, rgba(34, 197, 94, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(34, 197, 94, 0.1) 0%, transparent 40%);
 }
 .hidden { display: none !important; }
-.glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); border-radius: 12px; }
+.glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); border-radius: 12px; }
 
-#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
+#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #061a0d; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
 #loading-screen.hide-loader { opacity: 0; pointer-events: none; }
-.loader-spinner { width: 60px; height: 60px; border: 6px solid #1e293b; border-top: 6px solid var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.loader-spinner { width: 60px; height: 60px; border: 6px solid #1e293b; border-top: 6px solid var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loader-text { color: var(--gold); font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
+.loader-text { color: var(--green); font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
 
 .main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px; }
 #page-ticket { display: flex; flex-direction: column; height: 100%; }
-.top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
-.dash-card { padding: 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-.dash-label { font-size: 9px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
-.dash-value { font-size: 16px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
-.dash-value.wallet { color: var(--gold); } .dash-value.derash { color: #10b981; } .dash-value.selected { color: var(--blue); } .dash-value.timer { color: #f87171; }
+.top-dashboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.dash-card { padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+.dash-label { font-size: 10px; color: var(--green); font-weight: 800; text-transform: uppercase; }
+.dash-value { font-size: 18px; font-weight: 800; margin-top: 2px; font-family: 'Courier New', Courier, monospace; }
+.dash-value.wallet { color: #fff; } .dash-value.derash { color: var(--gold); } .dash-value.selected { color: #fff; }
 
-/* ✅ REMOVED: .instruction-text and countdown-bar-container */
+.sub-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--glass-border); }
+.players-count { font-size: 14px; font-weight: bold; color: var(--gold); }
 
 .grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-top: 5px; }
 .grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; flex: 1; overflow-y: auto; padding: 8px; align-content: start; }
 .grid-container.disabled { opacity: 0.3; pointer-events: none; }
 .disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
 
-.number-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
+/* ✅ መደበኛ ያልተመረጠ ካርቴላ (Dark Gray) */
+.number-btn { 
+    background: linear-gradient(135deg, #475569, #334155); 
+    border: 1px solid #64748b; 
+    color: #e2e8f0; 
+    padding: 12px 0; 
+    font-size: 16px; 
+    font-weight: 800; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
 .number-btn:active { transform: scale(0.95); }
-.number-btn.taken-by-other { background: rgba(239, 68, 68, 0.3) !important; border-color: #ef4444; color: #fca5a5 !important; opacity: 0.6; cursor: not-allowed; text-decoration: line-through; }
-.number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
+
+/* ✅ የራስህ የተመረጠ ካርቴላ (Yellow) */
+.number-btn.selected { 
+    background: linear-gradient(135deg, #facc15, #eab308) !important; 
+    color: #000 !important; 
+    border: 2px solid #fef08a !important; 
+    box-shadow: 0 0 15px rgba(250, 204, 21, 0.8); 
+    transform: scale(1.05); 
+}
+
+/* ✅ በሌሎች ተጫዋቾች የተያዙ ካርቴላዎች (Gold) */
+.number-btn.taken-by-other {
+    background: linear-gradient(135deg, #92400e, #b45309) !important;
+    border: 2px solid #facc15 !important;
+    color: #ffffff !important;
+    opacity: 1; 
+    cursor: not-allowed;
+    text-decoration: none;
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+}
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 .preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; align-items: center; }
@@ -86,7 +121,7 @@ body {
 .sub-option-btn { background: var(--btn-bg); color: var(--text-color); border: 1px solid var(--btn-border); padding: 12px; font-size: 13px; font-weight: 800; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 5px; }
 .deposit-info-display { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 13px; color: var(--gold); font-weight: bold; text-align: center; }
 .form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-color); padding: 12px; border-radius: 6px; font-size: 13px; margin-top: 8px; outline: none; }
-.submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 14px; font-size: 14px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+.submit-req-btn { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; width: 100%; padding: 14px; font-size: 14px; font-weight: 900; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 .copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 4px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin-left: 5px; }
 
 /* Promo Code */
@@ -98,17 +133,17 @@ body {
 
 /* Live Page */
 #page-live { display: flex; flex-direction: column; height: 100%; }
-.stats-header { display: flex; justify-content: space-around; padding: 10px; margin-bottom: 10px; border: 1px solid var(--blue); }
+.stats-header { display: flex; justify-content: space-around; padding: 10px; margin-bottom: 10px; border: 1px solid var(--green); background: rgba(0,0,0,0.3); border-radius: 8px;}
 .stat-item { text-align: center; }
 .stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
 .stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
 .game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
 .bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 40%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
 .board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
-.board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
+.board-cell.marked { background: var(--green) !important; color: #fff !important; box-shadow: 0 0 10px rgba(34,197,94,0.6); }
 .right-panel { width: 60%; display: flex; flex-direction: column; gap: 10px; }
 .current-call-container { text-align: center; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-.current-call-ball { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.current-call-ball { width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #4ade80, #16a34a); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(34,197,94,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 @keyframes bounceBall { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .recent-calls { display: flex; gap: 8px; justify-content: center; }
 .recent-ball { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
@@ -119,23 +154,23 @@ body {
 .card-header-letters .h-B { background: #3b82f6; } .card-header-letters .h-I { background: #ef4444; } .card-header-letters .h-N { background: #10b981; } .card-header-letters .h-G { background: #f59e0b; } .card-header-letters .h-O { background: #8b5cf6; }
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
 .interactive-cell { background: var(--btn-bg); text-align: center; padding: 6px 0; font-size: 14px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
-.interactive-cell.free { background: var(--blue); color: #fff; font-size: 11px; }
+.interactive-cell.free { background: var(--green); color: #fff; font-size: 11px; }
 .interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
 .wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
 
 /* Bottom Nav */
-.bottom-nav { height: 65px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); }
+.bottom-nav { height: 65px; display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: rgba(0,0,0,0.8); border-top: 1px solid var(--glass-border); }
 .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 10px; font-weight: 700; gap: 4px; }
 .nav-item.active { color: var(--gold); }
 .nav-icon { font-size: 20px; }
 
 /* Game Over */
-#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; overflow-y: auto; padding: 20px; }
+#game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(6,26,13,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; overflow-y: auto; padding: 20px; }
 .game-over-title { font-size: 40px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px rgba(250,204,21,0.6); font-family: 'Courier New', Courier, monospace;}
 .winner-text { font-size: 20px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
 .prize-text { font-size: 30px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px rgba(16,185,129,0.5); }
 .winners-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; width: 100%; }
-.winning-card-wrapper { width: 100%; max-width: 300px; padding: 15px; background: #1e293b; border-radius: 12px; border: 2px solid var(--blue); }
+.winning-card-wrapper { width: 100%; max-width: 300px; padding: 15px; background: #1e293b; border-radius: 12px; border: 2px solid var(--green); }
 .winning-card-wrapper .winner-name { text-align: center; color: var(--gold); font-weight: bold; margin-bottom: 8px; font-size: 14px; }
 .winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 8px 0; font-size: 14px; color: #fff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); font-weight:900; }
@@ -160,13 +195,24 @@ body {
 <div class="main-content-area">
   <div id="page-ticket">
     <div class="top-dashboard">
-      <div class="dash-card glass-panel"><span class="dash-label">Wallet</span><span class="dash-value wallet" id="wallet-display">0.00</span></div>
-      <div class="dash-card glass-panel"><span class="dash-label">Derash</span><span class="dash-value derash" id="derash-val-top">0</span></div>
-      <div class="dash-card glass-panel"><span class="dash-label">Players</span><span class="dash-value selected" id="players-val-top">0</span></div>
-      <div class="dash-card glass-panel">
-        <span class="dash-label">Time Left</span>
-        <span class="dash-value timer" id="timer-val">50ሰ</span>
+      <div class="dash-card glass-panel" style="border-radius: 12px; border: 1px solid var(--green);">
+        <span class="dash-label">🎮 PLAY</span>
+        <span class="dash-value wallet" id="wallet-display">0.00</span>
       </div>
+      <div class="dash-card glass-panel" style="border-radius: 12px; border: 1px solid var(--gold);">
+        <span class="dash-label">🏆 WIN</span>
+        <span class="dash-value derash" id="win-wallet-display-top">0.00</span>
+      </div>
+      <div class="dash-card glass-panel" style="border-radius: 12px; border: 1px solid #334155;">
+        <span class="dash-label">የተጫወቱት ካርቴላዎች</span>
+        <span class="dash-value selected" id="players-val-top">0</span>
+      </div>
+    </div>
+
+    <div class="sub-header">
+        <div class="players-count">ዕለታዊ ካርቴላዎች፦ <span id="derash-val-top" style="color: var(--gold);">0</span></div>
+        <div class="players-count">⚡ FLASH BINGO</div>
+        <div class="players-count" style="color: var(--text-color);"><span id="timer-val">50ሰ</span></div>
     </div>
     
     <div class="selected-count" id="selected-count-display">የተመረጡ ካርቴላዎች፦ 0</div>
@@ -182,7 +228,7 @@ body {
 
   <div id="page-live" class="hidden">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div class="stats-header glass-panel" style="flex:1; margin-bottom:0;">
+        <div class="stats-header" style="flex:1; margin-bottom:0;">
           <div class="stat-item"><span class="stat-label">DERASH</span><div class="stat-value" id="derash-val">0</div></div>
           <div class="stat-item"><span class="stat-label">PLAYERS</span><div class="stat-value" id="players-val">0</div></div>
           <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0</div></div>
@@ -207,34 +253,6 @@ body {
         </div>
         <div class="live-cards-container glass-panel" id="live-cards-container"></div>
       </div>
-    </div>
-  </div>
-
-  <div id="page-profile" class="page-inner-content hidden">
-    <div class="sec-title">የተጠቃሚ መገለጫ</div>
-    <div class="profile-card glass-panel">
-      <div class="profile-row"><span>ስም:</span><span class="profile-val" id="profile-name-val">--</span></div>
-      <div class="profile-row"><span>መለያ ቁጥር:</span><span class="profile-val" id="profile-id-val">--</span></div>
-      <div class="profile-row"><span>📱 ስልክ ቁጥር:</span><span class="profile-val" id="profile-phone-val">--</span></div>
-      <div class="profile-row"><span>የተጫወቱት ጨዋታ:</span><span class="profile-val" id="profile-games-val">0</span></div>
-      <div class="profile-row"><span>ያሸነፉት ጨዋታ:</span><span class="profile-val" id="profile-wins-val">0</span></div>
-    </div>
-    
-    <div class="sec-title">Theme Settings</div>
-    <div class="profile-card glass-panel">
-      <div style="font-size: 12px; margin-bottom: 8px; color:var(--text-muted);">የገጹን ቀለም ይምረጡ</div>
-      <div class="theme-options">
-          <button class="theme-btn dark" onclick="setTheme('dark')">🌙 Dark</button>
-          <button class="theme-btn light" onclick="setTheme('light')">☀️ Light</button>
-          <button class="theme-btn ocean" onclick="setTheme('ocean')">🌊 Ocean</button>
-      </div>
-    </div>
-
-    <div class="sec-title">የግብዣ ሊንክ</div>
-    <div class="profile-card glass-panel">
-      <div style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 8px;">✨ 30 ብር ያግኙ!</div>
-      <input type="text" id="invite-link-input" class="form-input" readonly>
-      <button class="submit-req-btn" style="margin-top: 8px;" onclick="copyInviteLink()">ሊንኩን ቅዳ</button>
     </div>
   </div>
 
@@ -281,26 +299,16 @@ body {
     </div>
   </div>
 
-  <div id="page-history" class="page-inner-content hidden">
-    <div class="sec-title" style="display:flex; justify-content:space-between;">
-      <span>የግብይት ታሪክ (History)</span>
-      <button onclick="clearMyHistory()" style="background:var(--danger); color:white; border:none; border-radius:4px; padding:4px 8px; font-size:11px; cursor:pointer;"><i class="fas fa-trash"></i> አጥፋ</button>
-    </div>
-    <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
-  </div>
-
   <div id="page-rank" class="page-inner-content hidden">
     <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 10)</div>
     <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
 
-<nav class="bottom-nav glass-panel">
+<nav class="bottom-nav">
   <button class="nav-item active" id="nav-btn-ticket" onclick="switchTab('ticket')"><span class="nav-icon">🎮</span><span>BINGO</span></button>
   <button class="nav-item" id="nav-btn-wallet" onclick="switchTab('wallet')"><span class="nav-icon">💳</span><span>WALLET</span></button>
-  <button class="nav-item" id="nav-btn-history" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>HISTORY</span></button>
   <button class="nav-item" id="nav-btn-rank" onclick="switchTab('rank')"><span class="nav-icon">🏆</span><span>RANK</span></button>
-  <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
 </nav>
 
 <div id="game-over-overlay" class="hidden">
@@ -378,17 +386,6 @@ window.addEventListener('load', () => {
 // ==========================================
 // MAIN APP LOGIC
 // ==========================================
-const savedTheme = localStorage.getItem('theme') || 'dark';
-if (savedTheme === 'light') document.body.classList.add('light-theme');
-if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
-
-function setTheme(theme) {
-    document.body.classList.remove('light-theme', 'ocean-theme');
-    if (theme === 'light') document.body.classList.add('light-theme');
-    if (theme === 'ocean') document.body.classList.add('ocean-theme');
-    localStorage.setItem('theme', theme);
-}
-
 let tg = window.Telegram?.WebApp;
 if (tg) { tg.expand(); tg.ready(); }
 
@@ -479,6 +476,7 @@ function updateWalletUI() {
     document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); 
     document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); 
     document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); 
+    document.getElementById('win-wallet-display-top').innerText = currentWinWallet.toFixed(2);
     updateCardClickability();
 }
 function updateProfileUI() { 
@@ -597,43 +595,15 @@ function updatePreviewUI() {
 
 window.switchTab = function(tabName) {
     if (gamePhase === 'calling' && tabName === 'ticket') tabName = 'live';
-    ['ticket', 'profile', 'wallet', 'rank', 'history', 'live'].forEach(t => { const el = document.getElementById('page-' + t); if (el) el.classList.add('hidden'); });
+    ['ticket', 'wallet', 'rank', 'live'].forEach(t => { const el = document.getElementById('page-' + t); if (el) el.classList.add('hidden'); });
     document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
     const target = document.getElementById('page-' + tabName); if (target) target.classList.remove('hidden');
     const navName = (tabName === 'live') ? 'ticket' : tabName;
     const nb = document.getElementById('nav-btn-' + navName); if (nb) nb.classList.add('active');
     
     if (tabName === 'wallet') loadWallet(); 
-    if (tabName === 'history') loadHistory(); 
     if (tabName === 'rank') loadLeaderboard(); 
-    if (tabName === 'profile') loadWallet();
     if (tabName === 'live') { if (selectedCards.size > 0) document.getElementById('wait-message-box').classList.add('hidden'); else document.getElementById('wait-message-box').classList.remove('hidden'); }
-}
-
-async function loadHistory() {
-    const container = document.getElementById('history-list'); container.innerHTML = '<div style="text-align:center; color:#94a3b8;">በመጫን ላይ...</div>';
-    const data = await apiGet('/api/wallet/history'); if (!data || !data.success) { container.innerHTML = 'Error loading history.'; return; }
-    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">📭 እስካሁን ግብይት የለም።</div>'; return; }
-    const frag = document.createDocumentFragment();
-    data.data.forEach(txn => { 
-        let icon = txn.type === 'deposit' ? '💰' : '💸'; 
-        let statusColor = txn.status === 'approved' ? '#10b981' : txn.status === 'rejected' ? '#ef4444' : '#f59e0b'; 
-        let div = document.createElement('div'); div.className = 'glass-panel';
-        div.style.cssText = "padding:12px; display:flex; flex-direction:column; gap:4px;"; 
-        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${icon} ${txn.type.toUpperCase()}</span><span style="color:var(--gold);">${txn.amount} ETB</span></div><div style="display:flex; justify-content:space-between; font-size:11px; color:#94a3b8;"><span>${new Date(txn.created).toLocaleDateString()}</span><span style="color:${statusColor}; font-weight:bold;">${txn.status.toUpperCase()}</span></div>`; 
-        frag.appendChild(div); 
-    });
-    container.appendChild(frag);
-}
-
-async function clearMyHistory() {
-    if (!confirm("ታሪክዎን ማጥፋት ይፈልጋሉ? ይህ ተግባር አይመለስም።")) return;
-    try {
-        const res = await fetch(`/api/wallet/history/clear`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) { alert("ታሪክዎ በተሳካ ሁኔታ ጠፍቷል!"); loadHistory(); }
-        else alert("ስህተት ተከስቷል።");
-    } catch (e) { alert("ሰርቨር ላይ ችግር ተፈጥሯል።"); }
 }
 
 async function loadLeaderboard() {
@@ -652,7 +622,6 @@ async function loadLeaderboard() {
 }
 
 function copyNumberToClipboard(num) { navigator.clipboard.writeText(num).then(() => alert('ቁጥሩ ተቀድቷል: ' + num)).catch(() => alert('ኮፒ ማድረግ አልተቻለም')); }
-function copyInviteLink() { const link = document.getElementById('invite-link-input').value; navigator.clipboard.writeText(link).then(() => alert('ሊንኩ ተቀድቷል!')).catch(() => alert('ኮፒ አልተቻለም')); }
 function toggleDepositOptions() { document.getElementById('withdraw-options-section').classList.add('hidden'); document.getElementById('deposit-options-section').classList.toggle('hidden'); }
 function toggleWithdrawOptions() { document.getElementById('deposit-options-section').classList.add('hidden'); document.getElementById('withdraw-options-section').classList.toggle('hidden'); }
 function selectDepositMethod(m) { 
@@ -765,11 +734,15 @@ socket.on('init_state', (state) => {
     selectedCards.clear(); state.myCards.forEach(n => selectedCards.add(n));
     initGrid(); updatePreviewUI(); updateCardCounter(); updateLiveStats(state.totalCards);
     
-    state.myCards.forEach(n => { if(numberButtons[n]) numberButtons[n].className = 'number-btn selected'; });
     for(let i=1; i<=maxCards; i++) {
         if(!numberButtons[i]) continue;
-        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
-        else if(state.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
+        if(selectedCards.has(i)) {
+            numberButtons[i].className = 'number-btn selected'; // ቢጫ (የአንተ)
+        } else if(state.takenCards.includes(i)) { 
+            numberButtons[i].className = 'number-btn taken-by-other'; // ወርቃማ (የሌሎች)
+        } else {
+            numberButtons[i].className = 'number-btn'; // ግራጫ (ያልተመረጠ)
+        }
     }
     if (state.calledNumbers?.length) { calledNumbersSet = new Set(state.calledNumbers); updateCalledNumbersUI(state.calledNumbers); }
     if (state.remainingTime !== undefined) document.getElementById('timer-val').innerText = state.remainingTime + 'ሰ';
@@ -783,9 +756,13 @@ socket.on('sync_taken_cards', (data) => {
     updateLiveStats(data.totalCards);
     for(let i=1; i<=maxCards; i++) {
         if(!numberButtons[i]) continue;
-        if(selectedCards.has(i)) numberButtons[i].className = 'number-btn selected';
-        else if(data.takenCards.includes(i)) { numberButtons[i].className = 'number-btn taken-by-other'; }
-        else { numberButtons[i].className = 'number-btn'; }
+        if(selectedCards.has(i)) {
+            numberButtons[i].className = 'number-btn selected'; // ቢጫ (የአንተ)
+        } else if(data.takenCards.includes(i)) { 
+            numberButtons[i].className = 'number-btn taken-by-other'; // ወርቃማ (የሌሎች)
+        } else {
+            numberButtons[i].className = 'number-btn'; // ግራጫ (ያልተመረጠ)
+        }
     }
     updateCardClickability();
 });
