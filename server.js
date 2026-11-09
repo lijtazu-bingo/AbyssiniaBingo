@@ -514,7 +514,7 @@ app.get('/api/wallet/me', async (req, res) => {
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         
-        // ✅ NEW: Daily Bonus Logic
+        // ✅ Daily Bonus Logic
         const todayStr = new Date().toISOString().split('T')[0];
         let dbUser = await User.findOne({ id: userId });
         
