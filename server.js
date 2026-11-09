@@ -20,7 +20,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const REQUIRE_TG_AUTH = process.env.REQUIRE_TG_AUTH === 'true';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
-const AUTO_DEPOSIT_LIMIT = 500;
 
 if (!BOT_TOKEN || !MONGODB_URI) { console.error('Missing env'); process.exit(1); }
 
@@ -563,6 +562,7 @@ app.post('/api/user/referral', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// 🔥 AUTO-APPROVE ሙሉ በሙሉ ተወግዷል - ሁልጊዜ ወደ Pending ይሄዳል 🔥
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
@@ -583,8 +583,7 @@ app.post('/api/bot/create-txn', async (req, res) => {
         }
 
         const txnId = (type === 'deposit' ? 'dep_' : 'wdr_') + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        let txnStatus = 'pending';
-        if (type === 'deposit' && amt <= AUTO_DEPOSIT_LIMIT) txnStatus = 'approved'; 
+        let txnStatus = 'pending'; // ሁልጊዜ Pending
 
         await Transaction.create({
             id: txnId, type, user_id: String(user_id), user_name: user_name || 'Unknown',
@@ -592,16 +591,8 @@ app.post('/api/bot/create-txn', async (req, res) => {
             status: txnStatus, created: new Date().toISOString(), notified: false
         });
 
-        if (txnStatus === 'approved') {
-            await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: amt } });
-            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: user_id, text: `✅ <b>Deposit Auto-Approved!</b>\n\nYour deposit of ${amt} ETB has been automatically approved and added to your Play Wallet.`, parse_mode: 'HTML' })
-            }).catch(() => {});
-        }
-
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-        res.json({ success: true, txnId, autoApproved: txnStatus === 'approved' });
+        res.json({ success: true, txnId, autoApproved: false }); // autoApproved ሁልጊዜ false ነው
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 

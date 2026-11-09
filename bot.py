@@ -103,6 +103,7 @@ TEXTS = {
         'dep_instructions': "🏦 <b>የክፍያ መረጃ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 አካውንት፦ <code>{acc}</code>\n\n⚠️ ከተላከ በኋላ የመጣውን የSMS ሙሉ ጽሁፍ (Transaction ID) ኮፒ አድርገው ከታች 👇 ፓስት ያድርጉት፦",
         'dep_success': "✅ <b>የDeposit ጥያቄዎ ተልኳል!</b>\n\n👤 ስም፦ {name}\n💳 አማራጭ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ አድሚን እስኪያጸድቅ ይጠብቁ።",
         'dep_duplicate': "❌ ይህ የግብይት ቁጥር (Transaction ID) ቀድሞ ጥቅም ላይ ውሏል!",
+        'dep_invalid_txn': "❌ <b>ትክክለኛ የባንክ ማረጋገጫ (Transaction ID) ያስገቡ!</b>\n\nያስገቡት ጽሑፍ ትክክል አይደለም። ከSMS የመጣውን ረጅም የግብይት ቁጥር (ለምሳሌ FT12345678) ብቻ ኮፒ አድርገው ይላኩ።",
         
         'wd_choose': "🏦 <b>ወደ የትኛው ባንክ/አካውንት ማውጣት ይፈልጋሉ?</b>",
         'wd_enter_amt': "💸 እባክዎ ማውጣት የሚፈልጉትን <b>መጠን</b> ያስገቡ (ዝቅተኛው 100 ETB)፦",
@@ -138,6 +139,7 @@ TEXTS = {
         'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ Paste Transaction ID below 👇",
         'dep_success': "✅ <b>Deposit Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n⏳ Wait for Admin approval.",
         'dep_duplicate': "❌ This Transaction ID has already been used!",
+        'dep_invalid_txn': "❌ <b>Invalid Transaction ID!</b>\n\nPlease copy and paste the correct long Transaction ID from your SMS (e.g., FT12345678).",
         'wd_choose': "🏦 <b>Choose a bank to withdraw:</b>", 'wd_enter_amt': "💸 Enter the amount (min 100 ETB):",
         'wd_enter_phone': "📱 Enter the Phone number:", 'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n\n⏳ <b>Wait for Admin approval.</b>",
         'bal_msg': "💵 <b>Balance Summary</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Total Balance: {total} ETB</b>",
@@ -167,6 +169,7 @@ TEXTS = {
         'dep_instructions': "🏦 <b>ናይ ክፍሊት ሓበሬታ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 ኣካውንት፦ <code>{acc}</code>\n\n⚠️ ድሕሪ ምስዳድ ዝመጸ ናይ SMS ጽሑፍ ኣብዚ ለጥፉ 👇",
         'dep_success': "✅ <b>ናይ Deposit ሕቶኹም ተላኢኹ!</b>\n\n👤 ስም፦ {name}\n💳 ኣማራጺ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ ንኣድሚን ጽበዩ።",
         'dep_duplicate': "❌ እዚ ናይ ግብይት ቁጽሪ ቀዲሙ ተጠቒሙ እዩ!",
+        'dep_invalid_txn': "❌ <b>ትኽክለኛ ናይ ባንክ መረጋገጺ (Transaction ID) ኣእትዉ!</b>\n\nዝኣእተኩምዎ ጽሑፍ ትኽክል ኣይኮነን። ካብ SMS ዝመጸ ነዊሕ ናይ ግብይት ቁጽሪ (ኣብነት FT12345678) ጥራይ ኮፒ ገይሩ ስደዱ።",
         'wd_choose': "🏦 <b>ናብ ኣየናይ ባንክ ክትወጽኡ ትደልዩ?</b>", 'wd_enter_amt': "💸 እባክዎ ክትወጽኡ ትደልዩ መጠን ኣእትዉ (ዝቕነይ 100 ETB)፦",
         'wd_enter_phone': "📱 እባክዎ ናይ ተሌፎን ቁጽሪ ኣእትዉ፦", 'wd_success': "✅ <b>ናይ Withdraw ሕቶኹም ተላኢኹ!</b>\n\n👤 ስም፦ {name}\n💳 ኣማራጺ፦ {method}\n💰 መጠን፦ {amount} ETB\n📱 ስልኪ፦ {phone}\n\n⏳ <b>ንኣድሚን ጽበዩ።</b>",
         'bal_msg': "💵 <b>ናይ ሂሳብ ጥርዓን</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>ጠቕላላ ባላንስ፦ {total} ETB</b>",
@@ -196,6 +199,7 @@ TEXTS = {
         'dep_instructions': "🏦 <b>Odeeffannoo Kaffaltii</b>\n\n👤 Maqaa: <b>{name}</b>\n👉 Herrega: <code>{acc}</code>\n\n⚠️ Erga ergitanii booda SMS guutuu gadii maxxansaa 👇",
         'dep_success': "✅ <b>Gaaffiin Galii Ergameera!</b>\n\n👤 Maqaa: {name}\n💳 Mala: {method}\n💰 Hanga: {amount} ETB\n⏳ Admin eegaa.",
         'dep_duplicate': "❌ Lakkoofsi txn kun duraan tajaajilameera!",
+        'dep_invalid_txn': "❌ <b>Lakkoofsa Txn sirrii galchaa!</b>\n\nBarruun galchitan sirrii miti. SMS irraa lakkoofsa txn dheeraa (fkn FT12345678) qofa garagalchii ergaa.",
         'wd_choose': "🏦 <b>Baankii baasii barbaaddan filadhaa:</b>", 'wd_enter_amt': "💸 Hanga baasii galchaa (xiqqaatee 100 ETB):",
         'wd_enter_phone': "📱 Lakkoofsa bilbila galchaa:", 'wd_success': "✅ <b>Gaaffiin Baasii Ergameera!</b>\n\n👤 Maqaa: {name}\n💳 Mala: {method}\n💰 Hanga: {amount} ETB\n📱 Bilbila: {phone}\n\n⏳ <b>Admin eegaa.</b>",
         'bal_msg': "💵 <b>Cuunfaa Hajaa</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Hajaa Waliigalaa: {total} ETB</b>",
@@ -230,7 +234,7 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ✅ INTERRUPT HANDLER: ያለበትን ሂደት ሰርዞ ወደ አዲሱ ቁልፍ እንዲሄድ
+# ✅ INTERRUPT HANDLER
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
@@ -312,9 +316,17 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     user = update.effective_user
     txn_ref = update.message.text.strip()
     amount = context.user_data.get('deposit_amount', 0)
+    
+    # 🛡️ 1. የTransaction ID ማጣሪያ (Validation)
+    # ቢያንስ 8 ፊደላት/ቁጥሮች መሆን አለበት እና ከቴሌብር/CBE የሚመጡ ፊደላትን (FT, TB, ወዘተ) ማካተት አለበት
+    if not re.match(r'^[A-Z0-9]{8,}$', txn_ref, re.IGNORECASE):
+        await update.message.reply_text(get_text(user.id, 'dep_invalid_txn'), parse_mode='HTML')
+        return DEPOSIT_TXN  # እንደገና እንዲሞክር ይጠይቀዋል
+    
     if is_txn_used(txn_ref):
         await update.message.reply_text(get_text(user.id, 'dep_duplicate'), reply_markup=get_main_menu(user.id))
         return ConversationHandler.END
+    
     result = None
     try:
         result = requests.post(f"{SERVER_API_URL}/api/bot/create-txn", json={
@@ -322,15 +334,16 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
             "amount": amount, "method": "telebirr", "reference": txn_ref
         }, timeout=10).json()
     except: pass
+    
     if result and result.get('success'):
         mark_txn_used(txn_ref) 
-        if result.get('autoApproved'):
-            msg = f"✅ <b>Deposit Auto-Approved!</b>\n\nYour deposit of {amount} ETB has been automatically added to your balance."
-        else:
-            msg = get_text(user.id, 'dep_success', name=user.first_name, method="Telebirr", amount=amount)
+        # 🔥 AUTO APPROVE ሙሉ በሙሉ ተወግዷል - ሁልጊዜ ወደ Admin ይሄዳል
+        msg = get_text(user.id, 'dep_success', name=user.first_name, method="Telebirr", amount=amount)
     else:
         msg = "⚠️ Request failed. Please contact support."
+        
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
+    
     if ADMIN_ID:
         try: await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 New Deposit Request!\nUser ID: {user.id}\n{msg}", parse_mode='HTML')
         except: pass
