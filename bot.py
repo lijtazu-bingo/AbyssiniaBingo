@@ -234,7 +234,7 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ✅ INTERRUPT HANDLER
+# ✅ INTERRUPT HANDLER: ያለበትን ሂደት ሰርዞ ወደ አዲሱ ቁልፍ እንዲሄድ
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
@@ -318,10 +318,9 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     amount = context.user_data.get('deposit_amount', 0)
     
     # 🛡️ 1. የTransaction ID ማጣሪያ (Validation)
-    # ቢያንስ 8 ፊደላት/ቁጥሮች መሆን አለበት እና ከቴሌብር/CBE የሚመጡ ፊደላትን (FT, TB, ወዘተ) ማካተት አለበት
     if not re.match(r'^[A-Z0-9]{8,}$', txn_ref, re.IGNORECASE):
         await update.message.reply_text(get_text(user.id, 'dep_invalid_txn'), parse_mode='HTML')
-        return DEPOSIT_TXN  # እንደገና እንዲሞክር ይጠይቀዋል
+        return DEPOSIT_TXN 
     
     if is_txn_used(txn_ref):
         await update.message.reply_text(get_text(user.id, 'dep_duplicate'), reply_markup=get_main_menu(user.id))
@@ -337,7 +336,6 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if result and result.get('success'):
         mark_txn_used(txn_ref) 
-        # 🔥 AUTO APPROVE ሙሉ በሙሉ ተወግዷል - ሁልጊዜ ወደ Admin ይሄዳል
         msg = get_text(user.id, 'dep_success', name=user.first_name, method="Telebirr", amount=amount)
     else:
         msg = "⚠️ Request failed. Please contact support."
@@ -545,24 +543,41 @@ def main():
     dep_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_deposit', 'Deposit')) for l in TEXTS])})$")
     wd_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_withdraw', 'Withdraw')) for l in TEXTS])})$")
 
+    # 🔥 የተስተካከለው የ ConversationHandler ሎጂክ (Interrupt Handler ተካቷል) 🔥
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(dep_entry_filter, deposit_start)],
         states={
-            DEPOSIT_AMOUNT: [CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)],
-            DEPOSIT_TXN: [MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)],
+            DEPOSIT_AMOUNT: [
+                CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), 
+                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)
+            ],
+            DEPOSIT_TXN: [
+                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)
+            ],
         },
-        fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
     
     wd_conv = ConversationHandler(
         entry_points=[MessageHandler(wd_entry_filter, withdraw_start)],
         states={
-            WITHDRAW_METHOD: [CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_")],
-            WITHDRAW_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)],
-            WITHDRAW_PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)],
+            WITHDRAW_METHOD: [
+                CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_"),
+                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+            ],
+            WITHDRAW_AMOUNT: [
+                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)
+            ],
+            WITHDRAW_PHONE: [
+                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)
+            ],
         },
-        fallbacks=[MessageHandler(menu_filter, interrupt_handler), CommandHandler("cancel", cancel)],
+        fallbacks=[CommandHandler("cancel", cancel)],
         allow_reentry=True
     )
 
@@ -572,9 +587,7 @@ def main():
     application.add_handler(dep_conv)
     application.add_handler(wd_conv)
     
-    # ✅ ADD: Giveaway Claim Callback
     application.add_handler(CallbackQueryHandler(claim_giveaway_callback, pattern="^claim_gw_"))
-    
     application.add_handler(CallbackQueryHandler(lang_callback, pattern="^lang_"))
     application.add_handler(MessageHandler(filters.CONTACT, handle_contact))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu_buttons))
