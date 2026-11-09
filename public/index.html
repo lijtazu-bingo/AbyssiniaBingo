@@ -45,23 +45,10 @@ body {
 .grid-container.disabled { opacity: 0.3; pointer-events: none; }
 .disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
 
-/* ✅ መደበኛ ያልተመረጠ ካርቴላ */
 .number-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
 .number-btn:active { transform: scale(0.95); }
-
-/* ✅ የራስህ የተመረጠ ካርቴላ (Bright Yellow) */
+.number-btn.taken-by-other { background: linear-gradient(135deg, #78350f, #451a03) !important; border: 2px solid #d97706 !important; color: #fde047 !important; opacity: 1; cursor: not-allowed; text-decoration: none; }
 .number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
-
-/* ✅ የሌሎች ተጫዋቾች ካርቴላ (Dark Brown / Gold Border - በስክሪንሾት 2 መሰረት) */
-.number-btn.taken-by-other {
-    background: linear-gradient(135deg, #78350f, #451a03) !important; 
-    border: 2px solid #d97706 !important; 
-    color: #fde047 !important; /* Soft yellow text */
-    opacity: 1; 
-    cursor: not-allowed;
-    text-decoration: none;
-    box-shadow: none; 
-}
 
 .footer-notification { text-align: center; font-size: 11px; color: var(--gold); font-weight: 700; margin-bottom: 5px; min-height: 15px; }
 .preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; align-items: center; }
@@ -117,32 +104,31 @@ body {
 .bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 35%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
 .board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
 .board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
-.right-panel { width: 65%; display: flex; flex-direction: column; gap: 10px; }
+.right-panel { width: 65%; display: flex; flex-direction: column; gap: 8px; }
 
-/* ✅ የተሻሻለው የ Current Call አቀራረብ */
-.current-call-container { text-align: center; padding: 8px; display: flex; flex-direction: column; align-items: center; }
-.current-call-ball { width: 65px; height: 65px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 26px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.current-call-container { text-align: center; padding: 5px; display: flex; flex-direction: column; align-items: center; }
+.current-call-ball { width: 55px; height: 55px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 @keyframes bounceBall { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-.recent-calls { display: flex; gap: 6px; justify-content: center; }
-.recent-ball { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+.recent-calls { display: flex; gap: 5px; justify-content: center; }
+.recent-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
-/* ✅ የተሻሻለው የካርቴላዎች አቀራረብ (አንድ ረድፍ - 1 Column) */
+/* ✅ የተሻሻለው የካርቴላዎች አቀራረብ (2 ካርቴላ ያለ ስክሮል እንዲታይ) */
 .live-cards-container { 
     flex: 1; 
     overflow-y: auto; 
-    padding: 5px; 
+    padding: 2px; 
     display: flex; 
-    flex-direction: column; /* አንድ ረድፍ ለማድረግ */
-    gap: 10px; 
+    flex-direction: column; 
+    gap: 6px; 
 }
-.interactive-card-view { background: var(--card-bg); border-radius: 8px; padding: 8px; border: 1px solid var(--glass-border); }
-.card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin-bottom: 4px; }
-.card-header-letters div { text-align: center; font-size: 14px; font-weight: 900; border-radius: 4px; padding: 4px 0; color: #fff; }
+.interactive-card-view { background: var(--card-bg); border-radius: 6px; padding: 4px; border: 1px solid var(--glass-border); }
+.card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin-bottom: 2px; }
+.card-header-letters div { text-align: center; font-size: 10px; font-weight: 900; border-radius: 3px; padding: 1px 0; color: #fff; }
 .card-header-letters .h-B { background: #3b82f6; } .card-header-letters .h-I { background: #ef4444; } .card-header-letters .h-N { background: #10b981; } .card-header-letters .h-G { background: #f59e0b; } .card-header-letters .h-O { background: #8b5cf6; }
-.interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.interactive-cell { background: var(--btn-bg); text-align: center; padding: 10px 0; font-size: 16px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; }
-.interactive-cell.free { background: var(--blue); color: #fff; font-size: 12px; }
-.interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); }
+.interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 5px 0; font-size: 12px; font-weight: 900; color: var(--text-color); border-radius: 3px; border: 1px solid var(--glass-border); transition: 0.3s; }
+.interactive-cell.free { background: var(--blue); color: #fff; font-size: 9px; }
+.interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 5px rgba(250, 204, 21, 0.6); }
 .wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
 
 /* Bottom Nav */
@@ -219,7 +205,7 @@ body {
       <div class="bingo-board" id="bingo-board"></div>
       <div class="right-panel">
         <div class="current-call-container glass-panel">
-          <div style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:5px; letter-spacing:1px;">CURRENT CALL</div>
+          <div style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:2px; letter-spacing:1px;">CURRENT CALL</div>
           <div class="current-call-ball" id="current-call-display">--</div>
           <div class="recent-calls" id="recent-calls-container"></div>
         </div>
@@ -504,6 +490,7 @@ function updateWalletUI() {
     document.getElementById('win-wallet-display-top').innerText = currentWinWallet.toFixed(2);
     updateCardClickability();
 }
+
 function updateProfileUI() { 
     document.getElementById('profile-name-val').innerText = userProfile.name; 
     document.getElementById('profile-id-val').innerText = userProfile.id; 
@@ -532,7 +519,8 @@ async function loadWallet() {
             userTotalGames = Number(data.data.total_games) || 0; 
             userTotalWins = Number(data.data.total_wins) || 0; 
             userPhone = data.data.phone || ""; 
-            updateWalletUI(); updateProfileUI(); 
+            updateWalletUI(); 
+            updateProfileUI(); // ✅ Update Profile Data
         } 
     } catch (e) {}
 }
@@ -629,7 +617,7 @@ window.switchTab = function(tabName) {
     if (tabName === 'wallet') loadWallet(); 
     if (tabName === 'history') loadHistory(); 
     if (tabName === 'rank') loadLeaderboard(); 
-    if (tabName === 'profile') loadWallet();
+    if (tabName === 'profile') { loadWallet(); updateProfileUI(); } // ✅ Ensure profile updates
     if (tabName === 'live') { if (selectedCards.size > 0) document.getElementById('wait-message-box').classList.add('hidden'); else document.getElementById('wait-message-box').classList.remove('hidden'); }
 }
 
@@ -742,7 +730,7 @@ function updateLiveCardsContainer() {
     selectedCards.forEach(cn => {
         if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn);
         const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn;
-        d.innerHTML = `<div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:4px; border-radius:4px; margin-bottom:6px;">BOARD ${cn}</div><div class="card-header-letters"><div class="h-B">B</div><div class="h-I">I</div><div class="h-N">N</div><div class="h-G">G</div><div class="h-O">O</div></div><div class="interactive-matrix" id="im-${cn}"></div>`;
+        d.innerHTML = `<div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:9px; font-weight:900; text-align:center; padding:2px; border-radius:3px; margin-bottom:4px;">BOARD ${cn}</div><div class="card-header-letters"><div class="h-B">B</div><div class="h-I">I</div><div class="h-N">N</div><div class="h-G">G</div><div class="h-O">O</div></div><div class="interactive-matrix" id="im-${cn}"></div>`;
         c.appendChild(d);
     });
     for (const cn of [..._liveCardsRendered]) {
