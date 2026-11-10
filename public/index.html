@@ -112,7 +112,7 @@ body {
 .recent-calls { display: flex; gap: 5px; justify-content: center; }
 .recent-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
-/* ✅ የተሻሻለው የካርቴላዎች አቀራረብ (2 ካርቴላ ያለ ስክሮል እንዲታይ) */
+/* ✅ የካርቴላዎች አቀራረብ (2 ካርቴላ ያለ ስክሮል እንዲታይ) */
 .live-cards-container { 
     flex: 1; 
     overflow-y: auto; 
@@ -520,7 +520,7 @@ async function loadWallet() {
             userTotalWins = Number(data.data.total_wins) || 0; 
             userPhone = data.data.phone || ""; 
             updateWalletUI(); 
-            updateProfileUI(); // ✅ Update Profile Data
+            updateProfileUI();
         } 
     } catch (e) {}
 }
@@ -617,7 +617,7 @@ window.switchTab = function(tabName) {
     if (tabName === 'wallet') loadWallet(); 
     if (tabName === 'history') loadHistory(); 
     if (tabName === 'rank') loadLeaderboard(); 
-    if (tabName === 'profile') { loadWallet(); updateProfileUI(); } // ✅ Ensure profile updates
+    if (tabName === 'profile') { loadWallet(); updateProfileUI(); }
     if (tabName === 'live') { if (selectedCards.size > 0) document.getElementById('wait-message-box').classList.add('hidden'); else document.getElementById('wait-message-box').classList.remove('hidden'); }
 }
 

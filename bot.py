@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ─── Flask Web Server ───
 app_web = Flask(__name__)
 @app_web.route('/')
-def home(): return "Abisinya Bingo Bot is running!"
+def home(): return "Abyssinia Bingo Bot is running!"
 
 def run_web():
     port = int(os.environ.get("PORT", 8080))
@@ -87,15 +87,15 @@ TEXTS = {
     'am': {
         'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ።",
         'share_contact': "📱 ስልክ ቁጥሬን አጋራ", 'already_registered': "✅ እርስዎ አስቀድመው ተመዝግበዋል!",
-        'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
-        'welcome_back': "🎉 <b>ወደ Abisinya Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
+        'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abyssinia Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
+        'welcome_back': "🎉 <b>ወደ Abyssinia Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 ገቢ (Deposit)", 'menu_withdraw': "💸 ወጪ (Withdraw)",
         'menu_balance': "🏦 ባላንስ (Balance)", 'menu_invite': "👥 ግብዣ (Invite)", 'menu_history': "📜 ታሪክ (History)",
         'menu_support': "💬 ድጋፍ (Support)", 'menu_register': "🔢 ምዝገባ (Register)", 'menu_lang': "🌐 ቋንቋ (Language)",
-        'menu_help': "ℹ️ እርዳታ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)",
+        'menu_help': "ℹ️ እርዳታ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)", 'menu_rules': "📜 ህግና መመሪያ",
         
-        'play_prompt': "🎲 ወደ Abisinya Bingo እንኳን ደህና መጡ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
+        'play_prompt': "🎲 ወደ Abyssinia Bingo እንኳን ደህና መጡ!\n\n👇 ጨዋታ ለመጀመር ከታች ያለውን ቁልፍ ይጫኑ:",
         'play_inline_btn': "🎮 Play Bingo",
         
         'dep_choose': "💳 <b>የክፍያ አማራጭ ይምረጡ፦</b>",
@@ -122,18 +122,69 @@ TEXTS = {
         'gw_success': "🎉 <b>እንኳን ደስ አለዎት!</b>\n\nየ {amount} ETB ቦነስ በተሳካ ሁኔታ አግኝተዋል። በ Play Walletዎ ውስጥ ይገኛል።",
         'gw_expired': "⏳ <b>ይቅርታ!</b>\n\nይህ ቦነስ ጊዜው አልፎበታል ወይም ተጠቃሚዎች ሙሉውን ወስደዋል። በሚቀጥለው ጊዜ ይሞክሩ!",
         'gw_claimed': "⚠️ ይህን ቦነስ አስቀድመው አግኝተዋል።",
-        'gw_error': "❌ ስህተት ተከስቷል። እባክዎ በኋላ ይሞክሩ።"
+        'gw_error': "❌ ስህተት ተከስቷል። እባክዎ በኋላ ይሞክሩ።",
+        
+        'rules_msg': """🎯 <b>የ Abyssinia Bingo ሙሉ ህግጋት እና መመሪያዎች</b>
+
+እንኳን ወደ <b>Abyssinia Bingo</b> በደህና መጡ! ጨዋታችንን ከመጀመርዎ በፊት እባክዎን የሚከተሉትን የጨዋታ ህጎች፣ ደንቦች እና መመሪያዎች በጥንቃቄ ያንብቡ።
+
+<b>1️⃣ የጨዋታ ህግ እና አጫወት (Gameplay)</b>
+* <b>የካርቴላ ዋጋ፦</b> የ 1 ካርቴላ ዋጋ 10 ብር ሲሆን፣ በአንድ ጨዋታ እስከ 4 ካርቴላ ድረስ መያዝ ይችላሉ።
+* <b>የካርቴላ ይዘት፦</b> በሚይዙት እያንዳንዱ ካርቴላ ላይ ከ 1 እስከ 75 ባሉት ቁጥሮች ውስጥ የተበተኑ 24 የእድል ቁጥሮች ያገኛሉ (የመሃሉ ሳጥን FREE/ነፃ ነው)።
+* <b>የጊዜ ገደብ፦</b> ካርቴላ መምረጫ ሰዓት እንደተጠናቀቀ ጨዋታው ወዲያውኑ ይጀምራል፤ ቁጥሮችም በቅደም ተከተል መጠራት ይጀምራሉ።
+* <b>የካርቴላ ቀለም፦</b> እርስዎ የመረጡት ካርቴላ ቢጫ (Yellow) ሆኖ ይታያል። ሌሎች ተጫዋቾች የመረጡት ካርቴላ ወርቃማ-ቡናማ (Gold/Brown) ሆኖ ይታያል። በተመሳሳይ ጊዜ አንድ ካርቴላ በሁለት ሰዎች ሊመረጥ አይችልም።
+
+<b>2️⃣ የማሸነፊያ መስፈርቶች (Winning Conditions)</b>
+በያዙት ካርቴላ ላይ የተጠሩትን ቁጥሮች በመጠቀም በሚከተሉት መንገዶች አሸናፊ መሆን ይችላሉ፦
+* <b>አግድም (Horizontal Line)፦</b> በአንድ ረድፍ ያሉ 5 ቁጥሮች ሲሟሉ።
+* <b>ቀጥ ያለ (Vertical Line)፦</b> በአንድ አምድ ያሉ 5 ቁጥሮች ሲሟሉ።
+* <b>ደያግናል/ሰያፍ (Diagonal Line)፦</b> ከላይ ግራ ወደ ታች ቀኝ ወይም ከላይ ቀኝ ወደ ታች ግራ ያሉ 5 ቁጥሮች ሲሟሉ።
+* <b>አራቱ ማዕዘናት (4 Corners)፦</b> በካርቴላው አራት ማዕዘን ያሉት ቁጥሮች ሲጠሩ።
+* <b>የመጨረሻ ቁጥር ህግ (Last Call Rule)፦</b> የመጨረሻው የተጠራው ቁጥር (Last Call) በእርስዎ የማሸነፊያ መስመር ላይ መሆን አለበት። መስመር የሞሉበትን ቁጥር ወይም አራቱን ማዕዘናት እንደጨረሱ ሲስተሙ ራሱ በራሱ አሸናፊዎችን ይለያል።
+
+<b>3️⃣ የሽልማት ክፍፍል (Prize Distribution)</b>
+* <b>የደራሽ መጠን፦</b> በዚያ ዙር ከተሸጡት ካርቴላዎች የተሰበሰበው ጠቅላላ ገንዘብ (Derash) ነው።
+* <b>አንድ አሸናፊ ካለ፦</b> ሙሉ የደራሽ መጠኑን ይወስዳል።
+* <b>ብዙ አሸናፊዎች ካሉ (Multi-Winner)፦</b> ሁለት ወይም ከዚያ በላይ ተጫዋቾች በአንድ ጊዜ ቢያሸንፉ የጨዋታው አጠቃላይ ሽልማት በእኩል ይከፋፈላል። የእያንዳንዱ አሸናፊ የካርቴላ ቁጥር እና ስም በስክሪኑ ላይ በግልጽ ይታያል።
+
+<b>4️⃣ ዲፖዚት፣ ዊዝድራው እና ቦነስ (Finance & Wallet)</b>
+* <b>ዲፖዚት (Deposit / Play Wallet)፦</b> ያስገቡት ገንዘብ ለመጫወቻነት ብቻ የሚያገለግል ሲሆን የሚቀመጠውም Play Wallet ላይ ነው። ይህን ገንዘብ በቀጥታ ወጪ ማድረግ (Withdraw) አይቻልም።
+* <b>ዊዝድራው (Withdraw / Win Wallet)፦</b> በጨዋታ ያሸነፉት ገንዘብ በቀጥታ ወደ Win Wallet የሚገባ ሲሆን፣ በማንኛውም ጊዜ ወጪ ማድረግ ይችላሉ።
+    * ዝቅተኛው የማውጫ መጠን 100 ብር ነው።
+    * የወጭ ጥያቄዎች በአስተዳዳሪው እስኪረጋገጡ ድረስ በመጠባበቅ ላይ (Pending) ሆነው ይቆያሉ።
+* <b>ቦነስ እና ግብዣ (Bonus & Referral)፦</b>
+    * አዲስ ተጫዋች ሲመዘገብ የዕለት ቦነስ (Daily Bonus) ያገኛል።
+    * ጓደኛ ለሚጋብዙ ተጫዋቾች 30 ብር፣ ለተጋበዙት አዲስ ተጫዋቾች ደግሞ 20 ብር ቦነስ ይሰጣል።
+    * የተለያዩ የፕሮሞ ኮዶች (Promo Codes) በመጠቀም ተጨማሪ ቦነስ ማግኘት ይችላሉ።
+
+<b>5️⃣ የዕድሜ ገደብ እና ሀላፊነት (Age Limit & Responsibility)</b>
+* <b>የዕድሜ ገደብ፦</b> እድሜያቸው ከ 21 ዓመት በታች ለሆኑ ወጣቶች መጫወት በጥብቅ የተከለከለ ነው።
+* <b>በኃላፊነት ይጫወቱ፦</b> ጨዋታው ለመዝናናት እና ለትርፍ ጊዜ ማሳለፊያ የተዘጋጀ ነው። አስበውበትና ፈቅደው ለመጫወት ብቻ የሚሆን ገንዘብ ያስገቡ። ቢከሰር እንኳ የዕለት ተዕለት ህይወትዎን በማይጎዳ ገንዘብ ብቻ ይጫወቱ።
+
+<b>6️⃣ የተከለከሉ ድርጊቶች (Prohibited Actions)</b>
+* <b>ብዙ አካውንት መፍጠር (Multi-Accounting)፦</b> አንድ ተጫዋች ከአንድ በላይ የቴሌግራም አካውንት በመፍጠር መጫወት አይችልም። ከተገኘ ሁሉም አካውንቶቹ ይዘጋሉ።
+* <b>ማጭበርበር (Fraud)፦</b> የተሳሳተ የክፍያ ማረጋገጫ (Fake Transaction ID) በማስገባት ገንዘብ ለማግኘት መሞከር ለዘላለም ከጨዋታው እንዲወገዱ ያደርጋል።
+* <b>የስፓም ስርዓት (Anti-Spam)፦</b> ተጫዋቾች በአጭር ጊዜ ውስጥ ብዙ የ Deposit/Withdraw ጥያቄዎችን ማስገባት አይችሉም (በየ 2 ደቂቃው አንድ ጥያቄ ብቻ)።
+* <b>ቦት መጠቀም፦</b> ጨዋታውን በራስ-ሰር (Automation/Bot) ለመጫወት የሚሞክሩ ሶፍትዌሮችን መጠቀም የተከለከለ ነው።
+
+<b>7️⃣ የቴክኒክ ችግሮች እና ማስተካከያ (Technical Issues)</b>
+* በኢንተርኔት መቋረጥ፣ በስልክ ባትሪ ማለቅ ወይም በሰርቨር ስህተት ምክንያት ጨዋታው ሊቋረጥ ይችላል።
+* በዚህ ጊዜ ጨዋታው ወደ መጀመሪያው ተመልሶ የሚጀምር ሲሆን፣ የተከፈለው የካርቴላ ገንዘብ ወደ ዋሌትዎ ይመለሳል።
+* በቴክኒክ ችግር ምክንያት የተፈጠረ ኪሳራ አስተዳዳሪው ተጠያቂ አይሆንም።
+* <b>የአስተዳዳሪ መብት፦</b> አስተዳዳሪው ህጎችን ወይም የጨዋታ መለኪያዎችን (ለምሳሌ የካርቴላ ዋጋ፣ የጊዜ ገደብ) በማንኛውም ጊዜ የመቀየር መብቱ የተጠበቀ ነው።
+
+🎮 መልካም እድል እና መልካም የመዝናኛ ጊዜ እንመኝልዎታለን!"""
     },
     'en': {
         'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number.",
         'share_contact': "📱 Share Phone Number", 'already_registered': "✅ You are already registered!",
-        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abisinya Bingo App!\n\n👇 Choose an option below",
-        'welcome_back': "🎉 <b>Welcome to the Abisinya Bingo App!</b>\n\n👇 Choose an option below",
+        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abyssinia Bingo App!\n\n👇 Choose an option below",
+        'welcome_back': "🎉 <b>Welcome to the Abyssinia Bingo App!</b>\n\n👇 Choose an option below",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Deposit", 'menu_withdraw': "💸 Withdraw",
         'menu_balance': "🏦 Balance", 'menu_invite': "👥 Invite", 'menu_history': "📜 History",
         'menu_support': "💬 Support", 'menu_register': "🔢 Register", 'menu_lang': "🌐 Language",
-        'menu_help': "ℹ️ Help", 'menu_rank': "🏆 Rank",
-        'play_prompt': "🎲 Welcome to Abisinya Bingo!\nPlay and Win!\n\n👇 Tap the button below to start playing:",
+        'menu_help': "ℹ️ Help", 'menu_rank': "🏆 Rank", 'menu_rules': "📜 Rules & Guidelines",
+        'play_prompt': "🎲 Welcome to Abyssinia Bingo!\nPlay and Win!\n\n👇 Tap the button below to start playing:",
         'play_inline_btn': "🎮 Play Bingo",
         'dep_choose': "💳 <b>Choose a payment method:</b>", 'dep_enter_amt': "💸 Please enter the amount:",
         'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ Paste Transaction ID below 👇",
@@ -152,18 +203,68 @@ TEXTS = {
         'min_dep': "❌ Minimum deposit is 10 ETB.", 'invalid_phone': "❌ Please enter a valid phone number.", 'cancelled': "❌ Process cancelled.",
         'gw_success': "🎉 <b>Congratulations!</b>\n\nYou have successfully claimed {amount} ETB bonus. It is now in your Play Wallet.",
         'gw_expired': "⏳ <b>Sorry!</b>\n\nThis giveaway has expired or all bonuses have been claimed. Try again next time!",
-        'gw_claimed': "⚠️ You already claimed this bonus.", 'gw_error': "❌ Error occurred. Try again later."
+        'gw_claimed': "⚠️ You already claimed this bonus.", 'gw_error': "❌ Error occurred. Try again later.",
+        
+        'rules_msg': """🎯 <b>Abyssinia Bingo Rules & Guidelines</b>
+
+Welcome to <b>Abyssinia Bingo</b>! Please read the following rules and guidelines carefully before starting.
+
+<b>1️⃣ Gameplay</b>
+* <b>Card Price:</b> 1 Card is 10 ETB. You can hold up to 4 cards per game.
+* <b>Card Content:</b> Each card has 24 random numbers from 1 to 75 (Center is FREE).
+* <b>Time Limit:</b> Once the selection timer ends, the game starts and numbers are called automatically.
+* <b>Card Colors:</b> Your selected card is Yellow. Other players' selected cards are Gold/Brown. A card can only be selected by one player.
+
+<b>2️⃣ Winning Conditions</b>
+You win by completing any of the following:
+* <b>Horizontal Line:</b> 5 numbers in a row.
+* <b>Vertical Line:</b> 5 numbers in a column.
+* <b>Diagonal Line:</b> 5 numbers from corner to corner.
+* <b>4 Corners:</b> The 4 corner numbers of the card.
+* <b>Last Call Rule:</b> The last called number must be part of your winning line. The system automatically verifies and announces the winner.
+
+<b>3️⃣ Prize Distribution</b>
+* <b>Total Prize (Derash):</b> The total money collected from all sold cards in that round.
+* <b>Single Winner:</b> Takes the entire prize pool.
+* <b>Multi-Winner:</b> If two or more players win at the same time, the prize is split equally. Winner names and card numbers are displayed.
+
+<b>4️⃣ Deposit, Withdraw & Bonus</b>
+* <b>Deposit (Play Wallet):</b> Money deposited is for playing only and is stored in the Play Wallet. It cannot be withdrawn directly.
+* <b>Withdraw (Win Wallet):</b> Money won in games goes to the Win Wallet and can be withdrawn anytime.
+    * Minimum withdrawal: 100 ETB.
+    * Withdraw requests are pending until approved by an admin.
+* <b>Bonus & Referral:</b>
+    * New players get a Daily Bonus.
+    * Invite a friend and get 30 ETB, the new user gets 20 ETB.
+    * Use Promo Codes for extra bonuses.
+
+<b>5️⃣ Age Limit & Responsibility</b>
+* <b>Age Limit:</b> Strictly 21+ only.
+* <b>Play Responsibly:</b> This is for entertainment. Only play with money you can afford to lose.
+
+<b>6️⃣ Prohibited Actions</b>
+* <b>Multi-Accounting:</b> One player can only have one Telegram account. Multiple accounts will be banned.
+* <b>Fraud:</b> Fake Transaction IDs will result in a permanent ban.
+* <b>Anti-Spam:</b> You can only submit one Deposit/Withdraw request every 2 minutes.
+* <b>Bots:</b> Using automation or bots to play is strictly prohibited.
+
+<b>7️⃣ Technical Issues</b>
+* If the game is interrupted due to internet, battery, or server issues, the round will reset, and card fees will be refunded.
+* The admin is not responsible for losses due to technical issues.
+* The admin reserves the right to change rules or game parameters at any time.
+
+🎮 Good luck and have fun!"""
     },
     'ti': {
         'register_first': "👋 <b>እንቋዕ ደሓን መጻእኩም!</b>\n\nንምጅማር በጃኹም ቁጽሪ ተሌፎንኩም ኣካፍሉ።",
         'share_contact': "📱 ቁጽሪ ተሌፎነይ ኣካፍል", 'already_registered': "✅ ተመዝጊብኩም ኢኹም!",
-        'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
-        'welcome_back': "🎉 <b>እንቋዕ ናብ Abisinya Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abyssinia Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        'welcome_back': "🎉 <b>እንቋዕ ናብ Abyssinia Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 ኣታዊ (Deposit)", 'menu_withdraw': "💸 ወጻኢ (Withdraw)",
         'menu_balance': "🏦 ተረፍ (Balance)", 'menu_invite': "👥 ዕድመ (Invite)", 'menu_history': "📜 ታሪኽ (History)",
         'menu_support': "💬 ደገፍ (Support)", 'menu_register': "🔢 ምዝገባ (Register)", 'menu_lang': "🌐 ቋንቋ (Language)",
-        'menu_help': "ℹ️ ሓገዝ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)",
-        'play_prompt': "🎲 እንቋዕ ናብ Abisinya Bingo መጻእኩም!\nተጻወቱ ተዓወቱ!\n\n👇 ጸወታ ንምጅማር ኣብ ታሕቲ ዘሎ መጠወቒ ጠውቑ:",
+        'menu_help': "ℹ️ ሓገዝ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)", 'menu_rules': "📜 ሕግን መምርሕን",
+        'play_prompt': "🎲 እንቋዕ ናብ Abyssinia Bingo መጻእኩም!\nተጻወቱ ተዓወቱ!\n\n👇 ጸወታ ንምጅማር ኣብ ታሕቲ ዘሎ መጠወቒ ጠውቑ:",
         'play_inline_btn': "🎮 Play Bingo",
         'dep_choose': "💳 <b>የክፍሊት ኣማራጺ ምረጹ፦</b>", 'dep_enter_amt': "💸 እባክዎ ክትኣትዉ ትደልዩ መጠን ገንዘብ ኣእትዉ፦",
         'dep_instructions': "🏦 <b>ናይ ክፍሊት ሓበሬታ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 ኣካውንት፦ <code>{acc}</code>\n\n⚠️ ድሕሪ ምስዳድ ዝመጸ ናይ SMS ጽሑፍ ኣብዚ ለጥፉ 👇",
@@ -182,18 +283,19 @@ TEXTS = {
         'min_dep': "❌ ዝቕነይ ኣታዊ 10 ETB እዩ።", 'invalid_phone': "❌ ትኽክለኛ ቁጽሪ ተሌፎን ኣእትዉ።", 'cancelled': "❌ መስርሕ ተሰሪዙ።",
         'gw_success': "🎉 <b>እንቋዕ ደስ ኣለኩም!</b>\n\nናይ {amount} ETB ቦነስ ብዓወት ረኺብኩም። ኣብ Play Walletኩም ይርከብ።",
         'gw_expired': "⏳ <b>ይቕሬታ!</b>\n\nእዚ ቦነስ ግዜኡ ሓሊፉ ወይ ተጠቀምቲ ኩሉ ወሲዶምዎ። ኣብ ዝቕጽል ግዜ ፈትኑ!",
-        'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።"
+        'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።",
+        'rules_msg': "📜 ሕግን መምርሕን ኣብ ምምሕዳር ክትረኽብዎ ትኽእሉ ኢኹም።" # አማርኛውን ተጠቀም
     },
     'om': {
         'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
         'share_contact': "📱 Lakkoofsa Bilbilaa Qoodi", 'already_registered': "✅ Duraan galmeeffamtanii jirtu!",
-        'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abisinya Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
-        'welcome_back': "🎉 <b>Baga gara Abisinya Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
+        'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abyssinia Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
+        'welcome_back': "🎉 <b>Baga gara Abyssinia Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Galii (Deposit)", 'menu_withdraw': "💸 Baasii (Withdraw)",
         'menu_balance': "🏦 Hajaa (Balance)", 'menu_invite': "👥 Affeera (Invite)", 'menu_history': "📜 Seenaa (History)",
         'menu_support': "💬 Deeggarsa (Support)", 'menu_register': "🔢 Galmee (Register)", 'menu_lang': "🌐 Afaan (Language)",
-        'menu_help': "ℹ️ Gargaarsa (Help)", 'menu_rank': "🏆 Sadarkaa (Rank)",
-        'play_prompt': "🎲 Baga gara Abisinya Bingo dhuftan!\nTaphadhaa Mo'adhaa!\n\n👇 Taphni akka jalqabuuf button gadii tuqaa:",
+        'menu_help': "ℹ️ Gargaarsa (Help)", 'menu_rank': "🏆 Sadarkaa (Rank)", 'menu_rules': "📜 Seera fi Qajeelfama",
+        'play_prompt': "🎲 Baga gara Abyssinia Bingo dhuftan!\nTaphadhaa Mo'adhaa!\n\n👇 Taphni akka jalqabuuf button gadii tuqaa:",
         'play_inline_btn': "🎮 Play Bingo",
         'dep_choose': "💳 <b>Mala kaffaltii filadhaa:</b>", 'dep_enter_amt': "💸 Maaloo maallaqa galii gochuu barbaaddan galchaa:",
         'dep_instructions': "🏦 <b>Odeeffannoo Kaffaltii</b>\n\n👤 Maqaa: <b>{name}</b>\n👉 Herrega: <code>{acc}</code>\n\n⚠️ Erga ergitanii booda SMS guutuu gadii maxxansaa 👇",
@@ -212,9 +314,15 @@ TEXTS = {
         'min_dep': "❌ Galiin xiqqaan 10 ETB dha.", 'invalid_phone': "❌ Lakkoofsa bilbila sirrii galchaa.", 'cancelled': "❌ Adeemsi haqameera.",
         'gw_success': "🎉 <b>Baga gammaddan!</b>\n\nBoonsii {amount} ETB milkaa'inaan argattan. Play Wallet keessan keessa jira.",
         'gw_expired': "⏳ <b>Dhiifama!</b>\n\nBoonsiin kun yeroon isaa darbeera ykn hunda fudhatameera. Yeroo biraa yaalaa!",
-        'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa."
+        'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa.",
+        'rules_msg': "📜 Seera fi Qajeelfama Admin irraa argachuu dandeessu." # አማርኛውን ተጠቀም
     }
 }
+
+# የአማርኛ ህጎችን ለሁሉም ቋንቋዎች መመደብ (እንደ አስተካካይ)
+TEXTS['ti']['rules_msg'] = TEXTS['am']['rules_msg']
+TEXTS['om']['rules_msg'] = TEXTS['am']['rules_msg']
+TEXTS['en']['rules_msg'] = TEXTS['am']['rules_msg'] # ወይም TEXTS['en']['rules_msg']
 
 def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
@@ -230,7 +338,8 @@ def get_main_menu(user_id):
         [KeyboardButton(text=t('menu_balance')), KeyboardButton(text=t('menu_invite'))],
         [KeyboardButton(text=t('menu_history')), KeyboardButton(text=t('menu_support'))],
         [KeyboardButton(text=t('menu_register')), KeyboardButton(text=t('menu_lang'))],
-        [KeyboardButton(text=t('menu_help')), KeyboardButton(text=t('menu_rank'))]
+        [KeyboardButton(text=t('menu_help')), KeyboardButton(text=t('menu_rank'))],
+        [KeyboardButton(text=t('menu_rules'))] # ✅ አዲስ የህግ ቁልፍ በመጨረሻ ላይ ተጨምሯል
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
@@ -317,7 +426,6 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     txn_ref = update.message.text.strip()
     amount = context.user_data.get('deposit_amount', 0)
     
-    # 🛡️ 1. የTransaction ID ማጣሪያ (Validation)
     if not re.match(r'^[A-Z0-9]{8,}$', txn_ref, re.IGNORECASE):
         await update.message.reply_text(get_text(user.id, 'dep_invalid_txn'), parse_mode='HTML')
         return DEPOSIT_TXN 
@@ -458,6 +566,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     is_lang = any(text == TEXTS[l].get('menu_lang') for l in TEXTS)
     is_history = any(text == TEXTS[l].get('menu_history') for l in TEXTS)
     is_rank = any(text == TEXTS[l].get('menu_rank') for l in TEXTS)
+    is_rules = any(text == TEXTS[l].get('menu_rules') for l in TEXTS) # ✅ አዲስ
 
     if is_play:
         webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}"
@@ -496,6 +605,8 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(t('history_msg'))
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history&lang={lang}"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
+    elif is_rules: # ✅ ህግና መመሪያ መልሶ መስጠት
+        await update.message.reply_text(t('rules_msg'), parse_mode='HTML')
 
 # ✅ GIVEAWAY CLAIM CALLBACK
 async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -536,24 +647,23 @@ def main():
 
     all_menu_buttons = []
     for l in TEXTS:
-        for k in ['menu_play', 'menu_deposit', 'menu_withdraw', 'menu_balance', 'menu_invite', 'menu_history', 'menu_support', 'menu_register', 'menu_lang', 'menu_help', 'menu_rank']:
+        for k in ['menu_play', 'menu_deposit', 'menu_withdraw', 'menu_balance', 'menu_invite', 'menu_history', 'menu_support', 'menu_register', 'menu_lang', 'menu_help', 'menu_rank', 'menu_rules']:
             if k in TEXTS[l]: all_menu_buttons.append(re.escape(TEXTS[l][k]))
     
     menu_filter = filters.Regex(f"^({'|'.join(all_menu_buttons)})$")
     dep_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_deposit', 'Deposit')) for l in TEXTS])})$")
     wd_entry_filter = filters.Regex(f"^({'|'.join([re.escape(TEXTS[l].get('menu_withdraw', 'Withdraw')) for l in TEXTS])})$")
 
-    # 🔥 የተስተካከለው የ ConversationHandler ሎጂክ (Interrupt Handler ተካቷል) 🔥
     dep_conv = ConversationHandler(
         entry_points=[MessageHandler(dep_entry_filter, deposit_start)],
         states={
             DEPOSIT_AMOUNT: [
                 CallbackQueryHandler(deposit_method_chosen, pattern="^dep_"), 
-                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(menu_filter, interrupt_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_amount_received)
             ],
             DEPOSIT_TXN: [
-                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(menu_filter, interrupt_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, deposit_txn_received)
             ],
         },
@@ -566,14 +676,14 @@ def main():
         states={
             WITHDRAW_METHOD: [
                 CallbackQueryHandler(withdraw_method_chosen, pattern="^wd_"),
-                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(menu_filter, interrupt_handler),
             ],
             WITHDRAW_AMOUNT: [
-                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(menu_filter, interrupt_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount_received)
             ],
             WITHDRAW_PHONE: [
-                MessageHandler(menu_filter, interrupt_handler), # ✅ ሜኑ ሲጫን እንዲያቋርጥ
+                MessageHandler(menu_filter, interrupt_handler),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_phone_received)
             ],
         },
