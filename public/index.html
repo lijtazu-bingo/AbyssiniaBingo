@@ -18,6 +18,7 @@
     --btn-border: #334155; 
     --card-bg: rgba(15, 23, 42, 0.9); 
     --blue: #3b82f6;
+    --gold: #facc15;
     --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-num: 'Courier New', Courier, monospace;
 }
@@ -82,9 +83,22 @@ body.emerald-theme {
 .number-btn.selected { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color); box-shadow: 0 0 12px rgba(255, 255, 255, 0.3); transform: scale(1.05); }
 
 .footer-notification { text-align: center; font-size: 12px; color: #ffffff; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; font-weight: 800; margin-bottom: 5px; min-height: 20px; }
-.preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; align-items: center; }
+
+/* Preview Section - Background Removed */
+.preview-section { 
+    display: flex; 
+    gap: 8px; 
+    overflow-x: auto; 
+    overflow-y: hidden; 
+    padding: 5px 0; 
+    margin-bottom: 5px; 
+    align-items: center; 
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
 .preview-section:empty { display: none; padding: 0; margin: 0; min-height: 0; }
-.preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--text-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--text-color); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 .preview-header { background: #334155; color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 2px; border-radius: 4px; margin-bottom: 2px; }
 .preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
 .preview-cell { background: #1e293b; color: #ffffff; text-align: center; font-size: 10px; font-weight: 900; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; font-family: var(--font-num); }
@@ -132,18 +146,45 @@ body.emerald-theme {
 .stat-value { font-size: 22px; font-weight: 900; color: var(--text-color); font-family: var(--font-num); margin-top: 4px; }
 .game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
 
-/* BINGO Board */
-.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px; overflow-y: auto; width: 38%; background: var(--bg-color) !important; border: 2px solid var(--btn-border); border-radius: 10px; }
-.board-cell { background: var(--btn-bg); color: var(--text-color); text-align: center; padding: 6px 0; font-size: 14px; font-weight: 900; border-radius: 4px; border: 1px solid var(--btn-border); transition: 0.2s; font-family: var(--font-num); }
-.board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 12px rgba(59,130,246,0.8); border-color: #60a5fa; }
+/* BINGO Board - ALWAYS BLACK */
+.bingo-board { 
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 4px; 
+    padding: 8px; 
+    overflow-y: auto; 
+    width: 38%; 
+    background: #000000 !important; 
+    border: 2px solid #334155; 
+    border-radius: 10px; 
+}
+.board-cell { 
+    background: #1e293b; 
+    color: #ffffff; 
+    text-align: center; 
+    padding: 6px 0; 
+    font-size: 14px; 
+    font-weight: 900; 
+    border-radius: 4px; 
+    border: 1px solid #334155; 
+    transition: 0.2s; 
+    font-family: var(--font-num); 
+}
+.board-cell.marked { 
+    background: var(--blue) !important; 
+    color: #fff !important; 
+    box-shadow: 0 0 12px rgba(59,130,246,0.8); 
+    border-color: #60a5fa; 
+}
+
 .right-panel { width: 62%; display: flex; flex-direction: column; gap: 8px; }
 
-/* Current Call Layout Adjustments */
+/* Current Call Layout */
 .current-call-container { text-align: center; padding: 15px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
 .current-call-ball { width: 85px; height: 85px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(59,130,246,0.8), inset -5px -5px 15px rgba(0,0,0,0.4); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 12px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-family: var(--font-num); }
 @keyframes bounceBall { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
 
-/* Recent Calls Layout Adjustments (Below Current Call) */
+/* Recent Calls */
 .recent-calls { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
 .recent-ball { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.5); font-family: var(--font-num); }
 
@@ -156,7 +197,15 @@ body.emerald-theme {
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
 .interactive-cell { background: var(--btn-bg); text-align: center; padding: 6px 0; font-size: 13px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; font-family: var(--font-num); }
 .interactive-cell.free { background: var(--blue); color: #fff; font-size: 10px; }
-.interactive-cell.marked-cell { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color); box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
+
+/* Interactive Cells (Player's Cards) - YELLOW CALLED NUMBERS */
+.interactive-cell.marked-cell { 
+    background: #facc15 !important; /* Yellow */
+    color: #000 !important; 
+    border-color: #eab308; 
+    box-shadow: 0 0 8px rgba(250, 204, 21, 0.6); 
+}
+
 .wait-in-live { text-align: center; padding: 25px; margin-top: 10px; }
 
 /* Bottom Nav */
@@ -176,7 +225,14 @@ body.emerald-theme {
 .winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 .winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 10px 0; font-size: 16px; color: #ffffff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.15); font-weight:900; font-family: var(--font-num); }
 .winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
-.winning-cell.highlight { background: #ffffff !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+
+/* Winning Line - YELLOW */
+.winning-cell.highlight { 
+    background: #facc15 !important; /* Yellow */
+    color: #000 !important; 
+    font-weight: 900; 
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.8); 
+}
 
 @keyframes pulseLastNum {
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); background: #10b981; color: white; }
@@ -213,7 +269,8 @@ body.emerald-theme {
     </div>
     
     <div class="footer-notification" id="footer-notification"></div>
-    <div class="preview-section glass-panel" id="preview-container"></div>
+    <!-- Background removed here -->
+    <div class="preview-section" id="preview-container"></div>
   </div>
 
   <div id="page-live" class="hidden">
@@ -233,11 +290,9 @@ body.emerald-theme {
       <div class="bingo-board" id="bingo-board"></div>
       <div class="right-panel">
         
-        <!-- Updated Current Call Layout (Vertical) -->
         <div class="current-call-container glass-panel">
               <div style="font-size:11px; color:var(--text-color); font-weight:800; margin-bottom:5px; letter-spacing:1.5px;">CURRENT</div>
               <div class="current-call-ball" id="current-call-display">--</div>
-              <!-- Recent calls moved below -->
               <div class="recent-calls" id="recent-calls-container"></div>
         </div>
 
@@ -419,7 +474,7 @@ window.addEventListener('load', () => {
 // MAIN APP LOGIC
 // ==========================================
 const savedTheme = localStorage.getItem('theme') || 'theme-dark';
-document.body.className = savedTheme; // Apply saved theme on load
+document.body.className = savedTheme; 
 
 function setTheme(themeName) {
     document.body.className = themeName;
