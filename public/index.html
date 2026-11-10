@@ -3,92 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#0f172a">
 <title>Abyssinia Bingo</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <style>
-:root {
-    --bg-color: #000000; 
-    --glass-bg: rgba(20, 20, 20, 0.85); 
-    --glass-border: rgba(255, 255, 255, 0.15);
-    --text-color: #ffffff; 
-    --text-muted: #e2e8f0; 
-    --btn-bg: rgba(30, 30, 30, 0.9);
-    --btn-border: #444444; 
-    --card-bg: rgba(10, 10, 10, 0.95); 
-    --gold: #facc15; 
+:root, body.theme-dark {
+    --bg-color: #0f172a; 
+    --glass-bg: rgba(30, 41, 59, 0.75); 
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-color: #f8fafc; 
+    --text-muted: #cbd5e1; 
+    --btn-bg: rgba(30, 41, 59, 0.9);
+    --btn-border: #334155; 
+    --card-bg: rgba(15, 23, 42, 0.9); 
     --blue: #3b82f6;
     --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     --font-num: 'Courier New', Courier, monospace;
 }
+body.light-theme {
+    --bg-color: #e2e8f0; 
+    --glass-bg: rgba(255, 255, 255, 0.85); 
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --text-color: #0f172a; 
+    --text-muted: #475569; 
+    --btn-bg: rgba(255, 255, 255, 0.95);
+    --btn-border: #cbd5e1; 
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --blue: #2563eb;
+}
+body.emerald-theme {
+    --bg-color: #070b11; 
+    --glass-bg: rgba(10, 25, 20, 0.85); 
+    --glass-border: rgba(30, 154, 108, 0.4);
+    --text-color: #ffffff; 
+    --text-muted: #a7f3d0; 
+    --btn-bg: #0f402e; 
+    --btn-border: #1e9a6c; 
+    --card-bg: #0a1f18; 
+    --blue: #10b981;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: var(--font-main); }
 body { 
     background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
-    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.05) 0%, transparent 40%);
+    background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
 }
-.hidden { display: none !important; }
-.glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5); border-radius: 12px; }
+body.light-theme { background-image: none; }
+body.emerald-theme {
+    background-image: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+}
 
-#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
+.hidden { display: none !important; }
+.glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); border-radius: 12px; }
+
+#loading-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 99999; transition: opacity 0.3s ease; }
 #loading-screen.hide-loader { opacity: 0; pointer-events: none; }
-.loader-spinner { width: 60px; height: 60px; border: 6px solid #222; border-top: 6px solid var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.loader-spinner { width: 60px; height: 60px; border: 6px solid #1e293b; border-top: 6px solid #ffffff; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loader-text { color: var(--gold); font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
+.loader-text { color: #ffffff; font-size: 22px; font-weight: 900; margin-top: 20px; letter-spacing: 3px; }
 
 .main-content-area { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 8px; }
 #page-ticket { display: flex; flex-direction: column; height: 100%; }
 .top-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
 .dash-card { padding: 12px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-.dash-label { font-size: 11px; color: #ffffff; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
-.dash-value { font-size: 18px; font-weight: 900; font-family: var(--font-num); color: #ffffff; }
-.dash-value.wallet { color: var(--gold); } .dash-value.derash { color: #ffffff; } .dash-value.selected { color: #ffffff; } .dash-value.timer { color: #ffffff; }
+.dash-label { font-size: 11px; color: var(--text-color); font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px; }
+.dash-value { font-size: 18px; font-weight: 900; font-family: var(--font-num); color: var(--text-color); }
 
 .grid-wrapper { position: relative; flex: 1; overflow: hidden; display: flex; flex-direction: column; margin-top: 5px; }
 .grid-container { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; flex: 1; overflow-y: auto; padding: 8px; align-content: start; }
 .grid-container.disabled { opacity: 0.3; pointer-events: none; }
 .disabled-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(239, 68, 68, 0.9); color: white; padding: 15px 25px; border-radius: 12px; font-weight: bold; font-size: 14px; text-align: center; z-index: 10; box-shadow: 0 10px 30px rgba(0,0,0,0.5); white-space: nowrap; }
 
-.number-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: #ffffff; padding: 12px 0; font-size: 16px; font-weight: 800; font-family: var(--font-num); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
+/* BUTTONS BASE */
+.number-btn { background: var(--btn-bg); border: 1px solid var(--btn-border); color: var(--text-color); padding: 12px 0; font-size: 16px; font-weight: 800; font-family: var(--font-num); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
 .number-btn:active { transform: scale(0.95); }
 .number-btn.taken-by-other { background: linear-gradient(135deg, #78350f, #451a03) !important; border: 2px solid #d97706 !important; color: #fde047 !important; opacity: 1; cursor: not-allowed; text-decoration: none; }
-.number-btn.selected { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 12px rgba(250, 204, 21, 0.5); transform: scale(1.05); }
+.number-btn.selected { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color); box-shadow: 0 0 12px rgba(255, 255, 255, 0.3); transform: scale(1.05); }
 
-.footer-notification { text-align: center; font-size: 12px; color: var(--gold); font-weight: 800; margin-bottom: 5px; min-height: 15px; }
+.footer-notification { text-align: center; font-size: 12px; color: #ffffff; background: rgba(0,0,0,0.5); padding: 4px; border-radius: 4px; font-weight: 800; margin-bottom: 5px; min-height: 20px; }
 .preview-section { display: flex; gap: 8px; overflow-x: auto; overflow-y: hidden; padding: 5px 0; margin-bottom: 5px; align-items: center; }
 .preview-section:empty { display: none; padding: 0; margin: 0; min-height: 0; }
-.preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-.preview-header { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 2px; border-radius: 4px; margin-bottom: 2px; }
+.preview-card { flex-shrink: 0; background: #fff; border-radius: 8px; padding: 4px; border: 2px solid var(--text-color); box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.preview-header { background: #334155; color: #fff; font-size: 10px; font-weight: 900; text-align: center; padding: 2px; border-radius: 4px; margin-bottom: 2px; }
 .preview-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
 .preview-cell { background: #1e293b; color: #ffffff; text-align: center; font-size: 10px; font-weight: 900; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; border-radius: 2px; font-family: var(--font-num); }
 .preview-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
 
-.selected-count { text-align: center; font-size: 13px; color: var(--gold); font-weight: 800; margin-bottom: 5px; letter-spacing: 0.5px; }
+.selected-count { text-align: center; font-size: 13px; color: var(--text-color); font-weight: 800; margin-bottom: 5px; letter-spacing: 0.5px; }
 
 .page-inner-content { height: 100%; display: flex; flex-direction: column; padding: 12px; overflow-y: auto; }
-.sec-title { font-size: 15px; font-weight: 900; margin-bottom: 12px; color: var(--gold); letter-spacing: 1px; }
+.sec-title { font-size: 15px; font-weight: 900; margin-bottom: 12px; color: var(--text-color); letter-spacing: 1px; }
 .profile-card { padding: 15px; margin-bottom: 15px; }
-.profile-row { display: flex; justify-content: space-between; font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--glass-border); font-weight: 600; color: #fff; }
+.profile-row { display: flex; justify-content: space-between; font-size: 14px; padding: 10px 0; border-bottom: 1px solid var(--glass-border); font-weight: 600; color: var(--text-color); }
 .profile-row:last-child { border-bottom: none; }
-.profile-val { color: var(--gold); font-weight: 900; font-family: var(--font-num); }
+.profile-val { color: var(--text-color); font-weight: 900; font-family: var(--font-num); }
 .theme-options { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.theme-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; border: 1px solid var(--glass-border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 45%; color: #fff; }
-.theme-btn.dark { background: #000; border-color: #444; }
-.theme-btn.light { background: #e2e8f0; color: #000; }
+.theme-btn { flex: 1; padding: 12px; border-radius: 8px; font-weight: 800; cursor: pointer; border: 1px solid var(--glass-border); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 30%; color: #fff; }
+.theme-btn.dark { background: #0f172a; border-color: #334155; }
+.theme-btn.light { background: #e2e8f0; color: #0f172a; }
+.theme-btn.emerald { background: #0f402e; border-color: #1e9a6c; }
 
 .wallet-balances-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
 .balance-box { padding: 15px; text-align: center; }
-.balance-box-title { font-size: 12px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: 1px; }
-.balance-box-val { font-size: 26px; font-weight: 900; color: var(--gold); font-family: var(--font-num); }
+.balance-box-title { font-size: 12px; font-weight: 800; color: var(--text-color); margin-bottom: 8px; letter-spacing: 1px; }
+.balance-box-val { font-size: 26px; font-weight: 900; color: var(--text-color); font-family: var(--font-num); }
 .wallet-action-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
 .action-btn-deposit { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none; padding: 15px; font-size: 14px; font-weight: 900; border-radius: 10px; cursor: pointer; letter-spacing: 1px; }
 .action-btn-withdraw { background: linear-gradient(135deg, #ca8a04, #a16207); color: #fff; border: none; padding: 15px; font-size: 14px; font-weight: 900; border-radius: 10px; cursor: pointer; letter-spacing: 1px; }
 .deposit-options-box, .withdraw-options-box { padding: 15px; margin-bottom: 15px; }
-.sub-option-btn { background: var(--btn-bg); color: #fff; border: 1px solid var(--btn-border); padding: 14px; font-size: 14px; font-weight: 800; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 8px; }
-.deposit-info-display { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 15px; margin-top: 8px; font-size: 14px; color: var(--gold); font-weight: bold; text-align: center; }
-.form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: #fff; padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 10px; outline: none; font-family: var(--font-num); }
+.sub-option-btn { background: var(--btn-bg); color: var(--text-color); border: 1px solid var(--btn-border); padding: 14px; font-size: 14px; font-weight: 800; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 8px; }
+.deposit-info-display { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 8px; padding: 15px; margin-top: 8px; font-size: 14px; color: var(--text-color); font-weight: bold; text-align: center; }
+.form-input { width: 100%; background: var(--card-bg); border: 1px solid var(--glass-border); color: var(--text-color); padding: 14px; border-radius: 8px; font-size: 14px; margin-top: 10px; outline: none; font-family: var(--font-num); }
 .submit-req-btn { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; width: 100%; padding: 15px; font-size: 15px; font-weight: 900; border-radius: 8px; margin-top: 12px; cursor: pointer; letter-spacing: 1px; }
-.copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: #fff; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; margin-left: 5px; font-weight: bold; }
+.copy-btn { background: var(--btn-bg); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; margin-left: 5px; font-weight: bold; }
 
 /* Promo Code */
 .promo-input-group { display: flex; gap: 5px; margin-top: 5px; }
@@ -100,25 +128,23 @@ body {
 #page-live { display: flex; flex-direction: column; height: 100%; }
 .stats-header { display: flex; justify-content: space-around; padding: 12px; margin-bottom: 10px; border: 1px solid var(--blue); }
 .stat-item { text-align: center; }
-.stat-label { font-size: 11px; color: #fff; font-weight: 800; letter-spacing: 1.5px; }
-.stat-value { font-size: 22px; font-weight: 900; color: #fff; font-family: var(--font-num); margin-top: 4px; }
+.stat-label { font-size: 11px; color: var(--text-color); font-weight: 800; letter-spacing: 1.5px; }
+.stat-value { font-size: 22px; font-weight: 900; color: var(--text-color); font-family: var(--font-num); margin-top: 4px; }
 .game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
 
-/* BINGO Board Spacing Adjustments */
-.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px; overflow-y: auto; width: 38%; background: #000 !important; border: 2px solid #333; border-radius: 10px; }
-.board-cell { background: #111; color: #ffffff; text-align: center; padding: 6px 0; font-size: 14px; font-weight: 900; border-radius: 4px; border: 1px solid #333; transition: 0.2s; font-family: var(--font-num); }
+/* BINGO Board */
+.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 8px; overflow-y: auto; width: 38%; background: var(--bg-color) !important; border: 2px solid var(--btn-border); border-radius: 10px; }
+.board-cell { background: var(--btn-bg); color: var(--text-color); text-align: center; padding: 6px 0; font-size: 14px; font-weight: 900; border-radius: 4px; border: 1px solid var(--btn-border); transition: 0.2s; font-family: var(--font-num); }
 .board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 12px rgba(59,130,246,0.8); border-color: #60a5fa; }
 .right-panel { width: 62%; display: flex; flex-direction: column; gap: 8px; }
 
 /* Current Call Layout Adjustments */
-.current-call-container { text-align: center; padding: 12px 10px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; }
-.call-left-section { display: flex; flex-direction: column; align-items: flex-start; width: 45%; padding-left: 5px; }
-.call-right-section { display: flex; flex-direction: column; align-items: flex-end; width: 55%; padding-right: 5px; }
-.current-call-ball { width: 85px; height: 85px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(59,130,246,0.8), inset -5px -5px 15px rgba(0,0,0,0.4); animation: bounceBall 0.8s infinite ease-in-out; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-family: var(--font-num); }
+.current-call-container { text-align: center; padding: 15px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+.current-call-ball { width: 85px; height: 85px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 32px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(59,130,246,0.8), inset -5px -5px 15px rgba(0,0,0,0.4); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 12px; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); font-family: var(--font-num); }
 @keyframes bounceBall { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.05); } }
 
-/* Recent Calls Layout Adjustments (Horizontal) */
-.recent-calls { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
+/* Recent Calls Layout Adjustments (Below Current Call) */
+.recent-calls { display: flex; flex-direction: row; flex-wrap: wrap; gap: 6px; justify-content: center; align-items: center; }
 .recent-ball { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; box-shadow: 0 3px 6px rgba(0,0,0,0.5); font-family: var(--font-num); }
 
 /* Live Cards Container */
@@ -128,29 +154,29 @@ body {
 .card-header-letters div { text-align: center; font-size: 11px; font-weight: 900; border-radius: 4px; padding: 2px 0; color: #fff; }
 .card-header-letters .h-B { background: #3b82f6; } .card-header-letters .h-I { background: #ef4444; } .card-header-letters .h-N { background: #10b981; } .card-header-letters .h-G { background: #f59e0b; } .card-header-letters .h-O { background: #8b5cf6; }
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
-.interactive-cell { background: var(--btn-bg); text-align: center; padding: 6px 0; font-size: 13px; font-weight: 900; color: #ffffff; border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; font-family: var(--font-num); }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 6px 0; font-size: 13px; font-weight: 900; color: var(--text-color); border-radius: 4px; border: 1px solid var(--glass-border); transition: 0.3s; font-family: var(--font-num); }
 .interactive-cell.free { background: var(--blue); color: #fff; font-size: 10px; }
-.interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 8px rgba(250, 204, 21, 0.8); }
+.interactive-cell.marked-cell { background: var(--text-color) !important; color: var(--bg-color) !important; border-color: var(--text-color); box-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
 .wait-in-live { text-align: center; padding: 25px; margin-top: 10px; }
 
 /* Bottom Nav */
 .bottom-nav { height: 70px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 0; border-left: none; border-right: none; border-bottom: none; background: var(--card-bg); }
 .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 800; gap: 4px; }
-.nav-item.active { color: var(--gold); }
+.nav-item.active { color: var(--text-color); }
 .nav-icon { font-size: 22px; }
 
 /* Game Over */
 #game-over-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); backdrop-filter: blur(10px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; overflow-y: auto; padding: 20px; }
-.game-over-title { font-size: 45px; color: var(--gold); font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 25px rgba(250,204,21,0.8); font-family: var(--font-num); letter-spacing: 2px; }
+.game-over-title { font-size: 45px; color: #ffffff; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 25px rgba(255,255,255,0.5); font-family: var(--font-num); letter-spacing: 2px; }
 .winner-text { font-size: 22px; color: #fff; font-weight: 900; margin-bottom: 10px; text-align: center; }
 .prize-text { font-size: 36px; color: #10b981; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px rgba(16,185,129,0.6); font-family: var(--font-num); }
 .winners-cards-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-bottom: 20px; width: 100%; }
 .winning-card-wrapper { width: 100%; max-width: 320px; padding: 18px; background: #111; border-radius: 12px; border: 2px solid var(--blue); }
-.winning-card-wrapper .winner-name { text-align: center; color: var(--gold); font-weight: 900; margin-bottom: 10px; font-size: 15px; letter-spacing: 1px; }
+.winning-card-wrapper .winner-name { text-align: center; color: #fff; font-weight: 900; margin-bottom: 10px; font-size: 15px; letter-spacing: 1px; }
 .winning-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
 .winning-cell { background: rgba(255,255,255,0.05); text-align: center; padding: 10px 0; font-size: 16px; color: #ffffff; border-radius: 6px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.15); font-weight:900; font-family: var(--font-num); }
 .winning-cell.called-cell { background: #3b82f6 !important; color: #fff !important; border: 1px solid #60a5fa; }
-.winning-cell.highlight { background: var(--gold) !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 20px rgba(250, 204, 21, 0.8); }
+.winning-cell.highlight { background: #ffffff !important; color: #000 !important; font-weight: 900; box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
 
 @keyframes pulseLastNum {
     0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); background: #10b981; color: white; }
@@ -160,7 +186,7 @@ body {
 .winning-cell.last-call-blink { animation: pulseLastNum 1s infinite; border: 2px solid #fff; z-index: 10; position: relative; }
 </style>
 </head>
-<body>
+<body class="theme-dark">
 
 <div id="loading-screen">
     <div class="loader-spinner"></div>
@@ -198,7 +224,7 @@ body {
           <div class="stat-item"><span class="stat-label">CALL</span><div class="stat-value" id="call-count">0</div></div>
         </div>
         
-        <button id="voice-toggle-btn" onclick="toggleVoice()" style="background:var(--gold); color:#000; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; margin-left:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.6);">
+        <button id="voice-toggle-btn" onclick="toggleVoice()" style="background:#ffffff; color:#000; border:none; border-radius:50%; width:50px; height:50px; font-size:22px; margin-left:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.6);">
             🔊
         </button>
     </div>
@@ -207,21 +233,17 @@ body {
       <div class="bingo-board" id="bingo-board"></div>
       <div class="right-panel">
         
-        <!-- Updated Current Call Layout -->
+        <!-- Updated Current Call Layout (Vertical) -->
         <div class="current-call-container glass-panel">
-          <div class="call-left-section">
-              <div style="font-size:11px; color:#fff; font-weight:800; margin-bottom:5px; letter-spacing:1.5px;">CURRENT</div>
+              <div style="font-size:11px; color:var(--text-color); font-weight:800; margin-bottom:5px; letter-spacing:1.5px;">CURRENT</div>
               <div class="current-call-ball" id="current-call-display">--</div>
-          </div>
-          <div class="call-right-section">
-              <div style="font-size:11px; color:#fff; font-weight:800; margin-bottom:5px; letter-spacing:1.5px;">PREVIOUS</div>
+              <!-- Recent calls moved below -->
               <div class="recent-calls" id="recent-calls-container"></div>
-          </div>
         </div>
 
         <div id="wait-message-box" class="wait-in-live glass-panel hidden">
           <div style="font-size:36px; margin-bottom:12px;">⏳</div>
-          <div style="font-size:16px; font-weight:900; color:var(--gold); letter-spacing:1px;">እባክዎ ይጠብቁ</div>
+          <div style="font-size:16px; font-weight:900; color:var(--text-color); letter-spacing:1px;">እባክዎ ይጠብቁ</div>
         </div>
         <div class="live-cards-container glass-panel" id="live-cards-container"></div>
       </div>
@@ -240,16 +262,17 @@ body {
     
     <div class="sec-title">Theme Settings</div>
     <div class="profile-card glass-panel">
-      <div style="font-size: 13px; margin-bottom: 10px; color:#fff; font-weight:bold;">የገጹን ቀለም ይምረጡ</div>
+      <div style="font-size: 13px; margin-bottom: 10px; color:var(--text-color); font-weight:bold;">የገጹን ቀለም ይምረጡ</div>
       <div class="theme-options">
-          <button class="theme-btn dark" onclick="setTheme('dark')">🌙 Dark</button>
-          <button class="theme-btn light" onclick="setTheme('light')">☀️ Light</button>
+          <button class="theme-btn dark" onclick="setTheme('theme-dark')">🌙 Dark</button>
+          <button class="theme-btn light" onclick="setTheme('light-theme')">☀️ Light</button>
+          <button class="theme-btn emerald" onclick="setTheme('emerald-theme')">💚 Emerald</button>
       </div>
     </div>
 
     <div class="sec-title">የግብዣ ሊንክ</div>
     <div class="profile-card glass-panel">
-      <div style="font-size: 13px; color: var(--gold); font-weight: 900; margin-bottom: 10px;">✨ 30 ብር ያግኙ!</div>
+      <div style="font-size: 13px; color: var(--text-color); font-weight: 900; margin-bottom: 10px;">✨ 30 ብር ያግኙ!</div>
       <input type="text" id="invite-link-input" class="form-input" readonly>
       <button class="submit-req-btn" style="margin-top: 10px;" onclick="copyInviteLink()">ሊንኩን ቅዳ</button>
     </div>
@@ -262,7 +285,7 @@ body {
 
     <div class="sec-title">🎁 Promo Code</div>
     <div class="glass-panel" style="padding: 15px; margin-bottom: 15px;">
-        <div style="font-size: 12px; color: var(--gold); font-weight: bold; margin-bottom: 4px;">Promo Code ካለዎት እዚህ ያስገቡ</div>
+        <div style="font-size: 12px; color: var(--text-color); font-weight: bold; margin-bottom: 4px;">Promo Code ካለዎት እዚህ ያስገቡ</div>
         <div class="promo-input-group">
             <input type="text" id="promo-code-input" class="form-input" placeholder="ለምሳሌ: WELCOME50" style="font-family:var(--font-main);">
             <button class="submit-req-btn" onclick="claimPromoCode()" style="width: auto; padding: 0 20px; margin-top: 10px;">Apply</button>
@@ -280,17 +303,17 @@ body {
     </div>
     
     <div id="deposit-options-section" class="deposit-options-box glass-panel hidden">
-      <div style="font-size: 13px; font-weight: bold; color: #fff; text-align: center; margin-bottom:15px; letter-spacing:1px;">የክፍያ አማራጭ ይምረጡ:</div>
+      <div style="font-size: 13px; font-weight: bold; color: var(--text-color); text-align: center; margin-bottom:15px; letter-spacing:1px;">የክፍያ አማራጭ ይምረጡ:</div>
       <button class="sub-option-btn" onclick="selectDepositMethod('telebirr')">📲 Telebirr</button>
       <div id="deposit-info-box" class="deposit-info-display hidden"></div>
     </div>
 
     <div id="withdraw-options-section" class="withdraw-options-box glass-panel hidden">
-      <div style="font-size: 13px; font-weight: bold; color: #fff; text-align: center; margin-bottom:15px; letter-spacing:1px;">የወጭ አማራጭ ይምረጡ:</div>
+      <div style="font-size: 13px; font-weight: bold; color: var(--text-color); text-align: center; margin-bottom:15px; letter-spacing:1px;">የወጭ አማራጭ ይምረጡ:</div>
       <button class="sub-option-btn" onclick="selectWithdrawMethod('self')">👤 በቴሌግራም</button>
       <button class="sub-option-btn" onclick="selectWithdrawMethod('other')">👥 ወደ ሌላ ቁጥር</button>
       <div id="withdraw-form-box" class="hidden" style="margin-top: 15px;">
-        <div id="withdraw-target-label" style="font-size: 13px; color: var(--gold); font-weight: 900; text-align: center; margin-bottom: 6px;"></div>
+        <div id="withdraw-target-label" style="font-size: 13px; color: var(--text-color); font-weight: 900; text-align: center; margin-bottom: 6px;"></div>
         <input type="number" id="withdraw-amount-input" class="form-input" placeholder="የሚወጣውን መጠን (ETB)">
         <input type="text" id="withdraw-phone-input" class="form-input hidden" placeholder="የቴሌብር ቁጥር">
         <button class="submit-req-btn" onclick="submitWithdrawRequest(event)">SUBMIT REQUEST</button>
@@ -327,7 +350,7 @@ body {
   <div class="winners-cards-container" id="winning-card-container"></div>
   <div style="margin-top: 25px; text-align: center;">
     <div style="font-size: 15px; color: #cbd5e1; font-weight:bold; letter-spacing:1px;">አዲስ ጨዋታ በ...</div>
-    <div style="font-size: 45px; color: var(--gold); font-weight: 900; font-family:var(--font-num);" id="modal-countdown">10</div>
+    <div style="font-size: 45px; color: #ffffff; font-weight: 900; font-family:var(--font-num);" id="modal-countdown">10</div>
   </div>
 </div>
 
@@ -355,10 +378,10 @@ function toggleVoice() {
     localStorage.setItem('abisinya_voice', isVoiceEnabled ? 'on' : 'off');
     const btn = document.getElementById('voice-toggle-btn');
     if (isVoiceEnabled) {
-        btn.innerText = '🔊'; btn.style.background = 'var(--gold)';
+        btn.innerText = '🔊'; btn.style.background = '#ffffff'; btn.style.color = '#000';
         unlockAudio(); speakNumber(1);
     } else {
-        btn.innerText = '🔇'; btn.style.background = '#475569';
+        btn.innerText = '🔇'; btn.style.background = '#475569'; btn.style.color = '#fff';
         if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     }
 }
@@ -387,21 +410,20 @@ document.addEventListener('touchstart', function() { unlockAudio(); }, { once: t
 window.addEventListener('load', () => {
     const btn = document.getElementById('voice-toggle-btn');
     if (btn) { 
-        if (isVoiceEnabled) { btn.innerText = '🔊'; btn.style.background = 'var(--gold)'; } 
-        else { btn.innerText = '🔇'; btn.style.background = '#475569'; }
+        if (isVoiceEnabled) { btn.innerText = '🔊'; btn.style.background = '#ffffff'; btn.style.color = '#000'; } 
+        else { btn.innerText = '🔇'; btn.style.background = '#475569'; btn.style.color = '#fff'; }
     }
 });
 
 // ==========================================
 // MAIN APP LOGIC
 // ==========================================
-const savedTheme = localStorage.getItem('theme') || 'dark';
-if (savedTheme === 'light') document.body.classList.add('light-theme');
+const savedTheme = localStorage.getItem('theme') || 'theme-dark';
+document.body.className = savedTheme; // Apply saved theme on load
 
-function setTheme(theme) {
-    document.body.classList.remove('light-theme');
-    if (theme === 'light') document.body.classList.add('light-theme');
-    localStorage.setItem('theme', theme);
+function setTheme(themeName) {
+    document.body.className = themeName;
+    localStorage.setItem('theme', themeName);
 }
 
 let tg = window.Telegram?.WebApp;
@@ -628,16 +650,16 @@ window.switchTab = function(tabName) {
 }
 
 async function loadHistory() {
-    const container = document.getElementById('history-list'); container.innerHTML = '<div style="text-align:center; color:#fff;">በመጫን ላይ...</div>';
+    const container = document.getElementById('history-list'); container.innerHTML = '<div style="text-align:center; color:var(--text-color);">በመጫን ላይ...</div>';
     const data = await apiGet('/api/wallet/history'); if (!data || !data.success) { container.innerHTML = 'Error loading history.'; return; }
-    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#fff; padding:20px;">📭 እስካሁን ግብይት የለም።</div>'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:var(--text-color); padding:20px;">📭 እስካሁን ግብይት የለም።</div>'; return; }
     const frag = document.createDocumentFragment();
     data.data.forEach(txn => { 
         let icon = txn.type === 'deposit' ? '💰' : '💸'; 
         let statusColor = txn.status === 'approved' ? '#10b981' : txn.status === 'rejected' ? '#ef4444' : '#f59e0b'; 
         let div = document.createElement('div'); div.className = 'glass-panel';
         div.style.cssText = "padding:15px; display:flex; flex-direction:column; gap:6px;"; 
-        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; color:#fff;"><span>${icon} ${txn.type.toUpperCase()}</span><span style="color:var(--gold); font-family:var(--font-num);">${txn.amount} ETB</span></div><div style="display:flex; justify-content:space-between; font-size:12px; color:#cbd5e1;"><span>${new Date(txn.created).toLocaleDateString()}</span><span style="color:${statusColor}; font-weight:bold;">${txn.status.toUpperCase()}</span></div>`; 
+        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; color:var(--text-color);"><span>${icon} ${txn.type.toUpperCase()}</span><span style="font-family:var(--font-num);">${txn.amount} ETB</span></div><div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted);"><span>${new Date(txn.created).toLocaleDateString()}</span><span style="color:${statusColor}; font-weight:bold;">${txn.status.toUpperCase()}</span></div>`; 
         frag.appendChild(div); 
     });
     container.appendChild(frag);
@@ -654,15 +676,15 @@ async function clearMyHistory() {
 }
 
 async function loadLeaderboard() {
-    const container = document.getElementById('leaderboard-list'); container.innerHTML = '<div style="text-align:center; color:#fff;">በመጫን ላይ...</div>';
+    const container = document.getElementById('leaderboard-list'); container.innerHTML = '<div style="text-align:center; color:var(--text-color);">በመጫን ላይ...</div>';
     const data = await apiGet('/api/leaderboard'); if (!data || !data.success) { container.innerHTML = 'Error loading rank.'; return; }
-    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:#fff; padding:20px;">📭 እስካሁን አሸናፊ የለም።</div>'; return; }
+    container.innerHTML = ''; if (data.data.length === 0) { container.innerHTML = '<div style="text-align:center; color:var(--text-color); padding:20px;">📭 እስካሁን አሸናፊ የለም።</div>'; return; }
     let medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]; 
     const frag = document.createDocumentFragment();
     data.data.forEach((u, i) => { 
         let div = document.createElement('div'); div.className = 'glass-panel';
         div.style.cssText = "padding:15px; display:flex; justify-content:space-between; align-items:center;"; 
-        div.innerHTML = `<div style="display:flex; gap:12px; align-items:center;"><span style="font-size:22px;">${medals[i] || ''}</span><span style="font-weight:bold; color:#fff; font-size:14px;">${u.name}</span></div><span style="color:var(--gold); font-weight:900; font-family:var(--font-num);">${Number(u.win_balance).toFixed(2)} ETB</span>`; 
+        div.innerHTML = `<div style="display:flex; gap:12px; align-items:center;"><span style="font-size:22px;">${medals[i] || ''}</span><span style="font-weight:bold; color:var(--text-color); font-size:14px;">${u.name}</span></div><span style="font-weight:900; font-family:var(--font-num);">${Number(u.win_balance).toFixed(2)} ETB</span>`; 
         frag.appendChild(div); 
     });
     container.appendChild(frag);
@@ -731,12 +753,12 @@ function generateCardLayout(cn) {
 
 function updateLiveCardsContainer() {
     const c = document.getElementById('live-cards-container');
-    if (selectedCards.size === 0) { c.innerHTML = '<div style="text-align:center; color:#fff; font-size:12px; padding:20px;">ካርቴላ የለም</div>'; _liveCardsRendered.clear(); return; }
+    if (selectedCards.size === 0) { c.innerHTML = '<div style="text-align:center; color:var(--text-color); font-size:12px; padding:20px;">ካርቴላ የለም</div>'; _liveCardsRendered.clear(); return; }
     if (!_liveCardsRendered.size) c.innerHTML = '';
     selectedCards.forEach(cn => {
         if (_liveCardsRendered.has(cn)) return; _liveCardsRendered.add(cn);
         const d = document.createElement('div'); d.className = 'interactive-card-view'; d.dataset.card = cn;
-        d.innerHTML = `<div style="background:linear-gradient(135deg,#d97706,#b45309); color:#fff; font-size:10px; font-weight:900; text-align:center; padding:3px; border-radius:3px; margin-bottom:5px; letter-spacing:1px;">BOARD ${cn}</div><div class="card-header-letters"><div class="h-B">B</div><div class="h-I">I</div><div class="h-N">N</div><div class="h-G">G</div><div class="h-O">O</div></div><div class="interactive-matrix" id="im-${cn}"></div>`;
+        d.innerHTML = `<div style="background:#334155; color:#fff; font-size:10px; font-weight:900; text-align:center; padding:3px; border-radius:3px; margin-bottom:5px; letter-spacing:1px;">BOARD ${cn}</div><div class="card-header-letters"><div class="h-B">B</div><div class="h-I">I</div><div class="h-N">N</div><div class="h-G">G</div><div class="h-O">O</div></div><div class="interactive-matrix" id="im-${cn}"></div>`;
         c.appendChild(d);
     });
     for (const cn of [..._liveCardsRendered]) {
@@ -864,7 +886,7 @@ socket.on('game_over', (data) => {
     
     if (isMeWinner) {
         document.getElementById('winner-text').innerHTML = `🎉 አንተ አሸንፈሃል! 🎉`; 
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#facc15', '#3b82f6', '#10b981', '#ef4444'] });
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#ffffff', '#3b82f6', '#10b981', '#ef4444'] });
         setTimeout(() => { confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } }); confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } }); }, 250);
     }
 
