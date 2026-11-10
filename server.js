@@ -49,7 +49,7 @@ const UserSchema = new mongoose.Schema({
     referral_code: String, referred_by: { type: String, default: null, index: true },
     pending_referrer: { type: String, default: null }, registered: { type: Boolean, default: false, index: true },
     lang: String, registered_at: { type: String, default: () => new Date().toISOString(), index: true },
-    last_daily_bonus: { type: String, default: null } // ✅ NEW
+    last_daily_bonus: { type: String, default: null }
 }, { collection: 'users' });
 
 const TransactionSchema = new mongoose.Schema({
@@ -282,6 +282,15 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ አንድን ተጠቃሚ በ ID ለማግኘት
+app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
+    try {
+        const user = await User.findOne({ id: req.params.id }).lean();
+        if (!user) return res.status(404).json({ success: false, error: 'User not found' });
+        res.json({ success: true, data: user });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
     try {
         const { id } = req.params; const { play_balance, win_balance } = req.body;
@@ -315,6 +324,7 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         let msgText = '';
         
         if (txn.type === 'deposit') {
+            // 🔥 DOUBLE DEPOSIT LOGIC
             let bonusAmount = 0;
             let totalToAdd = txn.amount;
             
@@ -677,7 +687,6 @@ app.post('/api/user/referral', async (req, res) => {
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
         
-        // ✅ Referral Fix: 30 for referrer, 20 for new user
         await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
         await User.findOneAndUpdate({ id: String(new_user_id) }, { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } }, { upsert: true });
         
@@ -699,7 +708,6 @@ app.post('/api/bot/create-txn', async (req, res) => {
         const amt = Number(amount);
         if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ success: false, error: 'Invalid amount' });
 
-        // ✅ Anti-Spam Check
         const lastTxnTime = userTxnCooldowns.get(String(user_id)) || 0;
         if (Date.now() - lastTxnTime < TXN_COOLDOWN_MS) {
             return res.status(429).json({ success: false, error: 'እባክዎ ትንሽ ይጠብቁ! በ2 ደቂቃ ውስጥ አዲስ ጥያቄ ማስገባት አይችሉም።' });
@@ -725,7 +733,7 @@ app.post('/api/bot/create-txn', async (req, res) => {
             status: txnStatus, created: new Date().toISOString(), notified: false
         });
 
-        userTxnCooldowns.set(String(user_id), Date.now()); // Update cooldown
+        userTxnCooldowns.set(String(user_id), Date.now());
 
         io.to(`user_${user_id}`).emit('wallet_updated', {});
         res.json({ success: true, txnId, autoApproved: false });
