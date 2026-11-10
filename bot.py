@@ -284,7 +284,7 @@ You win by completing any of the following:
         'gw_success': "🎉 <b>እንቋዕ ደስ ኣለኩም!</b>\n\nናይ {amount} ETB ቦነስ ብዓወት ረኺብኩም። ኣብ Play Walletኩም ይርከብ።",
         'gw_expired': "⏳ <b>ይቕሬታ!</b>\n\nእዚ ቦነስ ግዜኡ ሓሊፉ ወይ ተጠቀምቲ ኩሉ ወሲዶምዎ። ኣብ ዝቕጽል ግዜ ፈትኑ!",
         'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።",
-        'rules_msg': "📜 ሕግን መምርሕን ኣብ ምምሕዳር ክትረኽብዎ ትኽእሉ ኢኹም።" # አማርኛውን ተጠቀም
+        'rules_msg': "📜 ሕግን መምርሕን ኣብ ምምሕዳር ክትረኽብዎ ትኽእሉ ኢኹም።" 
     },
     'om': {
         'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
@@ -315,14 +315,14 @@ You win by completing any of the following:
         'gw_success': "🎉 <b>Baga gammaddan!</b>\n\nBoonsii {amount} ETB milkaa'inaan argattan. Play Wallet keessan keessa jira.",
         'gw_expired': "⏳ <b>Dhiifama!</b>\n\nBoonsiin kun yeroon isaa darbeera ykn hunda fudhatameera. Yeroo biraa yaalaa!",
         'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa.",
-        'rules_msg': "📜 Seera fi Qajeelfama Admin irraa argachuu dandeessu." # አማርኛውን ተጠቀም
+        'rules_msg': "📜 Seera fi Qajeelfama Admin irraa argachuu dandeessu."
     }
 }
 
-# የአማርኛ ህጎችን ለሁሉም ቋንቋዎች መመደብ (እንደ አስተካካይ)
+# የአማርኛ ህጎችን ለሁሉም ቋንቋዎች መመደብ
 TEXTS['ti']['rules_msg'] = TEXTS['am']['rules_msg']
 TEXTS['om']['rules_msg'] = TEXTS['am']['rules_msg']
-TEXTS['en']['rules_msg'] = TEXTS['am']['rules_msg'] # ወይም TEXTS['en']['rules_msg']
+TEXTS['en']['rules_msg'] = TEXTS['am']['rules_msg']
 
 def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
@@ -336,10 +336,9 @@ def get_main_menu(user_id):
         [KeyboardButton(text=t('menu_play'))],
         [KeyboardButton(text=t('menu_deposit')), KeyboardButton(text=t('menu_withdraw'))],
         [KeyboardButton(text=t('menu_balance')), KeyboardButton(text=t('menu_invite'))],
-        [KeyboardButton(text=t('menu_history')), KeyboardButton(text=t('menu_support'))],
         [KeyboardButton(text=t('menu_register')), KeyboardButton(text=t('menu_lang'))],
-        [KeyboardButton(text=t('menu_help')), KeyboardButton(text=t('menu_rank'))],
-        [KeyboardButton(text=t('menu_rules'))] # ✅ አዲስ የህግ ቁልፍ በመጨረሻ ላይ ተጨምሯል
+        [KeyboardButton(text=t('menu_support')), KeyboardButton(text=t('menu_help'))],
+        [KeyboardButton(text=t('menu_rules'))]
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
@@ -566,7 +565,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     is_lang = any(text == TEXTS[l].get('menu_lang') for l in TEXTS)
     is_history = any(text == TEXTS[l].get('menu_history') for l in TEXTS)
     is_rank = any(text == TEXTS[l].get('menu_rank') for l in TEXTS)
-    is_rules = any(text == TEXTS[l].get('menu_rules') for l in TEXTS) # ✅ አዲስ
+    is_rules = any(text == TEXTS[l].get('menu_rules') for l in TEXTS)
 
     if is_play:
         webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}"
@@ -605,7 +604,7 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(t('history_msg'))
         web_app_btn = InlineKeyboardButton(text="📜 Open History", web_app=WebAppInfo(url=f"{WEBAPP_URL}?page=history&lang={lang}"))
         await update.message.reply_text("👇", reply_markup=InlineKeyboardMarkup([[web_app_btn]]))
-    elif is_rules: # ✅ ህግና መመሪያ መልሶ መስጠት
+    elif is_rules:
         await update.message.reply_text(t('rules_msg'), parse_mode='HTML')
 
 # ✅ GIVEAWAY CLAIM CALLBACK
