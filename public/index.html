@@ -18,10 +18,26 @@ body.light-theme {
     --text-color: #0f172a; --text-muted: #475569; --btn-bg: rgba(255, 255, 255, 0.9);
     --btn-border: #cbd5e1; --card-bg: rgba(255, 255, 255, 0.95);
 }
+/* ✅ NEW AMETHYST THEME */
+body.amethyst-theme {
+    --bg-color: #1a0b2e; 
+    --glass-bg: rgba(46, 16, 74, 0.75); 
+    --glass-border: rgba(192, 132, 252, 0.2);
+    --text-color: #f8fafc; 
+    --text-muted: #d8b4fe; 
+    --btn-bg: rgba(46, 16, 74, 0.9);
+    --btn-border: #7e22ce; 
+    --card-bg: rgba(26, 11, 46, 0.9); 
+    --gold: #facc15; 
+    --blue: #3b82f6;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
 body { 
     background: var(--bg-color); color: var(--text-color); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
     background-image: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%);
+}
+body.amethyst-theme {
+    background-image: radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(250, 204, 21, 0.1) 0%, transparent 40%);
 }
 .hidden { display: none !important; }
 .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2); border-radius: 12px; }
@@ -71,7 +87,7 @@ body {
 .theme-btn { flex: 1; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 1px solid var(--glass-border); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 30%; }
 .theme-btn.dark { background: #0f172a; color: #fff; border-color: #334155; }
 .theme-btn.light { background: #e2e8f0; color: #0f172a; }
-.theme-btn.ocean { background: #0ea5e9; color: #fff; }
+.theme-btn.amethyst { background: #581c87; color: #fff; border-color: #7e22ce; }
 
 .wallet-balances-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
 .balance-box { padding: 15px; text-align: center; }
@@ -101,33 +117,40 @@ body {
 .stat-label { font-size: 10px; color: var(--text-muted); font-weight:bold; }
 .stat-value { font-size: 20px; font-weight: 900; color: var(--gold); font-family: 'Courier New', Courier, monospace; }
 .game-main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
-.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; padding: 5px; overflow-y: auto; width: 35%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
-.board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
+
+/* ✅ BINGO Board Spacing Adjustments */
+.bingo-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 6px; overflow-y: auto; width: 38%; background: #020617 !important; border: 2px solid #1e293b; border-radius: 8px; }
+.board-cell { background: #0f172a; color: #cbd5e1; text-align: center; padding: 5px 0; font-size: 13px; font-weight: 800; border-radius: 4px; border: 1px solid #1e293b; transition: 0.2s; }
 .board-cell.marked { background: var(--blue) !important; color: #fff !important; box-shadow: 0 0 10px rgba(59,130,246,0.6); }
-.right-panel { width: 65%; display: flex; flex-direction: column; gap: 8px; }
+.right-panel { width: 62%; display: flex; flex-direction: column; gap: 8px; }
 
-.current-call-container { text-align: center; padding: 5px; display: flex; flex-direction: column; align-items: center; }
-.current-call-ball { width: 55px; height: 55px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+/* ✅ Current Call Layout Adjustments */
+.current-call-container { text-align: center; padding: 8px; display: flex; flex-direction: row; justify-content: space-between; align-items: center; }
+.call-left-section { display: flex; flex-direction: column; align-items: center; width: 60%; }
+.call-right-section { display: flex; flex-direction: column; align-items: center; width: 40%; }
+.current-call-ball { width: 65px; height: 65px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); color: white; font-size: 26px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(59,130,246,0.6), inset -5px -5px 15px rgba(0,0,0,0.3); animation: bounceBall 1.5s infinite ease-in-out; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
 @keyframes bounceBall { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-.recent-calls { display: flex; gap: 5px; justify-content: center; }
-.recent-ball { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
-/* ✅ የካርቴላዎች አቀራረብ (2 ካርቴላ ያለ ስክሮል እንዲታይ) */
+/* ✅ Recent Calls Layout Adjustments (Vertical on the right) */
+.recent-calls { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: center; }
+.recent-ball { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+
+/* ✅ Live Cards Container (Fits 3 cards) */
 .live-cards-container { 
     flex: 1; 
     overflow-y: auto; 
     padding: 2px; 
     display: flex; 
     flex-direction: column; 
-    gap: 6px; 
+    gap: 5px; 
 }
 .interactive-card-view { background: var(--card-bg); border-radius: 6px; padding: 4px; border: 1px solid var(--glass-border); }
 .card-header-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; margin-bottom: 2px; }
-.card-header-letters div { text-align: center; font-size: 10px; font-weight: 900; border-radius: 3px; padding: 1px 0; color: #fff; }
+.card-header-letters div { text-align: center; font-size: 9px; font-weight: 900; border-radius: 3px; padding: 1px 0; color: #fff; }
 .card-header-letters .h-B { background: #3b82f6; } .card-header-letters .h-I { background: #ef4444; } .card-header-letters .h-N { background: #10b981; } .card-header-letters .h-G { background: #f59e0b; } .card-header-letters .h-O { background: #8b5cf6; }
 .interactive-matrix { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; }
-.interactive-cell { background: var(--btn-bg); text-align: center; padding: 5px 0; font-size: 12px; font-weight: 900; color: var(--text-color); border-radius: 3px; border: 1px solid var(--glass-border); transition: 0.3s; }
-.interactive-cell.free { background: var(--blue); color: #fff; font-size: 9px; }
+.interactive-cell { background: var(--btn-bg); text-align: center; padding: 4px 0; font-size: 11px; font-weight: 900; color: var(--text-color); border-radius: 3px; border: 1px solid var(--glass-border); transition: 0.3s; }
+.interactive-cell.free { background: var(--blue); color: #fff; font-size: 8px; }
 .interactive-cell.marked-cell { background: var(--gold) !important; color: #000 !important; border-color: #eab308; box-shadow: 0 0 5px rgba(250, 204, 21, 0.6); }
 .wait-in-live { text-align: center; padding: 20px; margin-top: 10px; }
 
@@ -204,11 +227,19 @@ body {
     <div class="game-main-layout">
       <div class="bingo-board" id="bingo-board"></div>
       <div class="right-panel">
+        
+        <!-- ✅ Updated Current Call Layout -->
         <div class="current-call-container glass-panel">
-          <div style="font-size:11px; color:var(--text-muted); font-weight:bold; margin-bottom:2px; letter-spacing:1px;">CURRENT CALL</div>
-          <div class="current-call-ball" id="current-call-display">--</div>
-          <div class="recent-calls" id="recent-calls-container"></div>
+          <div class="call-left-section">
+              <div style="font-size:10px; color:var(--text-muted); font-weight:bold; margin-bottom:5px; letter-spacing:1px;">CURRENT CALL</div>
+              <div class="current-call-ball" id="current-call-display">--</div>
+          </div>
+          <div class="call-right-section">
+              <div style="font-size:10px; color:var(--text-muted); font-weight:bold; margin-bottom:5px;">PREVIOUS</div>
+              <div class="recent-calls" id="recent-calls-container"></div>
+          </div>
         </div>
+
         <div id="wait-message-box" class="wait-in-live glass-panel hidden">
           <div style="font-size:32px; margin-bottom:10px;">⏳</div>
           <div style="font-size:14px; font-weight:900; color:var(--gold);">እባክዎ ይጠብቁ</div>
@@ -234,7 +265,7 @@ body {
       <div class="theme-options">
           <button class="theme-btn dark" onclick="setTheme('dark')">🌙 Dark</button>
           <button class="theme-btn light" onclick="setTheme('light')">☀️ Light</button>
-          <button class="theme-btn ocean" onclick="setTheme('ocean')">🌊 Ocean</button>
+          <button class="theme-btn amethyst" onclick="setTheme('amethyst')">🔮 Amethyst</button>
       </div>
     </div>
 
@@ -388,12 +419,12 @@ window.addEventListener('load', () => {
 // ==========================================
 const savedTheme = localStorage.getItem('theme') || 'dark';
 if (savedTheme === 'light') document.body.classList.add('light-theme');
-if (savedTheme === 'ocean') document.body.classList.add('ocean-theme');
+if (savedTheme === 'amethyst') document.body.classList.add('amethyst-theme');
 
 function setTheme(theme) {
-    document.body.classList.remove('light-theme', 'ocean-theme');
+    document.body.classList.remove('light-theme', 'amethyst-theme');
     if (theme === 'light') document.body.classList.add('light-theme');
-    if (theme === 'ocean') document.body.classList.add('ocean-theme');
+    if (theme === 'amethyst') document.body.classList.add('amethyst-theme');
     localStorage.setItem('theme', theme);
 }
 
