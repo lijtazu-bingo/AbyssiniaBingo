@@ -637,15 +637,32 @@ app.post('/api/admin/stop-game', adminAuth, (req, res) => {
     res.json({ success: true });
 });
 
+// ✅ የተስተካከለው የእጅ ጥሪ (Manual Call) ኮድ
 app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) {
         return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
     }
-    let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-    gameState.calledNumbers.push(num); gameState.currentCall = num;
-    io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
+    
+    // ✅ ከአድሚን ፓነል የመጣውን ቁጥር መቀበል
+    const reqNumber = Number(req.body.number);
+    if (!reqNumber || reqNumber < 1 || reqNumber > 75) {
+        return res.status(400).json({ success: false, message: 'እባክዎ ከ1 እስከ 75 ያለ ትክክለኛ ቁጥር ያስገቡ' });
+    }
+    if (gameState.calledNumbers.includes(reqNumber)) {
+        return res.status(400).json({ success: false, message: 'ይህ ቁጥር ቀድሞ ተጠርቷል!' });
+    }
+
+    // የተመረጠውን ቁጥር መጨመር
+    gameState.calledNumbers.push(reqNumber); 
+    gameState.currentCall = reqNumber;
+    
+    // ለሁሉም ተጫዋቾች መላክ
+    io.emit('new_number_called', { number: reqNumber, allCalled: gameState.calledNumbers });
+    
+    // ማሸነፍ መኖሩን ማረጋገጥ እና Game Over ማድረግ
     const winnerFound = await checkForAutoWinner();
     if (winnerFound) await endRound(roundWinners);
+    
     res.json({ success: true });
 });
 
