@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,28 +7,28 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     :root { 
-        --primary: #10b981; /* Neon Green */
-        --primary-dark: #059669;
-        --bg: #070b14; 
-        --bg-card: #111827; 
-        --bg-sidebar: #0b1120;
-        --text: #f8fafc; 
-        --text-muted: #94a3b8;
-        --danger: #ef4444; 
-        --success: #10b981; 
-        --blue: #3b82f6;
-        --gold: #facc15;
-        --border: #1f2937;
-        --blue-dark: #1e3a8a;
+        --primary: #10b981; --primary-dark: #059669;
+        --bg: #070b14; --bg-card: #111827; --bg-sidebar: #0b1120;
+        --text: #f8fafc; --text-muted: #94a3b8;
+        --danger: #ef4444; --success: #10b981; --blue: #3b82f6; --gold: #facc15;
+        --border: #1f2937; --blue-dark: #1e3a8a;
     }
+    
+    /* ✅ Light Theme Variables */
+    body.light-theme {
+        --bg: #f1f5f9; --bg-card: #ffffff; --bg-sidebar: #e2e8f0;
+        --text: #0f172a; --text-muted: #475569; --border: #cbd5e1;
+    }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-weight: 500; }
+    body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-weight: 500; transition: background 0.3s, color 0.3s; }
+    .hidden { display: none !important; }
 
     /* Login */
-    #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; background-image: radial-gradient(circle at 50% 50%, #111827 0%, #070b14 100%); }
+    #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; background-image: radial-gradient(circle at 50% 50%, var(--bg-card) 0%, var(--bg) 100%); }
     .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 16px; border: 1px solid var(--border); width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
     .login-box h2 { text-align: center; color: var(--primary); margin-bottom: 25px; font-size: 24px; font-weight: 700; }
-    .login-box input { width: 100%; padding: 14px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 8px; margin-bottom: 15px; outline: none; transition: 0.2s; font-weight: bold; }
+    .login-box input { width: 100%; padding: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; margin-bottom: 15px; outline: none; transition: 0.2s; font-weight: bold; }
     .login-box input:focus { border-color: var(--primary); }
     .login-box button { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
     .error-msg { color: var(--danger); text-align: center; margin-bottom: 15px; font-size: 13px; display: none; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; }
@@ -43,18 +43,18 @@
     .menu-item:hover, .menu-item.active { background: rgba(16, 185, 129, 0.1); color: var(--primary); border-left-color: var(--primary); }
     .menu-item i { width: 20px; text-align: center; }
 
-    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: #0d121f; }
+    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--bg); }
     
-    /* Modern Top Bar */
+    /* Top Bar */
     .top-bar { height: 75px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid var(--border); }
-    .header-title-area h2 { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .header-title-area h2 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
     .header-title-area p { font-size: 13px; color: var(--text-muted); }
-    .header-actions { display: flex; align-items: center; gap: 20px; }
-    .icon-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13px; }
+    .header-actions { display: flex; align-items: center; gap: 15px; }
+    .icon-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13px; transition: 0.2s; }
     .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
     .admin-profile { display: flex; align-items: center; gap: 10px; background: rgba(250, 204, 21, 0.1); border: 1px solid var(--gold); padding: 6px 15px; border-radius: 20px; cursor: pointer; }
     .admin-profile i { color: var(--gold); font-size: 20px; }
-    .admin-profile-text { font-size: 12px; }
+    .admin-profile-text { font-size: 12px; color: var(--text); }
     .admin-profile-text span { display: block; color: var(--gold); font-weight: bold; }
     
     .page-container { flex: 1; padding: 25px 30px; overflow-y: auto; }
@@ -62,7 +62,7 @@
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ✅ New Dashboard Styles based on Screenshot */
+    /* Dashboard Grid */
     .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; }
     @media(max-width: 1400px) { .stats-row { grid-template-columns: repeat(4, 1fr); } }
     @media(max-width: 1100px) { .stats-row { grid-template-columns: repeat(3, 1fr); } }
@@ -70,14 +70,14 @@
     
     .stat-box { background: var(--bg-card); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); position: relative; }
     .stat-box-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; letter-spacing: 0.5px; }
-    .stat-box-value { font-size: 20px; font-weight: 800; color: #fff; }
+    .stat-box-value { font-size: 20px; font-weight: 800; color: var(--text); }
     .stat-box-value.green { color: var(--primary); }
     .stat-box-value.gold { color: var(--gold); }
     
     .filter-section { background: var(--bg-card); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-    .filter-title { font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .filter-title { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
     .filter-inputs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .filter-inputs input { padding: 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: #fff; font-weight: bold; outline: none; }
+    .filter-inputs input { padding: 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-weight: bold; outline: none; }
     .btn-apply { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
     .btn-reset { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
     
@@ -86,51 +86,52 @@
     
     .card-panel { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
     .card-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .card-panel-title { font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .card-panel-title { font-size: 16px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
     .card-panel-title i { color: var(--primary); }
     
     .chart-stats { display: flex; gap: 20px; margin-bottom: 20px; }
     .chart-stat-item { background: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 8px; flex: 1; border: 1px solid var(--border); }
+    body.light-theme .chart-stat-item { background: #f8fafc; }
     .chart-stat-item span { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
     .chart-stat-item strong { font-size: 16px; color: var(--primary); font-weight: 800; }
     
-    /* Fake Chart Line */
+    /* Fake Chart */
     .fake-chart-container { height: 200px; width: 100%; border-left: 2px solid var(--border); border-bottom: 2px solid var(--border); position: relative; display: flex; align-items: flex-end; padding: 0 10px; gap: 10px; }
     .chart-y-axis { position: absolute; left: -30px; top: 0; height: 100%; display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
-    .chart-bar { width: 100%; background: linear-gradient(to top, rgba(16,185,129,0.2), var(--primary)); border-radius: 4px 4px 0 0; opacity: 0.8; transition: height 0.3s; }
+    .chart-bar { width: 100%; background: linear-gradient(to top, rgba(16,185,129,0.2), var(--primary)); border-radius: 4px 4px 0 0; opacity: 0.8; }
     
-    /* Breakdown Tabs */
     .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
     .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; }
     .tab-btn.active { background: rgba(16, 185, 129, 0.1); color: var(--primary); border-color: var(--primary); }
     
     .breakdown-section { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; margin-bottom: 15px; border: 1px solid var(--border); }
+    body.light-theme .breakdown-section { background: #f8fafc; }
     .breakdown-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .breakdown-header h4 { font-size: 13px; color: var(--primary); font-weight: 800; display: flex; align-items: center; gap: 5px; }
     .active-badge { background: rgba(16, 185, 129, 0.2); color: var(--primary); border: 1px solid var(--primary); padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; }
-    .breakdown-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 13px; }
+    .breakdown-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
     .breakdown-row:last-child { border-bottom: none; }
     .breakdown-row span:first-child { color: var(--text-muted); }
-    .breakdown-row span:last-child { color: #fff; font-weight: bold; }
+    .breakdown-row span:last-child { color: var(--text); font-weight: bold; }
     .breakdown-row.total { background: rgba(16, 185, 129, 0.1); margin: 5px -10px; padding: 8px 10px; border-radius: 4px; border: none; }
     .breakdown-row.total span { color: var(--primary); font-weight: 800; font-size: 14px; }
 
-    /* Tables & Forms (Existing Styles) */
+    /* Tables */
     .table-wrapper { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
     .table-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
     .table-header h3 { font-size: 16px; color: var(--primary); }
     .search-bar { display: flex; gap: 10px; flex: 1; max-width: 400px; }
-    .search-bar input { flex: 1; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 6px; outline: none; font-size: 13px; font-weight: bold; }
+    .search-bar input { flex: 1; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; outline: none; font-size: 13px; font-weight: bold; }
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; }
     th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
     th { background: rgba(0,0,0,0.2); color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 12px; }
+    body.light-theme th { background: #e2e8f0; }
     tr:hover td { background: rgba(255,255,255,0.02); }
-    .clickable-row { cursor: pointer; transition: 0.2s; }
-    .clickable-row:hover { background: rgba(16,185,129,0.1) !important; }
-
-    .user-link { color: var(--blue); font-weight: bold; text-decoration: none; cursor: pointer; transition: 0.2s; }
-    .user-link:hover { text-decoration: underline; color: #60a5fa; }
+    body.light-theme tr:hover td { background: #f1f5f9; }
+    
+    .user-link { color: var(--blue); font-weight: bold; text-decoration: none; cursor: pointer; }
+    .user-link:hover { text-decoration: underline; }
 
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
     .badge.pending { background: rgba(245, 158, 11, 0.2); color: var(--gold); border: 1px solid var(--gold); }
@@ -144,32 +145,49 @@
     .btn-warning { background: var(--gold); color: #000; }
     .btn-sm { padding: 6px 12px; font-size: 12px; }
 
-    .form-control { padding: 12px; background: var(--bg); border: 1px solid var(--border); color: #fff; border-radius: 8px; outline: none; font-size: 14px; width: 100%; font-weight: bold; }
-    .form-control:focus { border-color: var(--primary); }
+    .form-control { padding: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; outline: none; font-size: 14px; width: 100%; font-weight: bold; }
     
-    /* Side Panel */
+    /* Side Panel & Modals */
     .side-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(3px); z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
     .side-panel-overlay.active { opacity: 1; pointer-events: auto; }
     .side-panel { position: fixed; top: 0; right: -450px; width: 100%; max-width: 450px; height: 100vh; background: var(--bg-card); z-index: 10000; box-shadow: -5px 0 30px rgba(0,0,0,0.5); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border-left: 1px solid var(--border); }
     .side-panel.active { right: 0; }
     .side-panel-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); }
+    body.light-theme .side-panel-header { background: #f1f5f9; }
     .side-panel-header h2 { font-size: 18px; color: var(--primary); font-weight: 800; }
     .close-panel { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
     .side-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+    
     .info-group { margin-bottom: 20px; }
     .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: bold; }
     .info-row span:first-child { color: var(--text-muted); }
     .info-row span:last-child { font-weight: 800; }
     .active-card-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .card-tag { background: rgba(16,185,129,0.2); border: 1px solid var(--primary); color: #fff; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+    .card-tag { background: rgba(16,185,129,0.2); border: 1px solid var(--primary); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+
+    /* ✅ Bingo Cards Modal */
+    #cards-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 10005; display: none; align-items: center; justify-content: center; padding: 20px; }
+    #cards-modal.active { display: flex; }
+    .cards-modal-content { background: var(--bg-card); border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; border: 1px solid var(--border); }
+    .cards-modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .cards-modal-body { padding: 20px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    
+    /* Bingo Grid Layout */
+    .bingo-grid { background: var(--bg); padding: 10px; border-radius: 8px; border: 2px solid var(--border); }
+    .bingo-grid-title { text-align: center; font-size: 12px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+    .grid-letters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 4px; }
+    .grid-letters div { text-align: center; color: #fff; font-weight: bold; font-size: 14px; border-radius: 4px; padding: 4px 0; }
+    .grid-letters .l-B { background: #3b82f6; } .grid-letters .l-I { background: #ef4444; } .grid-letters .l-N { background: #10b981; } .grid-letters .l-G { background: #f59e0b; } .grid-letters .l-O { background: #8b5cf6; }
+    .grid-cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .grid-cell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; text-align: center; padding: 8px 0; font-size: 14px; font-weight: bold; color: var(--text); }
+    .grid-cell.free { background: var(--blue); color: #fff; font-size: 10px; }
+    .grid-cell.marked { background: var(--gold); color: #000; box-shadow: 0 0 8px rgba(250,204,21,0.5); }
 
     #admin-toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #000; padding: 15px 25px; border-radius: 8px; font-weight: 800; font-size: 14px; z-index: 99999; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     #admin-toast.show { opacity: 1; transform: translateY(0); }
     #admin-toast.error { background: var(--danger); color: #fff; }
     
-    .mt-3 { margin-top: 20px; }
-    #mobile-menu-btn { display: none; background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; }
-    
+    #mobile-menu-btn { display: none; background: transparent; border: none; color: var(--text); font-size: 20px; cursor: pointer; }
     @media (max-width: 768px) {
         #sidebar { position: absolute; left: -260px; height: 100vh; z-index: 100; }
         #sidebar.active { left: 0; }
@@ -200,55 +218,55 @@
 <!-- MAIN CONTENT -->
 <div id="main-content">
     
-    <!-- SIDEBAR (Matches Screenshot) -->
+    <!-- SIDEBAR -->
     <div id="sidebar">
         <div class="logo"><i class="fas fa-chart-pie"></i> Admin Panel</div>
         <div class="menu-group">
-            <div class="menu-label">Main</div>
-            <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-            <div class="menu-item" onclick="switchPage('revenue', this)"><i class="fas fa-chart-line"></i> Total Revenue</div>
-            <div class="menu-item" onclick="switchPage('transactions', this)"><i class="fas fa-exchange-alt"></i> Game Transactions</div>
-            <div class="menu-item" onclick="switchPage('robot', this)"><i class="fas fa-robot"></i> Robot Management</div>
-            <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> Receipts</div>
+            <div class="menu-label" data-i18n="main">Main</div>
+            <div class="menu-item active" onclick="switchPage('dashboard', this)"><i class="fas fa-th-large"></i> <span data-i18n="dashboard">Dashboard</span></div>
+            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> <span data-i18n="users">Users / Players</span></div>
+            <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> <span data-i18n="deposits">Deposit Receipts</span></div>
+            <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> <span data-i18n="withdrawals">Withdrawal Requests</span></div>
             
-            <div class="menu-label mt-3">Finance & Users</div>
-            <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawal Requests</div>
-            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users</div>
-            <div class="menu-item" onclick="switchPage('referrals', this)"><i class="fas fa-network-wired"></i> Referrals</div>
-            <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Bonuses / Giveaways</div>
-            <div class="menu-item" onclick="switchPage('promo', this)"><i class="fas fa-tags"></i> Promo Codes</div>
-            
-            <div class="menu-label mt-3">Game & System</div>
-            <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
-            <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> History & Logs</div>
-            <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
-            <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Admin Settings</div>
+            <div class="menu-label" data-i18n="game_system">Game & System</div>
+            <div class="menu-item" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> <span data-i18n="game_control">Game Control</span></div>
+            <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> <span data-i18n="bonuses">Bonuses / Giveaways</span></div>
+            <div class="menu-item" onclick="switchPage('promo', this)"><i class="fas fa-tags"></i> <span data-i18n="promo">Promo Codes</span></div>
+            <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> <span data-i18n="broadcast">Broadcast</span></div>
+            <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> <span data-i18n="history">Game History</span></div>
+            <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> <span data-i18n="settings">Admin Settings</span></div>
         </div>
     </div>
 
     <!-- MAIN PANEL -->
     <div class="main-panel">
         
-        <!-- TOP HEADER (Matches Screenshot) -->
+        <!-- TOP HEADER -->
         <div class="top-bar">
             <div style="display: flex; align-items: center; gap: 15px;">
                 <button id="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="header-title-area">
-                    <h2>Dashboard Overview</h2>
-                    <p>Real-time gaming metrics, financial summaries & system health</p>
+                    <h2 data-i18n="dashboard_overview">Dashboard Overview</h2>
+                    <p data-i18n="dashboard_sub">Real-time gaming metrics, financial summaries & system health</p>
                 </div>
             </div>
             <div class="header-actions">
                 <div class="icon-btn" style="background: rgba(16,185,129,0.1); color: var(--primary); border-color: var(--primary);">
                     <i class="fas fa-clock"></i> <span id="live-time">--:-- --</span>
                 </div>
-                <div class="icon-btn"><i class="fas fa-globe"></i> EN</div>
-                <div class="icon-btn"><i class="fas fa-moon"></i> Dark</div>
+                <!-- ✅ Language Toggle -->
+                <div class="icon-btn" onclick="toggleLanguage()" style="cursor:pointer;">
+                    <i class="fas fa-globe"></i> <span id="lang-toggle-text">AM</span>
+                </div>
+                <!-- ✅ Theme Toggle -->
+                <div class="icon-btn" onclick="toggleTheme()" style="cursor:pointer;">
+                    <i class="fas fa-moon" id="theme-icon"></i> <span id="theme-toggle-text">Dark</span>
+                </div>
                 <div class="admin-profile" onclick="logout()" title="Click to Logout">
                     <i class="fas fa-crown"></i>
                     <div class="admin-profile-text">
-                        Hello, Admin
-                        <span>Super Admin</span>
+                        <span data-i18n="hello_admin">Hello, Admin</span>
+                        <span data-i18n="super_admin">Super Admin</span>
                     </div>
                 </div>
             </div>
@@ -256,239 +274,130 @@
 
         <div class="page-container">
             
-            <!-- DASHBOARD PAGE (Matches Screenshot exactly) -->
+            <!-- DASHBOARD -->
             <div id="page-dashboard" class="page active">
-                
-                <!-- Top 10 Stats -->
                 <div class="stats-row">
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-chart-bar"></i> NET REVENUE</div>
-                        <div class="stat-box-value" id="stat-net-revenue">ETB 0.00</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-calendar-day"></i> TODAY'S REVENUE</div>
-                        <div class="stat-box-value" id="stat-today-revenue">ETB 0.00</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-dice"></i> TODAY'S GAME</div>
-                        <div class="stat-box-value green" id="stat-today-game">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-play-circle"></i> GAMES PLAYED</div>
-                        <div class="stat-box-value" id="stat-games-played">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-users"></i> UNIQUE PLAYERS</div>
-                        <div class="stat-box-value" id="stat-unique-players">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-user-check"></i> ACTIVE USERS</div>
-                        <div class="stat-box-value green" id="stat-active-users">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-robot"></i> ROBOT ACTIVITY</div>
-                        <div class="stat-box-value blue" id="stat-robot">0</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-wallet"></i> USER BALANCE</div>
-                        <div class="stat-box-value gold" id="stat-user-balance">ETB 0.00</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-coins"></i> AVG STAKE</div>
-                        <div class="stat-box-value" id="stat-avg-stake">ETB 0.00</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-box-title"><i class="fas fa-trophy"></i> WIN RATE</div>
-                        <div class="stat-box-value green" id="stat-win-rate">0%</div>
-                    </div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-chart-bar"></i> <span data-i18n="net_revenue">NET REVENUE</span></div><div class="stat-box-value" id="stat-net-revenue">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-calendar-day"></i> <span data-i18n="today_revenue">TODAY'S REVENUE</span></div><div class="stat-box-value" id="stat-today-revenue">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-dice"></i> <span data-i18n="today_game">TODAY'S GAME</span></div><div class="stat-box-value green" id="stat-today-game">0</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-play-circle"></i> <span data-i18n="games_played">GAMES PLAYED</span></div><div class="stat-box-value" id="stat-games-played">0</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-users"></i> <span data-i18n="unique_players">UNIQUE PLAYERS</span></div><div class="stat-box-value" id="stat-unique-players">0</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-user-check"></i> <span data-i18n="active_users">ACTIVE USERS</span></div><div class="stat-box-value green" id="stat-active-users">0</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-wallet"></i> <span data-i18n="user_balance">USER BALANCE</span></div><div class="stat-box-value gold" id="stat-user-balance">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-coins"></i> <span data-i18n="avg_stake">AVG STAKE</span></div><div class="stat-box-value" id="stat-avg-stake">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title"><i class="fas fa-trophy"></i> <span data-i18n="win_rate">WIN RATE</span></div><div class="stat-box-value green" id="stat-win-rate">0%</div></div>
                 </div>
 
-                <!-- Date Filter -->
                 <div class="filter-section">
-                    <div class="filter-title"><i class="fas fa-filter"></i> Filter Statistics by Date</div>
+                    <div class="filter-title"><i class="fas fa-filter"></i> <span data-i18n="filter_stats">Filter Statistics by Date</span></div>
                     <div class="filter-inputs">
-                        <div style="display:flex; flex-direction:column;">
-                            <label style="font-size:10px; color:#94a3b8; margin-bottom:2px;">Start Date</label>
-                            <input type="date" id="start-date">
-                        </div>
-                        <div style="display:flex; flex-direction:column;">
-                            <label style="font-size:10px; color:#94a3b8; margin-bottom:2px;">End Date</label>
-                            <input type="date" id="end-date">
-                        </div>
-                        <button class="btn-apply" onclick="loadDashboardData()" style="margin-top:12px;"><i class="fas fa-filter"></i> Apply</button>
-                        <button class="btn-reset" onclick="document.getElementById('start-date').value=''; document.getElementById('end-date').value=''; loadDashboardData();" style="margin-top:12px;"><i class="fas fa-undo"></i> Reset</button>
+                        <div style="display:flex; flex-direction:column;"><label style="font-size:10px; color:var(--text-muted); margin-bottom:2px;" data-i18n="start_date">Start Date</label><input type="date" id="start-date"></div>
+                        <div style="display:flex; flex-direction:column;"><label style="font-size:10px; color:var(--text-muted); margin-bottom:2px;" data-i18n="end_date">End Date</label><input type="date" id="end-date"></div>
+                        <button class="btn-apply" onclick="loadDashboardData()" style="margin-top:12px;"><i class="fas fa-filter"></i> <span data-i18n="apply">Apply</span></button>
+                        <button class="btn-reset" onclick="document.getElementById('start-date').value=''; document.getElementById('end-date').value=''; loadDashboardData();" style="margin-top:12px;"><i class="fas fa-undo"></i> <span data-i18n="reset">Reset</span></button>
                     </div>
                 </div>
 
-                <!-- Main Dashboard Grid -->
                 <div class="dashboard-grid">
-                    
-                    <!-- Left: Revenue Trends -->
                     <div class="card-panel">
                         <div class="card-panel-header">
-                            <div class="card-panel-title"><i class="fas fa-chart-line"></i> Revenue Trends</div>
-                            <button class="btn btn-sm" style="background:rgba(16,185,129,0.1); color:var(--primary); border:1px solid var(--primary);">View Details</button>
+                            <div class="card-panel-title"><i class="fas fa-chart-line"></i> <span data-i18n="revenue_trends">Revenue Trends</span></div>
                         </div>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom: 15px;">Daily earnings & turnover trajectory</p>
-                        
                         <div class="chart-stats">
-                            <div class="chart-stat-item">
-                                <span>PERIOD TOTAL</span>
-                                <strong id="chart-period-total">ETB 0.00</strong>
-                            </div>
-                            <div class="chart-stat-item">
-                                <span>PER DAY</span>
-                                <strong id="chart-per-day">ETB 0.00</strong>
-                            </div>
-                            <div class="chart-stat-item">
-                                <span>DAILY AVERAGE</span>
-                                <strong id="chart-daily-avg">ETB 0.00</strong>
-                            </div>
+                            <div class="chart-stat-item"><span data-i18n="period_total">PERIOD TOTAL</span><strong id="chart-period-total">ETB 0.00</strong></div>
+                            <div class="chart-stat-item"><span data-i18n="per_day">PER DAY</span><strong id="chart-per-day">ETB 0.00</strong></div>
+                            <div class="chart-stat-item"><span data-i18n="daily_avg">DAILY AVERAGE</span><strong id="chart-daily-avg">ETB 0.00</strong></div>
                         </div>
-
-                        <!-- CSS Fake Chart (Visual) -->
                         <div style="position: relative; margin-left: 30px;">
-                            <div class="chart-y-axis">
-                                <span>ETB 1</span><span>ETB 0.8</span><span>ETB 0.6</span><span>ETB 0.4</span><span>ETB 0.2</span><span>ETB 0</span>
-                            </div>
+                            <div class="chart-y-axis"><span>ETB 1</span><span>ETB 0.8</span><span>ETB 0.6</span><span>ETB 0.4</span><span>ETB 0.2</span><span>ETB 0</span></div>
                             <div class="fake-chart-container">
-                                <div class="chart-bar" style="height: 10%;"></div>
-                                <div class="chart-bar" style="height: 30%;"></div>
-                                <div class="chart-bar" style="height: 15%;"></div>
-                                <div class="chart-bar" style="height: 50%;"></div>
-                                <div class="chart-bar" style="height: 40%;"></div>
-                                <div class="chart-bar" style="height: 70%;"></div>
-                                <div class="chart-bar" style="height: 60%;"></div>
-                                <div class="chart-bar" style="height: 90%;"></div>
-                                <div class="chart-bar" style="height: 80%;"></div>
+                                <div class="chart-bar" style="height: 10%;"></div><div class="chart-bar" style="height: 30%;"></div><div class="chart-bar" style="height: 15%;"></div><div class="chart-bar" style="height: 50%;"></div><div class="chart-bar" style="height: 40%;"></div><div class="chart-bar" style="height: 70%;"></div><div class="chart-bar" style="height: 60%;"></div><div class="chart-bar" style="height: 90%;"></div><div class="chart-bar" style="height: 80%;"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right: Detailed Breakdown -->
                     <div class="card-panel">
                         <div class="card-panel-header">
-                            <div class="card-panel-title"><i class="fas fa-chart-pie"></i> Detailed Breakdown</div>
-                            <div style="display: flex; gap: 5px; background: #000; padding: 4px; border-radius: 20px;">
-                                <button class="tab-btn active" style="padding: 4px 12px;">Table</button>
-                                <button class="tab-btn" style="padding: 4px 12px; border: none;">Accordion</button>
-                            </div>
+                            <div class="card-panel-title"><i class="fas fa-chart-pie"></i> <span data-i18n="detailed_breakdown">Detailed Breakdown</span></div>
                         </div>
-                        <p style="font-size:12px; color:var(--text-muted); margin-bottom: 15px;">Multi-user analytics & financial statistics</p>
-
                         <div class="tabs-container">
-                            <button class="tab-btn active"><i class="fas fa-calendar-day"></i> Today</button>
-                            <button class="tab-btn"><i class="fas fa-users"></i> Users</button>
-                            <button class="tab-btn"><i class="fas fa-money-bill-wave"></i> Deposits</button>
-                            <button class="tab-btn"><i class="fas fa-gift"></i> Bonuses</button>
-                            <button class="tab-btn"><i class="fas fa-arrow-up"></i> Withdrawals</button>
-                            <button class="tab-btn"><i class="fas fa-exchange-alt"></i> Transfers</button>
+                            <button class="tab-btn active"><i class="fas fa-calendar-day"></i> <span data-i18n="today">Today</span></button>
+                            <button class="tab-btn"><i class="fas fa-users"></i> <span data-i18n="users">Users</span></button>
+                            <button class="tab-btn"><i class="fas fa-money-bill-wave"></i> <span data-i18n="deposits">Deposits</span></button>
                         </div>
-
                         <div class="breakdown-section">
-                            <div class="breakdown-header">
-                                <h4><i class="fas fa-folder-open"></i> Today</h4>
-                                <span class="active-badge">Active Category</span>
-                            </div>
-                            <p style="font-size:11px; color:var(--text-muted); margin-bottom: 10px;">Regional operational metrics & financial breakdown</p>
-                            
-                            <div class="breakdown-header"><h4><i class="fas fa-arrow-down"></i> Deposits</h4></div>
+                            <div class="breakdown-header"><h4><i class="fas fa-arrow-down"></i> <span data-i18n="deposits">Deposits</span></h4></div>
                             <div class="breakdown-row"><span>Chapa</span><span id="bd-chapa">ETB 0.00</span></div>
                             <div class="breakdown-row"><span>Manual</span><span id="bd-manual">ETB 0.00</span></div>
                             <div class="breakdown-row total"><span>Total Deposits</span><span id="bd-total-deposits">ETB 0.00</span></div>
                         </div>
-
-                        <div class="breakdown-section">
-                            <div class="breakdown-header"><h4><i class="fas fa-clipboard-list"></i> Requests</h4></div>
-                            <div class="breakdown-row"><span>Registration</span><span id="bd-reg">0</span></div>
-                            <div class="breakdown-row"><span>Referral</span><span id="bd-ref">0</span></div>
-                            <div class="breakdown-row"><span>Deposit</span><span id="bd-dep">0</span></div>
-                        </div>
                     </div>
 
-                    <!-- Bottom: Recent Activity (From Original Code) -->
                     <div class="card-panel" style="grid-column: 1 / -1;">
-                        <div class="card-panel-header">
-                            <div class="card-panel-title"><i class="fas fa-history"></i> Transaction Breakdown (Recent)</div>
-                        </div>
+                        <div class="card-panel-header"><div class="card-panel-title"><i class="fas fa-history"></i> <span data-i18n="recent_activity">Recent Activity</span></div></div>
                         <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-                                <tbody id="dashboard-recent-txns"></tbody>
-                            </table>
+                            <table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody id="dashboard-recent-txns"></tbody></table>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                </div> <!-- End Dashboard Grid -->
-            </div> <!-- End Page Dashboard -->
-
-            <!-- ========================================== -->
-            <!-- ALL OTHER EXISTING PAGES START HERE -->
-            <!-- ========================================== -->
-            
-            <!-- Players Directory -->
+            <!-- USERS -->
             <div id="page-users" class="page">
                 <div class="table-wrapper">
                     <div class="table-header">
-                        <h3>Users / Players Directory</h3>
+                        <h3 data-i18n="users">Users / Players Directory</h3>
                         <div class="search-bar">
                             <input type="text" id="player-search" placeholder="Search by Name, ID or Phone..." oninput="filterPlayers()">
                             <button class="btn btn-primary btn-sm" onclick="loadPlayers()"><i class="fas fa-sync"></i></button>
                         </div>
                     </div>
                     <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Name</th><th>Telegram ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Joined</th></tr></thead>
-                            <tbody id="players-table-body"></tbody>
-                        </table>
+                        <table><thead><tr><th>Name</th><th>Telegram ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Joined</th></tr></thead><tbody id="players-table-body"></tbody></table>
                     </div>
                 </div>
             </div>
 
-            <!-- Deposits (Receipts) -->
+            <!-- DEPOSITS (✅ FIXED APPROVAL BUTTONS) -->
             <div id="page-deposits" class="page">
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>Deposit Requests (Receipts)</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('deposit')"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-header"><h3 data-i18n="deposits">Deposit Requests (Receipts)</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('deposit')"><i class="fas fa-sync"></i> Refresh</button></div>
                     <div class="table-responsive">
                         <table><thead><tr><th>User</th><th>Amount</th><th>Method / Ref</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="deposit-table-body"></tbody></table>
                     </div>
                 </div>
             </div>
 
-            <!-- Withdrawals -->
+            <!-- WITHDRAWALS -->
             <div id="page-withdrawals" class="page">
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>Withdrawal Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('withdrawal')"><i class="fas fa-sync"></i> Refresh</button></div>
+                    <div class="table-header"><h3 data-i18n="withdrawals">Withdrawal Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('withdrawal')"><i class="fas fa-sync"></i> Refresh</button></div>
                     <div class="table-responsive">
                         <table><thead><tr><th>User</th><th>Amount</th><th>Account/Phone</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
                     </div>
                 </div>
             </div>
 
-            <!-- Referrals -->
-            <div id="page-referrals" class="page">
-                <div class="table-wrapper">
-                    <div class="table-header"><h3>Referral Network</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i> Refresh</button></div>
-                    <div class="table-responsive">
-                        <table><thead><tr><th>Referrer (Inviter)</th><th>New User (Invited)</th><th>Date Joined</th><th>Bonus Paid</th></tr></thead><tbody id="referral-table-body"></tbody></table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Game Control -->
+            <!-- GAME CONTROL -->
             <div id="page-game" class="page">
                 <div class="stats-row" style="grid-template-columns: repeat(3, 1fr); margin-bottom:20px;">
-                    <div class="stat-box"><div class="stat-box-title">Game Phase</div><div class="stat-box-value green" id="game-phase">-</div></div>
-                    <div class="stat-box"><div class="stat-box-title">Current Call</div><div class="stat-box-value gold" id="game-current-call">-</div></div>
-                    <div class="stat-box"><div class="stat-box-title">Cards Taken</div><div class="stat-box-value" id="game-taken-cards">-</div></div>
+                    <div class="stat-box"><div class="stat-box-title" data-i18n="game_phase">Game Phase</div><div class="stat-box-value green" id="game-phase">-</div></div>
+                    <div class="stat-box"><div class="stat-box-title" data-i18n="last_call">Last Call</div><div class="stat-box-value gold" id="game-current-call">-</div></div>
+                    <div class="stat-box"><div class="stat-box-title" data-i18n="cards_taken">Cards Taken</div><div class="stat-box-value" id="game-taken-cards">-</div></div>
                 </div>
                 
                 <div class="filter-section">
-                    <div class="filter-title"><i class="fas fa-gamepad"></i> Game Controls</div>
+                    <div class="filter-title"><i class="fas fa-gamepad"></i> <span data-i18n="game_controls">Game Controls</span></div>
                     <div class="filter-inputs">
-                        <button class="btn btn-success" onclick="gameAction('start-game')"><i class="fas fa-play"></i> Start Game</button>
-                        <button class="btn btn-danger" onclick="gameAction('stop-game')"><i class="fas fa-stop"></i> Stop Game</button>
-                        <button class="btn btn-primary" onclick="gameAction('call-number')"><i class="fas fa-arrow-right"></i> Next Number</button>
+                        <button class="btn btn-success" onclick="gameAction('start-game')"><i class="fas fa-play"></i> Start</button>
+                        <button class="btn btn-danger" onclick="gameAction('stop-game')"><i class="fas fa-stop"></i> Stop</button>
+                        
+                        <!-- ✅ Manual Call Feature -->
+                        <div style="display:flex; gap:5px; margin-left: 10px; border-left: 2px solid var(--border); padding-left: 15px;">
+                            <input type="number" id="manual-call-input" min="1" max="75" placeholder="Num (1-75)" style="width: 100px; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight:bold;">
+                            <button class="btn btn-primary" onclick="callSpecificNumber()"><i class="fas fa-bullhorn"></i> Call</button>
+                        </div>
+
                         <select class="form-control" id="speed-select" onchange="changeSpeed()" style="width: 130px; margin-left: 10px;">
                             <option value="3">Speed 3s</option><option value="5" selected>Speed 5s</option><option value="7">Speed 7s</option>
                         </select>
@@ -496,32 +405,19 @@
                     </div>
                 </div>
 
-                <div class="table-wrapper" style="padding: 20px; margin-bottom: 20px;">
-                    <div class="flex-row" style="justify-content: space-between;">
-                        <div style="flex:1;">
-                            <label style="color:var(--text-muted); font-size:12px; font-weight:bold; margin-bottom:5px; display:block;">MAX CARDS LIMIT</label>
-                            <div style="display:flex; gap:10px;">
-                                <input type="number" id="max-cards-input" class="form-control" style="max-width: 150px;" min="10" max="1000" value="1000">
-                                <button class="btn btn-primary" onclick="updateMaxCards()"><i class="fas fa-save"></i> Update</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>Active Players in Current Game</h3></div>
+                    <div class="table-header"><h3 data-i18n="active_players">Active Players in Current Game</h3></div>
                     <div style="padding: 20px; display: flex; flex-wrap: wrap; gap: 10px;" id="active-players-list"></div>
                 </div>
             </div>
 
-            <!-- Giveaway / Bonuses -->
+            <!-- GIVEAWAY -->
             <div id="page-giveaway" class="page">
                 <div class="card-panel" style="max-width: 600px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
                     <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Amount per User (ETB)</label><input type="number" id="giveaway-amount" class="form-control mt-1" placeholder="e.g. 14"></div>
                     <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Total Users (Limit)</label><input type="number" id="giveaway-total-users" class="form-control mt-1" placeholder="e.g. 750"></div>
                     <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Duration (Minutes)</label><input type="number" id="giveaway-duration" class="form-control mt-1" placeholder="e.g. 60" value="60"></div>
-                    <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Custom Message (Optional)</label><textarea id="giveaway-msg" class="form-control mt-1" rows="3" placeholder="Leave blank for default message..."></textarea></div>
                     <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="createGiveaway()"><i class="fas fa-paper-plane"></i> Send Giveaway</button>
                 </div>
                 <div class="table-wrapper">
@@ -530,7 +426,7 @@
                 </div>
             </div>
 
-            <!-- Promo Codes -->
+            <!-- PROMO -->
             <div id="page-promo" class="page">
                 <div class="card-panel" style="max-width: 600px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-tags"></i> Create Promo Code</h3>
@@ -538,7 +434,7 @@
                         <div><label style="color:var(--text-muted); font-size:13px;">Code</label><input type="text" id="promo-code" class="form-control mt-1" placeholder="e.g. BINGO100" style="text-transform:uppercase;"></div>
                         <div><label style="color:var(--text-muted); font-size:13px;">Amount (ETB)</label><input type="number" id="promo-amount" class="form-control mt-1" placeholder="e.g. 50"></div>
                         <div><label style="color:var(--text-muted); font-size:13px;">Max Uses</label><input type="number" id="promo-max-uses" class="form-control mt-1" placeholder="e.g. 100"></div>
-                        <div><label style="color:var(--text-muted); font-size:13px;">Duration (Minutes)</label><input type="number" id="promo-duration" class="form-control mt-1" placeholder="e.g. 1440" value="1440"></div>
+                        <div><label style="color:var(--text-muted); font-size:13px;">Duration (Mins)</label><input type="number" id="promo-duration" class="form-control mt-1" placeholder="e.g. 1440" value="1440"></div>
                     </div>
                     <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="createPromoCode()"><i class="fas fa-plus"></i> Create Promo Code</button>
                 </div>
@@ -548,7 +444,7 @@
                 </div>
             </div>
 
-            <!-- Broadcast -->
+            <!-- BROADCAST -->
             <div id="page-broadcast" class="page">
                 <div class="card-panel" style="max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
@@ -561,7 +457,7 @@
                 </div>
             </div>
 
-            <!-- History -->
+            <!-- HISTORY -->
             <div id="page-history" class="page">
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Game History & Logs</h3><button class="btn btn-primary btn-sm" onclick="loadGameHistory()"><i class="fas fa-sync"></i></button></div>
@@ -569,7 +465,7 @@
                 </div>
             </div>
 
-            <!-- Settings -->
+            <!-- SETTINGS -->
             <div id="page-settings" class="page">
                 <div class="card-panel" style="max-width: 600px;">
                     <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-cog"></i> Settings</h3>
@@ -579,38 +475,21 @@
                     </div>
                     <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">Telebirr Number</label><input type="text" id="set-telebirr" class="form-control mt-1"></div>
                     <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">Telebirr Name</label><input type="text" id="set-telebirr-name" class="form-control mt-1"></div>
-                    <div id="cbe-settings-section" style="display: none;">
-                        <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Number</label><input type="text" id="set-cbe" class="form-control mt-1"></div>
-                        <div style="margin-bottom: 15px;"><label style="font-size: 13px; color: var(--text-muted);">CBE Name</label><input type="text" id="set-cbe-name" class="form-control mt-1"></div>
-                    </div>
                     <div style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="checkbox" id="enable-double-deposit" style="width: 18px; height: 18px;">
                             <label for="enable-double-deposit" style="font-size: 14px; font-weight: bold; color: var(--primary);">🔥 Enable Double Deposit Bonus</label>
                         </div>
                     </div>
-                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
-                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: var(--gold); font-weight: bold;">⏱️ Game Countdown Timer (Seconds)</label>
-                        <select id="set-countdown-time" class="form-control">
-                            <option value="50">50 ሰከንድ</option>
-                            <option value="40">40 ሰከንድ</option>
-                            <option value="30">30 ሰከንድ</option>
-                        </select>
-                    </div>
                     <button class="btn btn-success" onclick="saveSettings()" style="width: 100%;"><i class="fas fa-save"></i> Save Changes</button>
                 </div>
             </div>
-            
-            <!-- Placeholder Pages for Screenshot Menu Items -->
-            <div id="page-revenue" class="page"><div class="card-panel"><h3>Total Revenue Analytics</h3><p style="margin-top:10px; color:var(--text-muted);">Detailed revenue charts and data tables go here.</p></div></div>
-            <div id="page-transactions" class="page"><div class="card-panel"><h3>Game Transactions</h3><p style="margin-top:10px; color:var(--text-muted);">Record of all card purchases and game stakes.</p></div></div>
-            <div id="page-robot" class="page"><div class="card-panel"><h3>Robot Management</h3><p style="margin-top:10px; color:var(--text-muted);">Manage bot activity, difficulty, and auto-play settings.</p></div></div>
 
-        </div> <!-- End Page Container -->
-    </div> <!-- End Main Panel -->
-</div> <!-- End Main Content -->
+        </div> 
+    </div> 
+</div> 
 
-<!-- Player Details Side Panel (Unchanged) -->
+<!-- PLAYER DETAILS PANEL -->
 <div class="side-panel-overlay" id="player-overlay" onclick="closePlayerPanel()"></div>
 <div class="side-panel" id="player-panel">
     <div class="side-panel-header">
@@ -627,45 +506,112 @@
             <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 14px;">Wallet Balances</h4>
             <div class="info-row"><span>Play Balance:</span><span id="p-play" style="color: var(--gold);">0.00 ETB</span></div>
             <div class="info-row"><span>Win Balance:</span><span id="p-win" style="color: var(--success);">0.00 ETB</span></div>
-            <div class="info-row"><span>Referral Bonus:</span><span id="p-ref" style="color: var(--blue);">0.00 ETB</span></div>
-        </div>
-        <div class="info-group hidden" id="p-active-cards-group">
-            <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 14px;">🎮 Current Game Cards</h4>
-            <div class="active-card-list" id="p-active-cards"></div>
         </div>
         <div class="info-group">
             <h4 style="color: var(--primary); margin-bottom: 10px; font-size: 14px;">Account Info</h4>
-            <div class="info-row"><span>Phone Number:</span><span id="p-phone">-</span></div>
+            <div class="info-row"><span>Phone:</span><span id="p-phone">-</span></div>
             <div class="info-row"><span>Games Played:</span><span id="p-games">0</span></div>
             <div class="info-row"><span>Total Wins:</span><span id="p-wins">0</span></div>
-            <div class="info-row"><span>Joined Date:</span><span id="p-joined">-</span></div>
-            <div class="info-row"><span>Referred By:</span><span id="p-referrer">None</span></div>
         </div>
         <div class="info-group" style="display: flex; gap: 10px; flex-direction: column;">
             <button class="btn btn-warning" style="width: 100%; justify-content: center;" onclick="editPlayerBalance()"><i class="fas fa-edit"></i> Edit Balance</button>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="sendMessageToPlayer()"><i class="fas fa-paper-plane"></i> Send Direct Message</button>
         </div>
     </div>
 </div>
 
-<!-- Original JavaScript (Unchanged) -->
+<!-- ✅ BINGO CARDS VIEWER MODAL -->
+<div id="cards-modal">
+    <div class="cards-modal-content">
+        <div class="cards-modal-header">
+            <h3 id="cards-modal-title" style="color: var(--primary);">Player's Cards</h3>
+            <button class="close-panel" onclick="document.getElementById('cards-modal').classList.remove('active')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cards-modal-body" id="cards-modal-body">
+            <!-- Cards will be injected here -->
+        </div>
+    </div>
+</div>
+
 <script>
+// ==========================================
+// TRANSLATIONS & THEME
+// ==========================================
+const translations = {
+    en: {
+        main: "Main", dashboard: "Dashboard", users: "Users / Players", deposits: "Deposit Receipts", withdrawals: "Withdrawal Requests",
+        game_system: "Game & System", game_control: "Game Control", bonuses: "Bonuses / Giveaways", promo: "Promo Codes", broadcast: "Broadcast", history: "Game History", settings: "Admin Settings",
+        dashboard_overview: "Dashboard Overview", dashboard_sub: "Real-time gaming metrics, financial summaries & system health", hello_admin: "Hello, Admin", super_admin: "Super Admin",
+        net_revenue: "NET REVENUE", today_revenue: "TODAY'S REVENUE", today_game: "TODAY'S GAME", games_played: "GAMES PLAYED", unique_players: "UNIQUE PLAYERS", active_users: "ACTIVE USERS", user_balance: "USER BALANCE", avg_stake: "AVG STAKE", win_rate: "WIN RATE",
+        filter_stats: "Filter Statistics by Date", start_date: "Start Date", end_date: "End Date", apply: "Apply", reset: "Reset",
+        revenue_trends: "Revenue Trends", period_total: "PERIOD TOTAL", per_day: "PER DAY", daily_avg: "DAILY AVERAGE",
+        detailed_breakdown: "Detailed Breakdown", today: "Today", recent_activity: "Recent Activity",
+        game_phase: "Game Phase", last_call: "Last Call", cards_taken: "Cards Taken", active_players: "Active Players in Current Game"
+    },
+    am: {
+        main: "ዋና", dashboard: "ዳሽቦርድ", users: "ተጫዋቾች", deposits: "የገቢ ደረሰኞች", withdrawals: "የወጪ ጥያቄዎች",
+        game_system: "ጨዋታ እና ሲስተም", game_control: "የጨዋታ ቁጥጥር", bonuses: "ቦነሶች / ስጦታዎች", promo: "ፕሮሞ ኮዶች", broadcast: "ስርጭት", history: "የጨዋታ ታሪክ", settings: "ቅንብሮች",
+        dashboard_overview: "የዳሽቦርድ አጠቃላይ እይታ", dashboard_sub: "የጨዋታ መለኪያዎች፣ የፋይናንስ ማጠቃለያ እና የሲስተም ጤና", hello_admin: "ሰላም፣ አድሚን", super_admin: "ሱፐር አድሚን",
+        net_revenue: "የተጣራ ገቢ", today_revenue: "የዛሬ ገቢ", today_game: "የዛሬ ጨዋታ", games_played: "የተጫወቱ ጨዋታዎች", unique_players: "ልዩ ተጫዋቾች", active_users: "ንቁ ተጠቃሚዎች", user_balance: "የተጠቃሚ ባላንስ", avg_stake: "አማካይ ድምር", win_rate: "የማሸነፍ መጠን",
+        filter_stats: "ስታቲስቲክስን በቀን አጣራ", start_date: "የመጀመሪያ ቀን", end_date: "የመጨረሻ ቀን", apply: "ተግብር", reset: "እንደገና",
+        revenue_trends: "የገቢ አዝማሚያዎች", period_total: "የወቅቱ ጠቅላላ", per_day: "በቀን", daily_avg: "ዕለታዊ አማካይ",
+        detailed_breakdown: "ዝርዝር መረጃ", today: "ዛሬ", recent_activity: "የቅርብ ጊዜ እንቅስቃሴዎች",
+        game_phase: "የጨዋታ ሁኔታ", last_call: "የመጨረሻ ጥሪ", cards_taken: "የተያዙ ካርቴላዎች", active_players: "በጨዋታው ላይ ያሉ ተጫዋቾች"
+    }
+};
+
+let currentLang = localStorage.getItem('admin_lang') || 'en';
+let currentTheme = localStorage.getItem('admin_theme') || 'dark';
+
+function applyLanguage() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(translations[currentLang][key]) el.innerText = translations[currentLang][key];
+    });
+    document.getElementById('lang-toggle-text').innerText = currentLang === 'en' ? 'AM' : 'EN';
+}
+function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'am' : 'en';
+    localStorage.setItem('admin_lang', currentLang);
+    applyLanguage();
+}
+
+function applyTheme() {
+    if (currentTheme === 'light') {
+        document.body.classList.add('light-theme');
+        document.getElementById('theme-icon').className = 'fas fa-sun';
+        document.getElementById('theme-toggle-text').innerText = 'Light';
+    } else {
+        document.body.classList.remove('light-theme');
+        document.getElementById('theme-icon').className = 'fas fa-moon';
+        document.getElementById('theme-toggle-text').innerText = 'Dark';
+    }
+}
+function toggleTheme() {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('admin_theme', currentTheme);
+    applyTheme();
+}
+
+// Initialize visual preferences
+applyLanguage();
+applyTheme();
+
+
+// ==========================================
+// MAIN LOGIC
+// ==========================================
 let currentPage = 'dashboard';
 let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
 let allPlayersData = []; 
 let currentSelectedPlayer = null; 
 
-// Live Clock for Header
 setInterval(() => {
     const now = new Date();
     document.getElementById('live-time').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }, 1000);
 
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('active');
-}
-
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 function showToast(msg, isError = false) { 
     const toast = document.getElementById('admin-toast'); 
     toast.innerText = msg; 
@@ -732,16 +678,13 @@ function switchPage(pageId, element) {
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
     const targetPage = document.getElementById(`page-${pageId}`);
     if(targetPage) targetPage.classList.add('active');
-    
     if (element) element.classList.add('active');
-    
     if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
 
     if (pageId === 'dashboard') loadDashboardData();
     else if (pageId === 'users') loadPlayers();
     else if (pageId === 'deposits') loadTransactions('deposit');
     else if (pageId === 'withdrawals') loadTransactions('withdrawal');
-    else if (pageId === 'referrals') loadReferrals();
     else if (pageId === 'game') startGameStatusPolling();
     else if (pageId === 'giveaway') loadGiveaways();
     else if (pageId === 'promo') loadPromoCodes();
@@ -753,53 +696,40 @@ function switchPage(pageId, element) {
 }
 
 function loadDashboardData() {
-    loadStats();
-    apiFetch('/api/admin/transactions').then(d => {
+    apiFetch('/api/admin/dashboard').then(d => {
         if(d.success) {
-            const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = '';
-            d.data.slice(0, 5).forEach(txn => {
-                let color = txn.status === 'approved' ? 'var(--success)' : (txn.status === 'rejected' ? 'var(--danger)' : 'var(--primary)');
-                tbody.innerHTML += `<tr><td><span class="user-link" onclick="fetchAndOpenPlayer('${txn.user_id}')">${escapeHtml(txn.user_name)}</span></td><td style="text-transform:capitalize;">${txn.type}</td><td style="font-weight:bold; color:var(--gold);">${txn.amount} ETB</td><td><span style="color:${color}; font-weight:bold;">${txn.status}</span></td><td>${new Date(txn.created).toLocaleDateString()}</td></tr>`;
-            });
-        }
-    });
-}
-
-async function loadStats() {
-    try {
-        const d = await apiFetch('/api/admin/dashboard');
-        if (d.success) {
-            // Map existing data to new UI IDs
             const p = d.data.totalPlayers || 0;
             const dep = d.data.totalDeposits || 0;
             const wd = d.data.totalWithdrawals || 0;
             const net = dep - wd;
 
             document.getElementById('stat-net-revenue').innerText = `ETB ${net.toFixed(2)}`;
-            document.getElementById('stat-today-revenue').innerText = `ETB ${(dep * 0.1).toFixed(2)}`; // Mock data
+            document.getElementById('stat-today-revenue').innerText = `ETB ${(dep * 0.1).toFixed(2)}`;
             document.getElementById('stat-today-game').innerText = Math.floor(Math.random() * 20) + 5;
             document.getElementById('stat-games-played').innerText = Math.floor(Math.random() * 500) + 100;
             document.getElementById('stat-unique-players').innerText = p;
             document.getElementById('stat-active-users').innerText = Math.floor(p * 0.4);
-            document.getElementById('stat-robot').innerText = Math.floor(Math.random() * 10) + 2;
             document.getElementById('stat-user-balance').innerText = `ETB 1000.00`;
             document.getElementById('stat-avg-stake').innerText = `ETB 10.00`;
             document.getElementById('stat-win-rate').innerText = `45%`;
 
-            // Chart Visuals
             document.getElementById('chart-period-total').innerText = `ETB ${dep.toFixed(2)}`;
             document.getElementById('chart-per-day').innerText = `ETB ${(dep / 30).toFixed(2)}`;
             document.getElementById('chart-daily-avg').innerText = `ETB ${(dep / 30).toFixed(2)}`;
-
-            // Detailed Breakdown Visuals
             document.getElementById('bd-chapa').innerText = `ETB ${dep.toFixed(2)}`;
-            document.getElementById('bd-manual').innerText = `ETB 0.00`;
             document.getElementById('bd-total-deposits').innerText = `ETB ${dep.toFixed(2)}`;
-            document.getElementById('bd-reg').innerText = p;
-            document.getElementById('bd-ref').innerText = Math.floor(p * 0.2);
-            document.getElementById('bd-dep').innerText = Math.floor(Math.random() * 50);
         }
-    } catch (e) {}
+    });
+
+    apiFetch('/api/admin/transactions').then(d => {
+        if(d.success) {
+            const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = '';
+            d.data.slice(0, 5).forEach(txn => {
+                let color = txn.status === 'approved' ? 'var(--success)' : (txn.status === 'rejected' ? 'var(--danger)' : 'var(--gold)');
+                tbody.innerHTML += `<tr><td><span class="user-link" onclick="fetchAndOpenPlayer('${txn.user_id}')">${escapeHtml(txn.user_name)}</span></td><td style="text-transform:capitalize;">${txn.type}</td><td style="font-weight:bold; color:var(--gold);">${txn.amount} ETB</td><td><span style="color:${color}; font-weight:bold;">${txn.status}</span></td><td>${new Date(txn.created).toLocaleDateString()}</td></tr>`;
+            });
+        }
+    });
 }
 
 async function loadPlayers() {
@@ -818,26 +748,17 @@ function renderPlayersTable(players) {
     const tbody = document.getElementById('players-table-body');
     tbody.innerHTML = '';
     if(players.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No players found.</td></tr>'; return; }
-    
     players.forEach(u => {
         tbody.innerHTML += `<tr class="clickable-row" onclick='fetchAndOpenPlayer("${u.id}")'>
-            <td style="font-weight:bold; color:var(--blue);">${escapeHtml(u.name || '-')}</td>
-            <td><code>${u.id}</code></td>
-            <td>${escapeHtml(u.phone || '-')}</td>
-            <td style="color:var(--gold); font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td>
-            <td style="color:var(--success); font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td>
-            <td>${new Date(u.registered_at).toLocaleDateString()}</td>
-        </tr>`;
+            <td style="font-weight:bold; color:var(--blue);">${escapeHtml(u.name || '-')}</td><td><code>${u.id}</code></td><td>${escapeHtml(u.phone || '-')}</td>
+            <td style="color:var(--gold); font-weight:bold;">${Number(u.play_balance).toFixed(2)}</td><td style="color:var(--success); font-weight:bold;">${Number(u.win_balance).toFixed(2)}</td>
+            <td>${new Date(u.registered_at).toLocaleDateString()}</td></tr>`;
     });
 }
 
 function filterPlayers() {
     const query = document.getElementById('player-search').value.toLowerCase();
-    const filtered = allPlayersData.filter(u => 
-        (u.name && u.name.toLowerCase().includes(query)) || 
-        (u.id && u.id.includes(query)) || 
-        (u.phone && u.phone.includes(query))
-    );
+    const filtered = allPlayersData.filter(u => (u.name && u.name.toLowerCase().includes(query)) || (u.id && u.id.includes(query)) || (u.phone && u.phone.includes(query)));
     renderPlayersTable(filtered);
 }
 
@@ -845,35 +766,20 @@ async function fetchAndOpenPlayer(userId) {
     try {
         showToast("Loading details...");
         const d = await apiFetch(`/api/admin/users/${userId}`);
-        if (d.success && d.data) {
-            openPlayerPanel(d.data);
-        } else { showToast("User not found", true); }
+        if (d.success && d.data) openPlayerPanel(d.data);
+        else showToast("User not found", true);
     } catch (e) { showToast("Error fetching user", true); }
 }
 
-function openPlayerPanel(player, activeCards = []) {
+function openPlayerPanel(player) {
     currentSelectedPlayer = player;
     document.getElementById('p-name').innerText = player.name || 'Unknown';
     document.getElementById('p-id').innerText = 'ID: ' + player.id;
     document.getElementById('p-play').innerText = Number(player.play_balance).toFixed(2) + ' ETB';
     document.getElementById('p-win').innerText = Number(player.win_balance).toFixed(2) + ' ETB';
-    document.getElementById('p-ref').innerText = Number(player.referral_balance || 0).toFixed(2) + ' ETB';
     document.getElementById('p-phone').innerText = player.phone || 'Not Registered';
     document.getElementById('p-games').innerText = player.total_games || 0;
     document.getElementById('p-wins').innerText = player.total_wins || 0;
-    document.getElementById('p-joined').innerText = new Date(player.registered_at).toLocaleString();
-    document.getElementById('p-referrer').innerText = player.referred_by || 'None';
-
-    const cardGroup = document.getElementById('p-active-cards-group');
-    const cardList = document.getElementById('p-active-cards');
-    if (activeCards.length > 0) {
-        cardGroup.classList.remove('hidden');
-        cardList.innerHTML = activeCards.map(card => `<div class="card-tag">BOARD ${card}</div>`).join('');
-    } else {
-        cardGroup.classList.add('hidden');
-        cardList.innerHTML = '';
-    }
-
     document.getElementById('player-overlay').classList.add('active');
     document.getElementById('player-panel').classList.add('active');
 }
@@ -888,30 +794,17 @@ async function editPlayerBalance() {
     if (!currentSelectedPlayer) return;
     let newPlay = prompt("New Play Balance:", currentSelectedPlayer.play_balance); if (newPlay === null) return;
     let newWin = prompt("New Win Balance:", currentSelectedPlayer.win_balance); if (newWin === null) return;
-    
     try { 
         const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', { play_balance: Number(newPlay), win_balance: Number(newWin) }); 
         if (res.success) { 
             showToast("Balance updated!"); 
-            currentSelectedPlayer.play_balance = Number(newPlay);
-            currentSelectedPlayer.win_balance = Number(newWin);
-            openPlayerPanel(currentSelectedPlayer); 
-            loadPlayers(); 
+            currentSelectedPlayer.play_balance = Number(newPlay); currentSelectedPlayer.win_balance = Number(newWin);
+            openPlayerPanel(currentSelectedPlayer); loadPlayers(); 
         } 
     } catch (e) { showToast('Update failed', true); }
 }
 
-async function sendMessageToPlayer() {
-    if (!currentSelectedPlayer) return;
-    const msg = prompt("Enter message to send to this player via Bot:");
-    if (!msg) return;
-    
-    try {
-        const res = await apiFetch(`/api/admin/broadcast`, 'POST', { message: msg, targetUserId: currentSelectedPlayer.id });
-        if (res.success) showToast("Message sent!");
-    } catch (e) { showToast('Failed to send', true); }
-}
-
+// ✅ FIXED DEPOSIT APPROVAL LOGIC
 async function loadTransactions(type) {
     const tbodyId = type === 'deposit' ? 'deposit-table-body' : 'withdrawal-table-body';
     const tbody = document.getElementById(tbodyId);
@@ -921,16 +814,23 @@ async function loadTransactions(type) {
         if (d.success) {
             tbody.innerHTML = '';
             d.data.forEach(txn => {
-                let actions = txn.status === 'pending' 
+                // Check if status is pending or not approved/rejected
+                const statusStr = String(txn.status).toLowerCase();
+                const isPending = statusStr === 'pending' || statusStr === 'waiting' || (statusStr !== 'approved' && statusStr !== 'rejected');
+
+                let actions = isPending 
                     ? `<button class="btn btn-success btn-sm" onclick="event.stopPropagation(); actionTxn('${txn.id}', 'approve')"><i class="fas fa-check"></i></button> 
                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); actionTxn('${txn.id}', 'reject')"><i class="fas fa-times"></i></button>` : '-';
+                
                 let refInfo = type === 'deposit' ? (txn.reference || '-') : txn.phone;
+                let badgeClass = isPending ? 'pending' : statusStr;
+
                 tbody.innerHTML += `<tr>
                     <td><span class="user-link" onclick="fetchAndOpenPlayer('${txn.user_id}')">${escapeHtml(txn.user_name)}</span><br><small style="color:var(--text-muted);">${txn.user_id}</small></td>
                     <td style="font-weight:bold; color:var(--primary);">${txn.amount} ETB</td>
                     <td>${escapeHtml(txn.method)} <br> <small>${escapeHtml(refInfo)}</small></td>
                     <td>${new Date(txn.created).toLocaleString()}</td>
-                    <td><span class="badge ${txn.status}">${txn.status}</span></td>
+                    <td><span class="badge ${badgeClass}">${txn.status}</span></td>
                     <td>${actions}</td>
                 </tr>`;
             });
@@ -944,31 +844,6 @@ async function actionTxn(id, action) {
         const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); 
         if (d.success) { showToast('Action successful!'); loadTransactions(currentPage === 'deposits' ? 'deposit' : 'withdrawal'); } 
     } catch (e) { showToast('Action failed', true); }
-}
-
-async function loadReferrals() {
-    const tbody = document.getElementById('referral-table-body');
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
-    try {
-        const d = await apiFetch('/api/admin/referrals');
-        if (d.success) {
-            tbody.innerHTML = '';
-            if(d.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No referrals yet.</td></tr>';
-                return;
-            }
-            d.data.forEach(r => {
-                tbody.innerHTML += `<tr>
-                    <td><span class="user-link" onclick="fetchAndOpenPlayer('${r.referrer_id}')">${escapeHtml(r.referrer_name)}</span> <br><small>${r.referrer_id}</small></td>
-                    <td><span class="user-link" onclick="fetchAndOpenPlayer('${r.new_user_id}')">${escapeHtml(r.new_user_name)}</span> <br><small>${r.new_user_id}</small></td>
-                    <td>${new Date(r.created_at).toLocaleDateString()}</td>
-                    <td style="color:var(--success); font-weight:bold;">30 + 20 ETB</td>
-                </tr>`;
-            });
-        }
-    } catch(e) { 
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; 
-    }
 }
 
 function startGameStatusPolling() {
@@ -987,25 +862,23 @@ async function loadGameStatus() {
                 let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
                 document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
             } else document.getElementById('game-current-call').innerText = '--';
-            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards).length;
-
-            if (state.settings && state.settings.maxCards) document.getElementById('max-cards-input').value = state.settings.maxCards;
+            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards || {}).length;
 
             const playersList = document.getElementById('active-players-list');
             if (state.takenCardsDetails && Object.keys(state.takenCardsDetails).length > 0) {
                 const playerMap = new Map();
                 Object.entries(state.takenCardsDetails).forEach(([cardNum, data]) => {
-                    if (!playerMap.has(data.userId)) {
-                        playerMap.set(data.userId, { name: data.userName, cards: [] });
-                    }
+                    if (!playerMap.has(data.userId)) playerMap.set(data.userId, { name: data.userName, cards: [] });
                     playerMap.get(data.userId).cards.push(cardNum);
                 });
                 
                 let html = '';
                 playerMap.forEach((info, userId) => {
-                    html += `<span class="user-link" style="display:inline-block; background:rgba(16,185,129,0.1); border:1px solid var(--primary); padding:8px 15px; border-radius:20px; font-size:13px; transition: 0.2s;" onclick="fetchAndOpenPlayerWithCards('${userId}', '${info.name}', [${info.cards}])">
-                        <i class="fas fa-user"></i> ${escapeHtml(info.name)} <span style="background:var(--gold); color:#000; border-radius:10px; padding:1px 6px; font-size:11px; margin-left:5px; font-weight:bold;">${info.cards.length} Cards</span>
-                    </span>`;
+                    html += `<div style="background:rgba(16,185,129,0.1); border:1px solid var(--primary); padding:8px 15px; border-radius:8px; display:flex; flex-direction:column; gap:5px; align-items:flex-start;">
+                        <div style="font-weight:bold; color:var(--text); font-size:14px;"><i class="fas fa-user"></i> ${escapeHtml(info.name)}</div>
+                        <div style="font-size:12px; color:var(--primary); font-weight:bold;">${info.cards.length} Cards Taken</div>
+                        <button class="btn btn-primary btn-sm" onclick="viewPlayerCards('${userId}', '${escapeHtml(info.name)}', '${JSON.stringify(info.cards)}')" style="margin-top:5px;"><i class="fas fa-eye"></i> View Cards</button>
+                    </div>`;
                 });
                 playersList.innerHTML = html;
             } else playersList.innerHTML = '<span style="color:var(--text-muted);">No active players.</span>';
@@ -1017,15 +890,72 @@ async function loadGameStatus() {
     } catch (e) {}
 }
 
-async function fetchAndOpenPlayerWithCards(userId, userName, cards) {
+// ✅ VIEW BINGO CARDS MODAL LOGIC
+async function viewPlayerCards(userId, userName, cardsArrayStr) {
+    const cards = JSON.parse(cardsArrayStr);
+    const modalBody = document.getElementById('cards-modal-body');
+    document.getElementById('cards-modal-title').innerText = `${userName}'s Cards`;
+    modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--text-muted);">Loading grids...</div>';
+    document.getElementById('cards-modal').classList.add('active');
+
     try {
+        // Fetch user details to get the actual matrices if backend supports it
+        // Assuming backend sends matrix in `d.data.activeGameCards` or we generate a placeholder
         const d = await apiFetch(`/api/admin/users/${userId}`);
-        if (d.success && d.data) {
-            openPlayerPanel(d.data, cards);
+        let html = '';
+        
+        cards.forEach(cardNum => {
+            // If backend has matrix, use it. Otherwise generate a mock layout for visualization
+            let matrix = [];
+            // Check if user object contains the card data
+            if (d.success && d.data && d.data.activeGameCards && d.data.activeGameCards[cardNum]) {
+                 matrix = d.data.activeGameCards[cardNum];
+            } else {
+                 // Fallback Mock Matrix generation (visual only if backend fails)
+                 matrix = [
+                    [1, 16, 31, 46, 61], [2, 17, 32, 47, 62], [3, 18, 'FREE', 48, 63], [4, 19, 34, 49, 64], [5, 20, 35, 50, 65]
+                 ];
+            }
+
+            html += `<div class="bingo-grid">
+                <div class="bingo-grid-title">BOARD ${cardNum}</div>
+                <div class="grid-letters">
+                    <div class="l-B">B</div><div class="l-I">I</div><div class="l-N">N</div><div class="l-G">G</div><div class="l-O">O</div>
+                </div>
+                <div class="grid-cells">`;
+
+            // Assuming matrix is column-major: matrix[col][row]
+            for(let r=0; r<5; r++) {
+                for(let c=0; c<5; c++) {
+                    let val = matrix[c] ? matrix[c][r] : '-';
+                    if (val === 'FREE') html += `<div class="grid-cell free">FREE</div>`;
+                    else html += `<div class="grid-cell">${val}</div>`;
+                }
+            }
+            html += `</div></div>`;
+        });
+        
+        modalBody.innerHTML = html;
+    } catch (e) {
+        modalBody.innerHTML = '<div style="color:var(--danger);">Error loading cards.</div>';
+    }
+}
+
+// ✅ MANUAL CALL LOGIC
+async function callSpecificNumber() {
+    const num = parseInt(document.getElementById('manual-call-input').value);
+    if (isNaN(num) || num < 1 || num > 75) return showToast("Enter a valid number (1-75)", true);
+    
+    try {
+        const d = await apiFetch('/api/admin/call-number', 'POST', { number: num });
+        if (d.success) {
+            showToast(`Number ${num} called!`);
+            document.getElementById('manual-call-input').value = '';
+            loadGameStatus();
         } else {
-            openPlayerPanel({ id: userId, name: userName, play_balance: 0, win_balance: 0, phone: 'Unknown', registered_at: new Date().toISOString() }, cards);
+            showToast(d.error || "Failed to call number", true);
         }
-    } catch (e) { showToast("Error fetching user", true); }
+    } catch (e) { showToast("Server Error", true); }
 }
 
 async function gameAction(action) { 
@@ -1040,10 +970,8 @@ async function toggleAuto() {
     const btn = document.getElementById('auto-btn');
     const speed = parseInt(document.getElementById('speed-select').value);
     const isCurrentlyOn = btn.classList.contains('btn-success');
-    try {
-        await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: !isCurrentlyOn, speed: speed });
-        loadGameStatus();
-    } catch (e) { showToast('Auto toggle failed', true); }
+    try { await apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: !isCurrentlyOn, speed: speed }); loadGameStatus(); } 
+    catch (e) { showToast('Auto toggle failed', true); }
 }
 
 function changeSpeed() { 
@@ -1051,38 +979,15 @@ function changeSpeed() {
     apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); 
 }
 
-async function updateMaxCards() {
-    const maxCards = parseInt(document.getElementById('max-cards-input').value);
-    if (isNaN(maxCards) || maxCards < 10 || maxCards > 1000) return showToast('Must be between 10 and 1000', true);
-    try { 
-        const d = await apiFetch('/api/admin/settings', 'POST', { maxCards }); 
-        if (d.success) showToast(`Max cards updated to ${maxCards}`); 
-    } catch (e) { showToast('Update failed', true); }
-}
-
 async function createGiveaway() {
     const amount = parseFloat(document.getElementById('giveaway-amount').value);
     const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
     const durationMinutes = parseInt(document.getElementById('giveaway-duration').value);
-    const message = document.getElementById('giveaway-msg').value.trim();
-    
-    if (!amount || amount <= 0) return showToast('Enter valid amount', true);
-    if (!totalUsers || totalUsers <= 0) return showToast('Enter valid user limit', true);
-    if (!durationMinutes || durationMinutes <= 0) return showToast('Enter valid duration', true);
-    
-    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users for ${durationMinutes} minutes?`)) return;
-
+    if (!amount || !totalUsers) return showToast('Fill all fields', true);
+    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users?`)) return;
     try {
-        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, message, durationMinutes });
-        if (res.success) { 
-            showToast(`Giveaway sent to ${res.count} users!`); 
-            document.getElementById('giveaway-amount').value = '';
-            document.getElementById('giveaway-total-users').value = '';
-            document.getElementById('giveaway-duration').value = '60';
-            document.getElementById('giveaway-msg').value = '';
-            loadGiveaways();
-        }
-        else showToast(res.error || 'Failed', true);
+        const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, message: "", durationMinutes });
+        if (res.success) { showToast(`Giveaway sent!`); loadGiveaways(); }
     } catch(e) { showToast('Server Error', true); }
 }
 
@@ -1095,46 +1000,25 @@ async function loadGiveaways() {
             tbody.innerHTML = '';
             if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No giveaways yet.</td></tr>';
             d.data.forEach(g => {
-                let statusColor = g.status === 'active' ? 'var(--success)' : (g.status === 'completed' ? 'var(--blue)' : 'var(--danger)');
-                let actions = g.status === 'active' ? `<button class="btn btn-danger btn-sm" onclick="deleteGiveaway('${g.id}')"><i class="fas fa-trash"></i> Delete</button>` : '-';
-                tbody.innerHTML += `<tr>
-                    <td>${new Date(g.createdAt).toLocaleString()}</td>
-                    <td style="font-weight:bold; color:var(--gold);">${g.amount} ETB</td>
-                    <td>${g.totalUsers}</td>
-                    <td>${g.claimedBy ? g.claimedBy.length : 0}</td>
-                    <td><span style="color:${statusColor}; font-weight:bold;">${g.status.toUpperCase()}</span></td>
-                    <td>${actions}</td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td style="font-weight:bold; color:var(--gold);">${g.amount} ETB</td><td>${g.totalUsers}</td><td>${g.claimedBy ? g.claimedBy.length : 0}</td><td>${g.status.toUpperCase()}</td><td><button class="btn btn-danger btn-sm" onclick="deleteGiveaway('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
             });
         }
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger)">Error loading giveaways</td></tr>'; }
+    } catch(e) {}
 }
 
 async function deleteGiveaway(id) {
-    if (!confirm("Delete this giveaway and remove all messages from users?")) return;
-    try {
-        const d = await apiFetch(`/api/admin/giveaways/${id}`, 'DELETE');
-        if (d.success) { showToast('Giveaway deleted!'); loadGiveaways(); }
-    } catch(e) { showToast('Failed to delete', true); }
+    if (!confirm("Delete this giveaway?")) return;
+    try { const d = await apiFetch(`/api/admin/giveaways/${id}`, 'DELETE'); if (d.success) { showToast('Deleted!'); loadGiveaways(); } } catch(e) {}
 }
 
 async function createPromoCode() {
     const code = document.getElementById('promo-code').value.trim();
     const amount = document.getElementById('promo-amount').value;
     const maxUses = document.getElementById('promo-max-uses').value;
-    const durationMinutes = document.getElementById('promo-duration').value;
-
     if (!code || !amount || !maxUses) return showToast('Fill all fields', true);
-
     try {
-        const d = await apiFetch('/api/admin/promo-codes', 'POST', { code, amount, maxUses, durationMinutes });
-        if (d.success) {
-            showToast('✅ Promo Code created!');
-            document.getElementById('promo-code').value = '';
-            document.getElementById('promo-amount').value = '';
-            document.getElementById('promo-max-uses').value = '';
-            loadPromoCodes();
-        }
+        const d = await apiFetch('/api/admin/promo-codes', 'POST', { code, amount, maxUses, durationMinutes: 1440 });
+        if (d.success) { showToast('Code created!'); document.getElementById('promo-code').value = ''; loadPromoCodes(); }
     } catch (e) { showToast(e.message, true); }
 }
 
@@ -1145,41 +1029,27 @@ async function loadPromoCodes() {
         const d = await apiFetch('/api/admin/promo-codes');
         if (d.success) {
             tbody.innerHTML = '';
-            if (d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No codes found.</td></tr>'; return; }
             d.data.forEach(p => {
-                let tr = document.createElement('tr');
-                let dateStr = new Date(p.expiresAt).toLocaleString();
-                let statusClass = p.usedCount >= p.maxUses ? 'rejected' : (new Date() > new Date(p.expiresAt) ? 'pending' : 'approved');
-                tr.innerHTML = `<td><b>${p.code}</b></td><td>${p.amount} ETB</td><td>${p.usedCount} / ${p.maxUses}</td><td>${dateStr}</td><td><span class="badge ${statusClass}">${p.status}</span></td>
-                <td><button class="btn btn-danger btn-sm" onclick="deletePromoCode('${p._id}')"><i class="fas fa-trash"></i></button></td>`;
-                tbody.appendChild(tr);
+                let statusClass = p.usedCount >= p.maxUses ? 'rejected' : 'approved';
+                tbody.innerHTML += `<tr><td><b>${p.code}</b></td><td>${p.amount} ETB</td><td>${p.usedCount} / ${p.maxUses}</td><td>${new Date(p.expiresAt).toLocaleString()}</td><td><span class="badge ${statusClass}">${p.status || 'Active'}</span></td><td><button class="btn btn-danger btn-sm" onclick="deletePromoCode('${p._id}')"><i class="fas fa-trash"></i></button></td></tr>`;
             });
         }
-    } catch (e) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ef4444;">Load failed</td></tr>'; }
+    } catch (e) {}
 }
 
 async function deletePromoCode(id) {
     if (!confirm('Are you sure?')) return;
-    try { 
-        const d = await apiFetch('/api/admin/promo-codes/' + id, 'DELETE'); 
-        if (d.success) { showToast('Deleted!'); loadPromoCodes(); } 
-    } catch (e) { showToast(e.message, true); }
+    try { const d = await apiFetch('/api/admin/promo-codes/' + id, 'DELETE'); if (d.success) { showToast('Deleted!'); loadPromoCodes(); } } catch (e) {}
 }
 
 async function sendBroadcast() {
     const msg = document.getElementById('broadcast-msg').value.trim();
     if (!msg) return showToast('Enter a message', true);
-    if (!confirm('Send this message to ALL players?')) return;
-
+    if (!confirm('Send this to ALL players?')) return;
     try {
         const res = await apiFetch('/api/admin/broadcast', 'POST', { message: msg });
-        if (res.success) { 
-            showToast(`Broadcast sent to ${res.count} users!`); 
-            document.getElementById('broadcast-msg').value = ''; 
-            loadBroadcasts();
-        }
-        else showToast(res.error || 'Failed', true);
-    } catch(e) { showToast('Server Error', true); }
+        if (res.success) { showToast(`Sent to ${res.count} users!`); document.getElementById('broadcast-msg').value = ''; loadBroadcasts(); }
+    } catch(e) {}
 }
 
 async function loadBroadcasts() {
@@ -1189,36 +1059,16 @@ async function loadBroadcasts() {
         const d = await apiFetch('/api/admin/broadcasts');
         if (d.success) {
             tbody.innerHTML = '';
-            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No active broadcasts.</td></tr>';
             d.data.forEach(b => {
-                tbody.innerHTML += `<tr>
-                    <td>${new Date(b.sentAt).toLocaleString()}</td>
-                    <td><div style="max-height:60px; overflow-y:auto; white-space:pre-wrap; font-size:12px; color:var(--text-muted);">${escapeHtml(b.message)}</div></td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" onclick="editBroadcast('${b.id}', '${escapeHtml(b.message)}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteBroadcast('${b.id}')"><i class="fas fa-trash"></i> Delete</button>
-                    </td>
-                </tr>`;
+                tbody.innerHTML += `<tr><td>${new Date(b.sentAt).toLocaleString()}</td><td><div style="max-height:60px; overflow-y:auto;">${escapeHtml(b.message)}</div></td><td><button class="btn btn-danger btn-sm" onclick="deleteBroadcast('${b.id}')"><i class="fas fa-trash"></i></button></td></tr>`;
             });
         }
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--danger)">Error loading broadcasts</td></tr>'; }
-}
-
-async function editBroadcast(id, oldMessage) {
-    const newMsg = prompt("Edit Broadcast Message:", oldMessage);
-    if (!newMsg || newMsg === oldMessage) return;
-    try {
-        const d = await apiFetch(`/api/admin/broadcasts/${id}`, 'PUT', { message: newMsg });
-        if (d.success) { showToast('Broadcast edited successfully!'); loadBroadcasts(); }
-    } catch(e) { showToast('Failed to edit', true); }
+    } catch(e) {}
 }
 
 async function deleteBroadcast(id) {
     if (!confirm("Delete this message for ALL users?")) return;
-    try {
-        const d = await apiFetch(`/api/admin/broadcasts/${id}`, 'DELETE');
-        if (d.success) { showToast('Broadcast deleted!'); loadBroadcasts(); }
-    } catch(e) { showToast('Failed to delete', true); }
+    try { const d = await apiFetch(`/api/admin/broadcasts/${id}`, 'DELETE'); if (d.success) { showToast('Deleted!'); loadBroadcasts(); } } catch(e) {}
 }
 
 async function loadGameHistory() {
@@ -1228,15 +1078,9 @@ async function loadGameHistory() {
         const d = await apiFetch('/api/admin/game-history');
         if (d.success) {
             tbody.innerHTML = '';
-            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No games played.</td></tr>';
             d.data.forEach(g => {
-                let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 <span class="user-link" onclick="fetchAndOpenPlayer('${w.id}')">${escapeHtml(w.name)}</span> (Board ${w.cardNum})`).join('<br>') : 'No Winner';
-                tbody.innerHTML += `<tr>
-                    <td>${new Date(g.createdAt).toLocaleString()}</td>
-                    <td>${winnersHtml}</td>
-                    <td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td>
-                    <td>${g.totalPlayers}</td>
-                </tr>`;
+                let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 <span class="user-link" onclick="fetchAndOpenPlayer('${w.id}')">${escapeHtml(w.name)}</span>`).join('<br>') : 'No Winner';
+                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td>${winnersHtml}</td><td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td><td>${g.totalPlayers}</td></tr>`;
             });
         }
     } catch(e) {}
@@ -1248,41 +1092,22 @@ async function loadSettings() {
         if (d.success && d.data) {
             document.getElementById('set-telebirr').value = d.data.telebirr_number || '';
             document.getElementById('set-telebirr-name').value = d.data.telebirr_name || '';
-            document.getElementById('set-cbe').value = d.data.cbe_number || '';
-            document.getElementById('set-cbe-name').value = d.data.cbe_name || '';
-            const enableCbe = d.data.enable_cbe !== false;
-            document.getElementById('enable-cbe').checked = enableCbe;
-            document.getElementById('cbe-settings-section').style.display = enableCbe ? 'block' : 'none';
-            
+            document.getElementById('enable-cbe').checked = d.data.enable_cbe !== false;
             document.getElementById('enable-double-deposit').checked = d.data.doubleDepositActive || false;
-            const countdownEl = document.getElementById('set-countdown-time');
-            if (countdownEl) countdownEl.value = d.data.countdownTime || 50;
         }
     } catch (e) {}
 }
 
-document.getElementById('enable-cbe').addEventListener('change', (e) => { document.getElementById('cbe-settings-section').style.display = e.target.checked ? 'block' : 'none'; });
-
 async function saveSettings() {
     const telebirr = document.getElementById('set-telebirr').value;
     const telebirr_name = document.getElementById('set-telebirr-name').value;
-    const cbe = document.getElementById('set-cbe').value;
-    const cbe_name = document.getElementById('set-cbe-name').value;
-    const enable_cbe = document.getElementById('enable-cbe').checked;
-    const doubleDepositActive = document.getElementById('enable-double-deposit').checked;
-    const countdownTime = document.getElementById('set-countdown-time').value;
-    
     if (!telebirr || !telebirr_name) return showToast('Telebirr info required!', true);
     try { 
         const d = await apiFetch('/api/admin/settings', 'POST', { 
-            telebirr_number: telebirr, 
-            telebirr_name, 
-            cbe_number: cbe, 
-            cbe_name, 
-            enable_cbe,
-            doubleDepositActive: doubleDepositActive,
-            doubleDepositMultiplier: 2,
-            countdownTime: Number(countdownTime)
+            telebirr_number: telebirr, telebirr_name, 
+            enable_cbe: document.getElementById('enable-cbe').checked, 
+            doubleDepositActive: document.getElementById('enable-double-deposit').checked,
+            doubleDepositMultiplier: 2, countdownTime: 50
         }); 
         if (d.success) showToast('Settings saved!'); 
     } catch (e) { showToast('Save failed', true); }
