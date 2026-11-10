@@ -659,9 +659,26 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     // ለሁሉም ተጫዋቾች መላክ
     io.emit('new_number_called', { number: reqNumber, allCalled: gameState.calledNumbers });
     
-    // ማሸነፍ መኖሩን ማረጋገጥ እና Game Over ማድረግ
+    // ✅ ማሸነፍ መኖሩን ማረጋገጥ እና Game Over ማድረግ
     const winnerFound = await checkForAutoWinner();
-    if (winnerFound) await endRound(roundWinners);
+    if (winnerFound) {
+        await endRound(roundWinners);
+        return res.json({ success: true });
+    }
+
+    // ✅ ራስ-ሰር ጥሪው እንዳይቋረጥ ታይመርን እንደገና ማስጀመር
+    if (callInterval) { clearInterval(callInterval); callInterval = null; }
+    if (gameState.isAutoOn) {
+        callInterval = setInterval(async () => {
+            if (gameState.phase !== 'calling' || isEndingRound) return;
+            if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
+            let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+            gameState.calledNumbers.push(num); gameState.currentCall = num;
+            io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
+            const winnerFound = await checkForAutoWinner();
+            if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
+        }, gameState.settings.callInterval * 1000);
+    }
     
     res.json({ success: true });
 });

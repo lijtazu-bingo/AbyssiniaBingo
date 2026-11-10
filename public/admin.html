@@ -147,7 +147,6 @@
     .grid-cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
     .grid-cell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; text-align: center; padding: 8px 0; font-size: 14px; font-weight: bold; color: var(--text); }
     .grid-cell.free { background: var(--blue); color: #fff; font-size: 10px; }
-    /* ✅ Marked Cell Style matching player view */
     .grid-cell.marked { background: var(--gold); color: #000; box-shadow: 0 0 8px rgba(250,204,21,0.5); border-color: var(--gold); }
 
     #admin-toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #000; padding: 15px 25px; border-radius: 8px; font-weight: 800; font-size: 14px; z-index: 99999; opacity: 0; transform: translateY(20px); transition: 0.3s; pointer-events: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -529,7 +528,6 @@ function toggleTheme() {
 applyLanguage();
 applyTheme();
 
-
 // ==========================================
 // MAIN LOGIC
 // ==========================================
@@ -538,7 +536,7 @@ let AUTH_TOKEN = sessionStorage.getItem('admin_auth') || "";
 let gameStatusInterval = null;
 let allPlayersData = []; 
 let currentSelectedPlayer = null; 
-let currentGameCalledNumbers = []; // ✅ Store called numbers for card marking
+let latestGameState = null; // ✅ Store global state for card viewing
 
 setInterval(() => {
     const now = new Date();
@@ -777,34 +775,32 @@ async function loadGameStatus() {
     try {
         const d = await apiFetch('/api/admin/game-status');
         if (d.success && d.data) {
-            const state = d.data;
-            // ✅ Store called numbers globally
-            currentGameCalledNumbers = state.calledNumbers || state.allCalled || [];
+            latestGameState = d.data; // ✅ Save globally for View Cards
 
-            document.getElementById('game-phase').innerText = state.phase.toUpperCase();
-            if (state.currentCall) {
-                let pfx = state.currentCall <= 15 ? 'B' : state.currentCall <= 30 ? 'I' : state.currentCall <= 45 ? 'N' : state.currentCall <= 60 ? 'G' : 'O';
-                document.getElementById('game-current-call').innerText = pfx + '-' + state.currentCall;
+            document.getElementById('game-phase').innerText = d.data.phase.toUpperCase();
+            if (d.data.currentCall) {
+                let pfx = d.data.currentCall <= 15 ? 'B' : d.data.currentCall <= 30 ? 'I' : d.data.currentCall <= 45 ? 'N' : d.data.currentCall <= 60 ? 'G' : 'O';
+                document.getElementById('game-current-call').innerText = pfx + '-' + d.data.currentCall;
             } else document.getElementById('game-current-call').innerText = '--';
-            document.getElementById('game-taken-cards').innerText = Object.keys(state.takenCards || {}).length;
+            document.getElementById('game-taken-cards').innerText = Object.keys(d.data.takenCards || {}).length;
 
             const playersList = document.getElementById('active-players-list');
-            if (state.takenCardsDetails && Object.keys(state.takenCardsDetails).length > 0) {
+            if (d.data.takenCardsDetails && Object.keys(d.data.takenCardsDetails).length > 0) {
                 const playerMap = new Map();
-                Object.entries(state.takenCardsDetails).forEach(([cardNum, data]) => {
+                Object.entries(d.data.takenCardsDetails).forEach(([cardNum, data]) => {
                     if (!playerMap.has(data.userId)) playerMap.set(data.userId, { name: data.userName, cards: [] });
                     playerMap.get(data.userId).cards.push(cardNum);
                 });
                 
                 let html = '';
                 playerMap.forEach((info, userId) => {
-                    // ✅ Make Name Clickable & View Cards button
+                    // ✅ Pass ONLY userId and userName to avoid stringify syntax errors
                     html += `<div style="background:rgba(16,185,129,0.1); border:1px solid var(--primary); padding:10px 15px; border-radius:8px; display:flex; flex-direction:column; gap:8px; min-width: 200px;">
                         <div class="user-link" onclick="fetchAndOpenPlayer('${userId}')" style="font-weight:bold; color:var(--text); font-size:15px; display:flex; align-items:center; gap:8px;">
                             <i class="fas fa-user-circle" style="color:var(--primary);"></i> ${escapeHtml(info.name)}
                         </div>
                         <div style="font-size:12px; color:var(--primary); font-weight:bold; background:rgba(16,185,129,0.2); padding:2px 8px; border-radius:10px; width:fit-content;">${info.cards.length} Cards</div>
-                        <button class="btn btn-primary btn-sm" onclick="viewPlayerCards('${userId}', '${escapeHtml(info.name)}', '${JSON.stringify(info.cards)}')" style="margin-top:5px; width:100%; justify-content:center;">
+                        <button class="btn btn-primary btn-sm" onclick="viewPlayerCards('${userId}', '${escapeHtml(info.name)}')" style="margin-top:5px; width:100%; justify-content:center;">
                             <i class="fas fa-eye"></i> View Cards
                         </button>
                     </div>`;
@@ -813,13 +809,13 @@ async function loadGameStatus() {
             } else playersList.innerHTML = '<span style="color:var(--text-muted);">No active players.</span>';
 
             const btn = document.getElementById('auto-btn');
-            btn.innerHTML = state.isAutoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
-            btn.className = state.isAutoOn ? 'btn btn-success' : 'btn btn-warning';
+            btn.innerHTML = d.data.isAutoOn ? '<i class="fas fa-robot"></i> Auto: ON' : '<i class="fas fa-robot"></i> Auto: OFF';
+            btn.className = d.data.isAutoOn ? 'btn btn-success' : 'btn btn-warning';
         }
     } catch (e) {}
 }
 
-// ✅ DETERMINISTIC CARD GENERATOR (Matches Player Frontend perfectly)
+// ✅ DETERMINISTIC CARD GENERATOR
 function mulberry32(a) { 
     return function() { 
         a |= 0; a = a + 0x6D2B79F5 | 0; 
@@ -841,14 +837,28 @@ function generateCardLayout(cn) {
     cols[2][2] = 'FREE'; return cols;
 }
 
-// ✅ VIEW BINGO CARDS MODAL LOGIC (Shows marked/uncalled)
-function viewPlayerCards(userId, userName, cardsArrayStr) {
-    const cards = JSON.parse(cardsArrayStr);
+// ✅ FIXED: View Player Cards (Uses latestGameState instead of parsing stringified arrays)
+function viewPlayerCards(userId, userName) {
+    if (!latestGameState || !latestGameState.takenCardsDetails) return;
+    
+    // Find the user's cards from the global state
+    const userCards = [];
+    Object.entries(latestGameState.takenCardsDetails).forEach(([cardNum, data]) => {
+        if (String(data.userId) === String(userId)) {
+            userCards.push(cardNum);
+        }
+    });
+
+    if (userCards.length === 0) {
+        showToast("No cards found for this player", true);
+        return;
+    }
+
     const modalBody = document.getElementById('cards-modal-body');
     document.getElementById('cards-modal-title').innerText = `${userName}'s Cards`;
     
     let html = '';
-    cards.forEach(cardNum => {
+    userCards.forEach(cardNum => {
         const matrix = generateCardLayout(parseInt(cardNum));
         
         html += `<div class="bingo-grid">
@@ -864,8 +874,7 @@ function viewPlayerCards(userId, userName, cardsArrayStr) {
                 if (val === 'FREE') {
                     html += `<div class="grid-cell free">FREE</div>`;
                 } else {
-                    // Check if the number is in the called numbers array
-                    const isCalled = currentGameCalledNumbers.includes(val);
+                    const isCalled = (latestGameState.calledNumbers || []).includes(val);
                     html += `<div class="grid-cell ${isCalled ? 'marked' : ''}">${val}</div>`;
                 }
             }
@@ -877,7 +886,6 @@ function viewPlayerCards(userId, userName, cardsArrayStr) {
     document.getElementById('cards-modal').classList.add('active');
 }
 
-// ✅ MANUAL CALL LOGIC
 async function callSpecificNumber() {
     const num = parseInt(document.getElementById('manual-call-input').value);
     if (isNaN(num) || num < 1 || num > 75) return showToast("Enter a valid number (1-75)", true);
@@ -887,10 +895,9 @@ async function callSpecificNumber() {
         if (d.success) {
             showToast(`Number ${num} called!`);
             document.getElementById('manual-call-input').value = '';
-            // ✅ Immediately refresh status to update last call and cards
             loadGameStatus(); 
         } else {
-            showToast(d.error || "Failed to call number", true);
+            showToast(d.message || d.error || "Failed to call number", true);
         }
     } catch (e) { showToast("Server Error", true); }
 }
@@ -916,6 +923,7 @@ function changeSpeed() {
     apiFetch('/api/admin/auto-game', 'POST', { isAutoOn: true, speed: speed }).catch(() => {}); 
 }
 
+// Keep all other functions (createGiveaway, loadPromoCodes, etc.) identical to previous version
 async function createGiveaway() {
     const amount = parseFloat(document.getElementById('giveaway-amount').value);
     const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
