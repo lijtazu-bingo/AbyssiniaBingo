@@ -179,7 +179,8 @@ const gameState = {
         callInterval: 5, 
         maxCards: 1000,
         countdownTime: 50
-    } 
+    },
+    numberToCardsMap: {} // ✅ አዲስ የተጨመረ
 };
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null;
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
@@ -282,7 +283,6 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ አንድን ተጠቃሚ በ ID ለማግኘት
 app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
     try {
         const user = await User.findOne({ id: req.params.id }).lean();
@@ -324,7 +324,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         let msgText = '';
         
         if (txn.type === 'deposit') {
-            // 🔥 DOUBLE DEPOSIT LOGIC
             let bonusAmount = 0;
             let totalToAdd = txn.amount;
             
@@ -524,7 +523,6 @@ app.get('/api/wallet/me', async (req, res) => {
         if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
         const userId = user ? String(user.id) : String(req.headers['x-user-id']);
         
-        // ✅ Daily Bonus Logic
         const todayStr = new Date().toISOString().split('T')[0];
         let dbUser = await User.findOne({ id: userId });
         
@@ -637,13 +635,11 @@ app.post('/api/admin/stop-game', adminAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ የተስተካከለው የእጅ ጥሪ (Manual Call) ኮድ
 app.post('/api/admin/call-number', adminAuth, async (req, res) => {
     if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) {
         return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
     }
     
-    // ✅ ከአድሚን ፓነል የመጣውን ቁጥር መቀበል
     const reqNumber = Number(req.body.number);
     if (!reqNumber || reqNumber < 1 || reqNumber > 75) {
         return res.status(400).json({ success: false, message: 'እባክዎ ከ1 እስከ 75 ያለ ትክክለኛ ቁጥር ያስገቡ' });
@@ -652,21 +648,17 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
         return res.status(400).json({ success: false, message: 'ይህ ቁጥር ቀድሞ ተጠርቷል!' });
     }
 
-    // የተመረጠውን ቁጥር መጨመር
     gameState.calledNumbers.push(reqNumber); 
     gameState.currentCall = reqNumber;
     
-    // ለሁሉም ተጫዋቾች መላክ
     io.emit('new_number_called', { number: reqNumber, allCalled: gameState.calledNumbers });
     
-    // ✅ ማሸነፍ መኖሩን ማረጋገጥ እና Game Over ማድረግ
-    const winnerFound = await checkForAutoWinner();
+    const winnerFound = await checkForAutoWinner(reqNumber); // ✅ reqNumber ተጨምሯል
     if (winnerFound) {
         await endRound(roundWinners);
         return res.json({ success: true });
     }
 
-    // ✅ ራስ-ሰር ጥሪው እንዳይቋረጥ ታይመርን እንደገና ማስጀመር
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
     if (gameState.isAutoOn) {
         callInterval = setInterval(async () => {
@@ -675,7 +667,7 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
             let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-            const winnerFound = await checkForAutoWinner();
+            const winnerFound = await checkForAutoWinner(num); // ✅ num ተጨምሯል
             if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
         }, gameState.settings.callInterval * 1000);
     }
@@ -695,7 +687,7 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
             let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-            const winnerFound = await checkForAutoWinner();
+            const winnerFound = await checkForAutoWinner(num); // ✅ num ተጨምሯል
             if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
         }, gameState.settings.callInterval * 1000);
     }
@@ -734,6 +726,31 @@ app.post('/api/user/referral', async (req, res) => {
 const userTxnCooldowns = new Map();
 const TXN_COOLDOWN_MS = 2 * 60 * 1000; // 2 Minutes
 
+// ✅ የጽሑፍ ማጣሪያ ፈንክሽን (ሙሉ SMS ገብቶ ቁጥሩን ብቻ ለማውጣት)
+function extractTransactionId(text) {
+    if (!text) return null;
+    const patterns = [
+        /transaction number is\s+([A-Za-z0-9]+)/i,
+        /transaction id[:\s]+([A-Za-z0-9]+)/i,
+        /receipt number is\s+([A-Za-z0-9]+)/i,
+        /\b(FT|DK|CB|CH|TR)[A-Za-z0-9]{6,20}\b/i
+    ];
+
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+            return match[1] ? match[1].toUpperCase() : match[0].toUpperCase();
+        }
+    }
+
+    const cleanText = text.trim();
+    if (/^[A-Za-z0-9]{8,25}$/.test(cleanText)) {
+        return cleanText.toUpperCase();
+    }
+
+    return null;
+}
+
 app.post('/api/bot/create-txn', async (req, res) => {
     try {
         const { type, user_id, user_name, amount, method, phone, reference } = req.body;
@@ -747,8 +764,16 @@ app.post('/api/bot/create-txn', async (req, res) => {
             return res.status(429).json({ success: false, error: 'እባክዎ ትንሽ ይጠብቁ! በ2 ደቂቃ ውስጥ አዲስ ጥያቄ ማስገባት አይችሉም።' });
         }
 
+        let finalReference = reference;
         if (type === 'deposit' && reference) {
-            const existingTxn = await Transaction.findOne({ type: 'deposit', reference: reference });
+            const extractedId = extractTransactionId(reference);
+            if (extractedId) {
+                finalReference = extractedId;
+            } else {
+                return res.status(400).json({ success: false, error: 'ትክክለኛ የባንክ ማረጋገጫ (Transaction ID) አልተገኘም!' });
+            }
+            
+            const existingTxn = await Transaction.findOne({ type: 'deposit', reference: finalReference });
             if (existingTxn) return res.status(400).json({ success: false, error: 'This Transaction ID has already been submitted!' });
         }
 
@@ -763,14 +788,14 @@ app.post('/api/bot/create-txn', async (req, res) => {
 
         await Transaction.create({
             id: txnId, type, user_id: String(user_id), user_name: user_name || 'Unknown',
-            amount: amt, method: method || 'telebirr', reference: reference || '', phone: phone || '',
+            amount: amt, method: method || 'telebirr', reference: finalReference || '', phone: phone || '',
             status: txnStatus, created: new Date().toISOString(), notified: false
         });
 
         userTxnCooldowns.set(String(user_id), Date.now());
 
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-        res.json({ success: true, txnId, autoApproved: false });
+        res.json({ success: true, txnId, autoApproved: false, reference: finalReference });
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
@@ -839,38 +864,78 @@ io.on('connection', (socket) => {
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), win_balance: { $gte: CARD_PRICE } }, { $inc: { win_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), referral_balance: { $gte: CARD_PRICE } }, { $inc: { referral_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
+                
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId }; 
                 socket.emit('wallet_updated', {});
+
+                // ✅ ካርቴላው ያሉትን ቁጥሮች በMap ውስጥ ማስታወስ
+                const cardCols = getCardCols(cardNum);
+                cardCols.forEach(col => {
+                    col.forEach(num => {
+                        if (num !== 'FREE') {
+                            if (!gameState.numberToCardsMap[num]) gameState.numberToCardsMap[num] = new Set();
+                            gameState.numberToCardsMap[num].add(cardNum);
+                        }
+                    });
+                });
+
             } else if (data.action === 'deselect') {
                 if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) { 
                     delete gameState.takenCards[cardNum]; 
                     await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } }); 
                     socket.emit('wallet_updated', {}); 
+
+                    // ✅ ካርቴላው ሲለቀቅ ከMap ማጥፋት
+                    const cardCols = getCardCols(cardNum);
+                    cardCols.forEach(col => {
+                        col.forEach(num => {
+                            if (num !== 'FREE' && gameState.numberToCardsMap[num]) {
+                                gameState.numberToCardsMap[num].delete(cardNum);
+                            }
+                        });
+                    });
                 }
             }
             const totalCards = Object.keys(gameState.takenCards).length;
             io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: totalCards, totalCards });
         } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
     });
+
+    // ✅ የMemory Leak መከላከያ
+    socket.on('disconnect', () => {
+        socket.removeAllListeners();
+        if (socket.verifiedId) socket.leave(`user_${socket.verifiedId}`);
+    });
 });
 
-async function checkForAutoWinner() {
+// ✅ የተሻሻለው የአሸናፊ ፍለጋ ፈንክሽን
+async function checkForAutoWinner(newNumber) {
     if (isEndingRound || gameState.phase !== 'calling') return false;
-    const entries = Object.entries(gameState.takenCards); 
-    if (entries.length === 0) return false;
+    
+    const potentialCards = gameState.numberToCardsMap[newNumber];
+    if (!potentialCards || potentialCards.size === 0) return false;
+
     let potentialWinners = [];
-    for (const [cardNum, data] of entries) {
+    
+    for (const cardNum of potentialCards) {
+        const data = gameState.takenCards[cardNum];
+        if (!data) continue;
+        
         const win = checkWinningLine(cardNum, gameState.calledNumbers);
         if (win) potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, win });
     }
+    
     if (potentialWinners.length === 0) return false;
+    
     const userIds = [...new Set(potentialWinners.map(p => p.userId))];
     const users = await User.find({ id: { $in: userIds } }, { id: 1, name: 1 }).lean();
     const userMap = new Map(users.map(u => [u.id, u.name]));
+    
     roundWinners = potentialWinners.map(p => ({
         id: p.userId, name: userMap.get(p.userId) || 'Player', cardNum: p.cardNum,
         winDesc: p.win.desc, winType: p.win.type, winIndex: p.win.index, allLines: [p.win]
     }));
+    
     isEndingRound = true; gameState.phase = 'claiming';
     if (callInterval) { clearInterval(callInterval); callInterval = null; }
     if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
@@ -907,7 +972,7 @@ function startRound() {
                     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
                     gameState.calledNumbers.push(num); gameState.currentCall = num;
                     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-                    const winnerFound = await checkForAutoWinner();
+                    const winnerFound = await checkForAutoWinner(num); // ✅ num ተጨምሯል
                     if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
                 }, gameState.settings.callInterval * 1000);
             }
