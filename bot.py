@@ -82,6 +82,32 @@ def mark_txn_used(txn_id):
     conn.commit()
     conn.close()
 
+# ✅ አዲስ የተጨመረ፡ የጽሑፍ ማጣሪያ ፈንክሽን (Regex)
+def extract_transaction_id(text):
+    if not text: return None
+    
+    # የተለያዩ የባንክ እና የቴሌብር ኤስኤምኤስ ፎርማቶች
+    patterns = [
+        r"transaction number is\s+([A-Za-z0-9]+)",
+        r"transaction id[:\s]+([A-Za-z0-9]+)",
+        r"receipt number is\s+([A-Za-z0-9]+)",
+        r"\b(FT|DK|CB|CH|TR)[A-Za-z0-9]{6,20}\b"
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            # በቅንፍ የተያዘ ካለ (Group 1) ያንን ይመልሳል፣ ካለበለዚያ ሙሉውን ማች (Match 0)
+            return match.group(1).upper() if match.groups() else match.group(0).upper()
+
+    # ተጠቃሚው የትራንዛክሽን ቁጥሩን ብቻ ከጻፈ (ከ8 እስከ 25 ፊደላት/ቁጥሮች)
+    clean_text = text.strip()
+    if re.match(r"^[A-Za-z0-9]{8,25}$", clean_text):
+        return clean_text.upper()
+
+    return None
+
+
 # ─── ሙሉ ትርጉሞች ───
 TEXTS = {
     'am': {
@@ -420,12 +446,16 @@ async def deposit_amount_received(update: Update, context: ContextTypes.DEFAULT_
     await update.message.reply_text(get_text(user.id, 'dep_instructions', name=name, acc=acc), parse_mode='HTML')
     return DEPOSIT_TXN
 
+# ✅ የተስተካከለው የ Deposit Transaction ተቀባይ
 async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    txn_ref = update.message.text.strip()
+    raw_text = update.message.text.strip()
     amount = context.user_data.get('deposit_amount', 0)
     
-    if not re.match(r'^[A-Z0-9]{8,}$', txn_ref, re.IGNORECASE):
+    # ከSMS ወይም ከጽሑፍ ውስጥ ትክክለኛውን የትራንዛክሽን ቁጥር ማውጣት
+    txn_ref = extract_transaction_id(raw_text)
+    
+    if not txn_ref:
         await update.message.reply_text(get_text(user.id, 'dep_invalid_txn'), parse_mode='HTML')
         return DEPOSIT_TXN 
     
@@ -435,6 +465,7 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
     
     result = None
     try:
+        # የተጣራውን ቁጥር ብቻ (txn_ref) ወደ ሰርቨር መላክ
         result = requests.post(f"{SERVER_API_URL}/api/bot/create-txn", json={
             "type": "deposit", "user_id": str(user.id), "user_name": user.first_name,
             "amount": amount, "method": "telebirr", "reference": txn_ref
