@@ -6,31 +6,17 @@
 <title>Admin Panel - Abisinya Bingo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    :root { 
-        --primary: #10b981; --primary-dark: #059669;
-        --bg: #070b14; --bg-card: #111827; --bg-sidebar: #0b1120;
-        --text: #f8fafc; --text-muted: #94a3b8;
-        --danger: #ef4444; --success: #10b981; --blue: #3b82f6; --gold: #facc15;
-        --border: #1f2937;
-    }
-    body.light-theme {
-        --bg: #f1f5f9; --bg-card: #ffffff; --bg-sidebar: #e2e8f0;
-        --text: #0f172a; --text-muted: #475569; --border: #cbd5e1;
-    }
-    
+    :root { --primary: #10b981; --primary-dark: #059669; --bg: #070b14; --bg-card: #111827; --bg-sidebar: #0b1120; --text: #f8fafc; --text-muted: #94a3b8; --danger: #ef4444; --success: #10b981; --blue: #3b82f6; --gold: #facc15; --border: #1f2937; }
+    body.light-theme { --bg: #f1f5f9; --bg-card: #ffffff; --bg-sidebar: #e2e8f0; --text: #0f172a; --text-muted: #475569; --border: #cbd5e1; }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; font-weight: 500; transition: background 0.3s, color 0.3s; }
     .hidden { display: none !important; }
-
-    /* Login */
     #login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; background-image: radial-gradient(circle at 50% 50%, var(--bg-card) 0%, var(--bg) 100%); }
     .login-box { background: var(--bg-card); padding: 40px 30px; border-radius: 16px; border: 1px solid var(--border); width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
     .login-box h2 { text-align: center; color: var(--primary); margin-bottom: 25px; font-size: 24px; font-weight: 700; }
     .login-box input { width: 100%; padding: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; margin-bottom: 15px; outline: none; font-weight: bold; }
     .login-box button { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
     .error-msg { color: var(--danger); text-align: center; margin-bottom: 15px; font-size: 13px; display: none; background: rgba(239,68,68,0.1); padding: 10px; border-radius: 6px; }
-
-    /* Layout */
     #main-content { flex: 1; display: flex; flex-direction: row; overflow: hidden; display: none; }
     #sidebar { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border); flex-shrink: 0; display: flex; flex-direction: column; transition: 0.3s; z-index: 100; overflow-y: auto; }
     .logo { padding: 20px; font-size: 20px; font-weight: 900; color: var(--primary); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
@@ -39,7 +25,6 @@
     .menu-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; color: var(--text-muted); font-size: 14px; font-weight: 600; transition: 0.2s; border-left: 3px solid transparent; }
     .menu-item:hover, .menu-item.active { background: rgba(16, 185, 129, 0.1); color: var(--primary); border-left-color: var(--primary); }
     .menu-item i { width: 20px; text-align: center; }
-
     .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--bg); }
     .top-bar { height: 75px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid var(--border); }
     .header-title-area h2 { font-size: 22px; font-weight: 800; color: var(--text); }
@@ -49,42 +34,32 @@
     .page { display: none; animation: fadeIn 0.3s ease; }
     .page.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Stats & Cards */
     .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 20px; }
     .stat-box { background: var(--bg-card); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); }
     .stat-box-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px; display: flex; gap: 5px; }
     .stat-box-value { font-size: 20px; font-weight: 800; color: var(--text); }
     .stat-box-value.green { color: var(--primary); }
     .stat-box-value.gold { color: var(--gold); }
-    
     .filter-section { background: var(--bg-card); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 15px; }
     .filter-title { font-size: 16px; font-weight: 700; }
-    
-    /* Buttons & Forms */
     .btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; }
     .btn-primary { background: var(--blue); }
     .btn-success { background: var(--success); color: #000; }
     .btn-danger { background: var(--danger); }
     .btn-warning { background: var(--gold); color: #000; }
     .btn-sm { padding: 6px 12px; font-size: 12px; }
-    .form-control { padding: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; width: 100%; font-weight: bold; outline: none; }
-
-    /* Tables */
     .table-wrapper { background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
     .table-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .table-responsive { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 700px; }
     th, td { padding: 14px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
     th { background: rgba(0,0,0,0.2); color: var(--text-muted); font-weight: 700; font-size: 12px; text-transform: uppercase; }
-    
     .user-link { color: var(--blue); font-weight: bold; cursor: pointer; }
     .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
     .badge.pending { background: rgba(245, 158, 11, 0.2); color: var(--gold); border: 1px solid var(--gold); }
     .badge.approved { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
     .badge.rejected { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-
-    /* Side Panel & Modals */
+    .form-control { padding: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 14px; width: 100%; font-weight: bold; outline: none; }
     .side-panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s; }
     .side-panel-overlay.active { opacity: 1; pointer-events: auto; }
     .side-panel { position: fixed; top: 0; right: -450px; width: 100%; max-width: 450px; height: 100vh; background: var(--bg-card); z-index: 10000; transition: 0.3s; display: flex; flex-direction: column; border-left: 1px solid var(--border); }
@@ -93,7 +68,6 @@
     .close-panel { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
     .side-panel-body { flex: 1; overflow-y: auto; padding: 20px; }
     .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: bold; }
-
     #cards-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10005; display: none; align-items: center; justify-content: center; padding: 20px; }
     #cards-modal.active { display: flex; }
     .cards-modal-content { background: var(--bg-card); border-radius: 12px; width: 100%; max-width: 800px; max-height: 90vh; display: flex; flex-direction: column; }
@@ -106,7 +80,6 @@
     .grid-cell { background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px; text-align: center; padding: 8px 0; font-size: 14px; font-weight: bold; color: var(--text); }
     .grid-cell.free { background: var(--blue); color: #fff; }
     .grid-cell.marked { background: var(--gold); color: #000; }
-
     #admin-toast { position: fixed; bottom: 30px; right: 30px; background: var(--primary); color: #000; padding: 15px 25px; border-radius: 8px; font-weight: 800; font-size: 14px; z-index: 99999; opacity: 0; transform: translateY(20px); transition: 0.3s; }
     #admin-toast.show { opacity: 1; transform: translateY(0); }
     #admin-toast.error { background: var(--danger); color: #fff; }
@@ -116,7 +89,6 @@
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
 <div id="login-screen">
     <div class="login-box">
         <h2><i class="fas fa-shield-alt"></i> Admin Access</h2>
@@ -129,9 +101,7 @@
 
 <div id="admin-toast"></div>
 
-<!-- MAIN CONTENT -->
 <div id="main-content">
-    <!-- SIDEBAR -->
     <div id="sidebar">
         <div class="logo"><i class="fas fa-chart-pie"></i> Admin Panel</div>
         <div class="menu-group">
@@ -152,7 +122,6 @@
         </div>
     </div>
 
-    <!-- MAIN PANEL -->
     <div class="main-panel">
         <div class="top-bar">
             <div style="display: flex; align-items: center; gap: 15px;">
@@ -171,7 +140,6 @@
 
         <div class="page-container">
             
-            <!-- GAME CONTROL PAGE -->
             <div id="page-game" class="page active">
                 <div class="stats-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
                     <div class="stat-box"><div class="stat-box-title">Game Phase</div><div class="stat-box-value green" id="game-phase">-</div></div>
@@ -195,6 +163,9 @@
                             <option value="3">Speed 3s</option><option value="5" selected>Speed 5s</option><option value="7">Speed 7s</option>
                         </select>
                         <button class="btn btn-warning" id="auto-btn" onclick="toggleAuto()"><i class="fas fa-robot"></i> Auto: OFF</button>
+                        
+                        <!-- ✅ Force Bot Win Button -->
+                        <button class="btn btn-danger" id="force-win-btn" onclick="toggleForceWin()" style="margin-left: 10px; border: 2px solid #fff;"><i class="fas fa-bolt"></i> Force Bot Win</button>
                     </div>
                 </div>
 
@@ -217,7 +188,6 @@
                 </div>
             </div>
 
-            <!-- DASHBOARD PAGE -->
             <div id="page-dashboard" class="page">
                 <div class="stats-row">
                     <div class="stat-box"><div class="stat-box-title">NET REVENUE</div><div class="stat-box-value" id="stat-net-revenue">ETB 0.00</div></div>
@@ -231,7 +201,6 @@
                 </div>
             </div>
 
-            <!-- BOT MANAGEMENT PAGE -->
             <div id="page-bots" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px;">
                     <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-robot"></i> Ghost Bot Settings</h3>
@@ -265,7 +234,6 @@
                 </div>
             </div>
 
-            <!-- REFERRALS PAGE -->
             <div id="page-referrals" class="page">
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Referral List</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i></button></div>
@@ -273,7 +241,6 @@
                 </div>
             </div>
 
-            <!-- USERS PAGE -->
             <div id="page-users" class="page">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -283,24 +250,9 @@
                     <div class="table-responsive"><table><thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Play Bal</th><th>Win Bal</th><th>Action</th></tr></thead><tbody id="players-table-body"></tbody></table></div>
                 </div>
             </div>
-
-            <!-- DEPOSITS PAGE -->
-            <div id="page-deposits" class="page">
-                <div class="table-wrapper">
-                    <div class="table-header"><h3>Deposit Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('deposit')"><i class="fas fa-sync"></i></button></div>
-                    <div class="table-responsive"><table><thead><tr><th>User</th><th>Amount</th><th>Ref</th><th>Status</th><th>Action</th></tr></thead><tbody id="deposit-table-body"></tbody></table></div>
-                </div>
-            </div>
-
-            <!-- WITHDRAWALS PAGE -->
-            <div id="page-withdrawals" class="page">
-                <div class="table-wrapper">
-                    <div class="table-header"><h3>Withdrawal Requests</h3><button class="btn btn-primary btn-sm" onclick="loadTransactions('withdrawal')"><i class="fas fa-sync"></i></button></div>
-                    <div class="table-responsive"><table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table></div>
-                </div>
-            </div>
-
-            <!-- PROMO CODES PAGE -->
+            <div id="page-deposits" class="page"><div class="table-wrapper"><div class="table-header"><h3>Deposit Requests</h3></div><div class="table-responsive"><table><thead><tr><th>User</th><th>Amount</th><th>Ref</th><th>Status</th><th>Action</th></tr></thead><tbody id="deposit-table-body"></tbody></table></div></div></div>
+            <div id="page-withdrawals" class="page"><div class="table-wrapper"><div class="table-header"><h3>Withdrawal Requests</h3></div><div class="table-responsive"><table><thead><tr><th>User</th><th>Amount</th><th>Phone</th><th>Status</th><th>Action</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table></div></div></div>
+            
             <div id="page-promo" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-tags"></i> Create Promo Code</h3>
@@ -318,7 +270,6 @@
                 </div>
             </div>
 
-            <!-- BROADCAST PAGE -->
             <div id="page-broadcast" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
@@ -331,7 +282,6 @@
                 </div>
             </div>
 
-            <!-- GIVEAWAY PAGE -->
             <div id="page-giveaway" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
@@ -345,7 +295,6 @@
                 </div>
             </div>
 
-            <!-- SETTINGS PAGE -->
             <div id="page-settings" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 600px;">
                     <h3 style="margin-bottom: 20px; color: var(--primary);"><i class="fas fa-cog"></i> Settings</h3>
@@ -377,7 +326,6 @@
     </div> 
 </div> 
 
-<!-- PLAYER DETAILS PANEL -->
 <div class="side-panel-overlay" id="player-overlay" onclick="closePlayerPanel()"></div>
 <div class="side-panel" id="player-panel">
     <div class="side-panel-header">
@@ -406,7 +354,6 @@
     </div>
 </div>
 
-<!-- BINGO CARDS MODAL -->
 <div id="cards-modal">
     <div class="cards-modal-content">
         <div class="cards-modal-header">
@@ -520,23 +467,44 @@ async function loadGameStatus() {
             document.getElementById('game-taken-cards').innerText = d.data.takenCards ? Object.keys(d.data.takenCards).length : 0;
             latestCalledNumbers = d.data.calledNumbers || [];
 
+            const fwBtn = document.getElementById('force-win-btn');
+            if (d.data.isForceWinActive) {
+                fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: ON';
+                fwBtn.style.background = '#10b981';
+                fwBtn.style.color = '#000';
+            } else {
+                fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: OFF';
+                fwBtn.style.background = 'var(--danger)';
+                fwBtn.style.color = '#fff';
+            }
+
             const plist = document.getElementById('active-players-list');
             if (d.data.takenCardsDetails) {
                 const playerMap = new Map();
+                
                 Object.entries(d.data.takenCardsDetails).forEach(([cardNum, data]) => {
                     if (!playerMap.has(data.userId)) playerMap.set(data.userId, { name: data.userName, isBot: data.isBot, cards: [] });
                     playerMap.get(data.userId).cards.push(cardNum);
                 });
+
+                // ✅ Real ተጫዋቾች መጀመሪያ እንዲታዩ (Sorting)
+                const sortedPlayers = Array.from(playerMap.entries()).sort((a, b) => {
+                    if (a[1].isBot === b[1].isBot) return 0;
+                    return a[1].isBot ? 1 : -1;
+                });
+
                 let html = '';
-                playerMap.forEach((info, userId) => {
+                sortedPlayers.forEach(([userId, info]) => {
                     let bgColor = info.isBot ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)';
                     let borderColor = info.isBot ? 'var(--blue)' : 'var(--primary)';
                     let botBadge = info.isBot ? '<span style="font-size:10px; background:var(--blue); color:#fff; padding:1px 5px; border-radius:10px; margin-left:5px;">BOT</span>' : '';
-                    html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:150px;">
+                    
+                    html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:160px;">
                         <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}>
                             <i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}
                         </div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">${info.cards.length} Cards</div>
+                        ${!info.isBot ? `<button class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center;" onclick="viewCardsDirect('${userId}', '${escapeHtml(info.name)}')"><i class="fas fa-eye"></i> View Cards</button>` : ''}
                     </div>`;
                 });
                 plist.innerHTML = html;
@@ -549,18 +517,30 @@ async function loadGameStatus() {
     } catch (e) {}
 }
 
+async function toggleForceWin() {
+    const btn = document.getElementById('force-win-btn');
+    const isCurrentlyOn = btn.innerHTML.includes('ON');
+    try {
+        const res = await apiFetch('/api/admin/toggle-force-win', 'POST', { active: !isCurrentlyOn });
+        if (res.success) {
+            showToast(!isCurrentlyOn ? '⚡ Force Bot Win Activated!' : 'Force Bot Win Deactivated');
+            loadGameStatus();
+        }
+    } catch (e) { showToast('Action failed', true); }
+}
+
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
 function generateCardLayout(cn) { const cols = [[], [], [], [], []]; const seedBase = cn * 100; for (let c = 0; c < 5; c++) { const min = c * 15 + 1, max = c * 15 + 15; const avail = []; for (let n = min; n <= max; n++) avail.push(n); const seed = seedBase + c; const rand = mulberry32(seed); for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; } cols[c] = avail.slice(0, 5); } cols[2][2] = 'FREE'; return cols; }
 
-async function viewPlayerCards() {
-    if (!currentSelectedPlayer) return;
+// ✅ አዲስ የተጨመረ: ከ Live Game Control ላይ በቀጥታ ካርቴላ ለማየት
+async function viewCardsDirect(userId, userName) {
     const modalBody = document.getElementById('cards-modal-body');
-    document.getElementById('cards-modal-title').innerText = `${currentSelectedPlayer.name}'s Cards`;
+    document.getElementById('cards-modal-title').innerText = `${userName}'s Cards`;
     modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--text-muted);">Loading grids...</div>';
     document.getElementById('cards-modal').classList.add('active');
 
     try {
-        const d = await apiFetch(`/api/admin/user-cards/${currentSelectedPlayer.id}`);
+        const d = await apiFetch(`/api/admin/user-cards/${userId}`);
         if (!d.success) throw new Error('Failed');
         const userCards = d.data.userCards; const called = d.data.calledNumbers;
         
@@ -570,7 +550,7 @@ async function viewPlayerCards() {
         userCards.forEach(cardNum => {
             const matrix = generateCardLayout(cardNum);
             html += `<div class="bingo-grid">
-                <div class="bingo-grid-title" style="text-align:center; color:var(--gold); margin-bottom:10px; font-weight:bold;">BOARD ${cardNum}</div>
+                <div style="text-align:center; color:var(--gold); margin-bottom:10px; font-weight:bold;">BOARD ${cardNum}</div>
                 <div class="grid-letters"><div style="background:#3b82f6;">B</div><div style="background:#ef4444;">I</div><div style="background:#10b981;">N</div><div style="background:#f59e0b;">G</div><div style="background:#8b5cf6;">O</div></div>
                 <div class="grid-cells">`;
             for(let r=0; r<5; r++) { for(let c=0; c<5; c++) { let val = matrix[c][r]; if (val === 'FREE') { html += `<div class="grid-cell free">FREE</div>`; } else { const isCalled = called.includes(val); html += `<div class="grid-cell ${isCalled ? 'marked' : ''}">${val}</div>`; } } }
@@ -578,6 +558,11 @@ async function viewPlayerCards() {
         });
         modalBody.innerHTML = html;
     } catch(e) { modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--danger);">Error loading cards.</div>'; }
+}
+
+async function viewPlayerCards() {
+    if (!currentSelectedPlayer) return;
+    await viewCardsDirect(currentSelectedPlayer.id, currentSelectedPlayer.name);
 }
 
 async function fetchAndOpenPlayer(id) {

