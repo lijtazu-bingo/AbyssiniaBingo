@@ -343,11 +343,11 @@ function updateCardClickability() {
 function updateCardCounter() { const counter = document.getElementById('selected-count-display'); if (counter) counter.innerText = `የተመረጡ ካርቴላዎች፦ ${selectedCards.size}`; }
 function updateWalletUI() { document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); updateCardClickability(); }
 function updateProfileUI() { document.getElementById('profile-name-val').innerText = userProfile.name; document.getElementById('profile-id-val').innerText = userProfile.id; document.getElementById('profile-games-val').innerText = userTotalGames; document.getElementById('profile-wins-val').innerText = userTotalWins; document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; document.getElementById('invite-link-input').value = 'https://t.me/Ethiobongo_bot?start=' + userProfile.id; }
-function updateLiveStats(totalPlayers) { 
-    document.getElementById('players-val-top').innerText = totalPlayers; 
-    document.getElementById('derash-val-top').innerText = totalPlayers * 8; // Assumes average 2 cards/player
-    document.getElementById('players-val').innerText = totalPlayers; 
-    document.getElementById('derash-val').innerText = totalPlayers * 8; 
+function updateLiveStats(totalCards) { 
+    document.getElementById('players-val-top').innerText = totalCards; 
+    document.getElementById('derash-val-top').innerText = totalCards * 8; 
+    document.getElementById('players-val').innerText = totalCards; 
+    document.getElementById('derash-val').innerText = totalCards * 8; 
 }
 
 async function loadWallet() {
@@ -474,20 +474,25 @@ socket.on('new_number_called', (data) => { calledNumbersSet.add(data.number); up
 socket.on('daily_bonus_claimed', (data) => { showFooterNotification(`🎉 የዕለት ቦነስ ${data.amount} ብር አግኝተዋል!`); });
 socket.on('reset_game', () => { selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear(); initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden'); document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0'; document.getElementById('recent-calls-container').innerHTML = ''; updatePreviewUI(); updateCardCounter(); loadWallet(); });
 
+// ✅ የተስተካከለው የGame Over መልእክት
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
     const totalWinners = data.winners.length; 
     const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
     
+    // የአሸናፊዎች ስም እና ካርቴላ ቁጥር ማዘጋጀት
+    let winnerNamesList = data.winners.map(w => `${w.name} #${w.cardNum}`).join(', ');
+
     if (totalWinners === 1) { 
-        document.getElementById('winner-text').innerHTML = `🏆 ${data.winners[0].name} (ካርቴላ ${data.winners[0].cardNum}) አሸንፏል`; 
+        // አንድ ሰው ብቻ ካሸነፈ
+        document.getElementById('winner-text').innerHTML = `${data.winners[0].name} #${data.winners[0].cardNum} has won this round`; 
     } else { 
-        const names = data.winners.map(w => w.name).join(', ');
-        document.getElementById('winner-text').innerHTML = `🏆 ${names} አሸንፈዋል!`; 
+        // ከአንድ በላይ ሰዎች ካሸነፉ
+        document.getElementById('winner-text').innerHTML = `${totalWinners} ተጫዋቾች አሸንፈዋል!<br><span style="font-size:14px; color:#cbd5e1; font-weight:normal; margin-top:5px; display:block;">${winnerNamesList}</span>`; 
     }
     
     if (isMeWinner) { 
-        document.getElementById('winner-text').innerHTML = `🎉 አንተ አሸንፈሃል! 🎉`; 
+        document.getElementById('winner-text').innerHTML = `🎉 አንተ አሸንፈሃል! 🎉<br><span style="font-size:14px; color:#cbd5e1; font-weight:normal; margin-top:5px; display:block;">${winnerNamesList}</span>`; 
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#facc15', '#3b82f6', '#10b981', '#ef4444'] }); 
         setTimeout(() => { confetti({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0 } }); confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1 } }); }, 250); 
     }
@@ -496,7 +501,7 @@ socket.on('game_over', (data) => {
     const container = document.getElementById('winning-card-container'); container.innerHTML = '';
     data.winners.forEach(winInfo => {
         const winningCard = winInfo.cardNum; const cols = generateCardLayout(winningCard); const calledNumbersArray = data.calledNumbers || []; const prizeAmount = winInfo.prize !== undefined ? winInfo.prize : data.prizePerWinner;
-        let html = `<div class="winning-card-wrapper"><div class="winner-name">${winInfo.name} - ${prizeAmount} ETB (BOARD ${winningCard})</div><div class="winning-matrix">`;
+        let html = `<div class="winning-card-wrapper"><div class="winner-name">${winInfo.name} #${winningCard} - ${prizeAmount} ETB</div><div class="winning-matrix">`;
         ['B','I','N','G','O'].forEach((l,i) => { const colors = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6']; html += `<div style="background:${colors[i]};color:#fff;text-align:center;font-weight:900;padding:4px;border-radius:4px;font-size:12px;">${l}</div>`; });
         for(let r = 0; r < 5; r++) { for(let c = 0; c < 5; c++) { const v = cols[c][r]; const isFree = v === 'FREE'; const isCalled = !isFree && calledNumbersArray.includes(v); const isWin = winInfo?.allLines?.some(line => { if(line.type === 'row') return line.index === r; if(line.type === 'col') return line.index === c; if(line.type === 'diag1') return r === c; if(line.type === 'diag2') return r === (4 - c); if(line.type === 'corners') return (r===0||r===4) && (c===0||c===4); return false; }); const isLastCall = (v === data.lastCall); let cls = 'winning-cell'; if (isWin) cls += ' highlight'; else if (isCalled) cls += ' called-cell'; if (isLastCall && isWin && !isFree) cls += ' last-call-blink'; html += `<div class="${cls}">${isFree ? 'FREE' : v}</div>`; } }
         html += `</div></div>`; container.innerHTML += html;
