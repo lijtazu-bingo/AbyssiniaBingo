@@ -118,6 +118,8 @@
             <div class="menu-item" onclick="switchPage('promo', this)"><i class="fas fa-tags"></i> Promo Codes</div>
             <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
             <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Giveaway</div>
+            <!-- ✅ Game History Restored -->
+            <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
             <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
         </div>
     </div>
@@ -164,7 +166,6 @@
                         </select>
                         <button class="btn btn-warning" id="auto-btn" onclick="toggleAuto()"><i class="fas fa-robot"></i> Auto: OFF</button>
                         
-                        <!-- ✅ Force Bot Win Button -->
                         <button class="btn btn-danger" id="force-win-btn" onclick="toggleForceWin()" style="margin-left: 10px; border: 2px solid #fff;"><i class="fas fa-bolt"></i> Force Bot Win</button>
                     </div>
                 </div>
@@ -234,10 +235,16 @@
                 </div>
             </div>
 
+            <!-- ✅ UPDATED REFERRALS PAGE -->
             <div id="page-referrals" class="page">
                 <div class="table-wrapper">
-                    <div class="table-header"><h3>Referral List</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i></button></div>
-                    <div class="table-responsive"><table><thead><tr><th>Inviter</th><th>New Player</th><th>Date</th><th>Bonus</th></tr></thead><tbody id="referral-table-body"></tbody></table></div>
+                    <div class="table-header"><h3>Referral Leaderboard (Top Inviters)</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i></button></div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Rank</th><th>Inviter Name</th><th>Total Users Invited</th><th>Total Bonus Earned</th><th>Invited Users List</th></tr></thead>
+                            <tbody id="referral-table-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -292,6 +299,14 @@
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Previous Giveaways</h3><button class="btn btn-primary btn-sm" onclick="loadGiveaways()"><i class="fas fa-sync"></i></button></div>
                     <div class="table-responsive"><table><thead><tr><th>Date</th><th>Amount</th><th>Total Users</th><th>Claimed</th><th>Status</th><th>Actions</th></tr></thead><tbody id="giveaway-table-body"></tbody></table></div>
+                </div>
+            </div>
+
+            <!-- ✅ RESTORED GAME HISTORY PAGE -->
+            <div id="page-history" class="page">
+                <div class="table-wrapper">
+                    <div class="table-header"><h3>Game History & Logs</h3><button class="btn btn-primary btn-sm" onclick="loadGameHistory()"><i class="fas fa-sync"></i></button></div>
+                    <div class="table-responsive"><table><thead><tr><th>Date</th><th>Winners</th><th>Total Prize</th><th>Players</th></tr></thead><tbody id="history-table-body"></tbody></table></div>
                 </div>
             </div>
 
@@ -414,7 +429,7 @@ function switchPage(pageId, element) {
     if (element) element.classList.add('active');
     if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
     
-    const titles = { game: 'Game Control', dashboard: 'Dashboard', bots: 'Bot Management', referrals: 'Referrals', users: 'Users', deposits: 'Deposits', withdrawals: 'Withdrawals', promo: 'Promo Codes', broadcast: 'Broadcast', giveaway: 'Giveaway', settings: 'Settings' };
+    const titles = { game: 'Game Control', dashboard: 'Dashboard', bots: 'Bot Management', referrals: 'Referrals', users: 'Users', deposits: 'Deposits', withdrawals: 'Withdrawals', promo: 'Promo Codes', broadcast: 'Broadcast', giveaway: 'Giveaway', history: 'Game History', settings: 'Settings' };
     document.getElementById('page-title').innerText = titles[pageId] || 'Admin';
 
     if (pageId === 'game') { startGameStatusPolling(); loadPendingTransactions(); }
@@ -427,6 +442,7 @@ function switchPage(pageId, element) {
     else if (pageId === 'promo') loadPromoCodes();
     else if (pageId === 'broadcast') loadBroadcasts();
     else if (pageId === 'giveaway') loadGiveaways();
+    else if (pageId === 'history') loadGameHistory();
     else if (pageId === 'settings') loadSettings();
 
     if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
@@ -481,13 +497,11 @@ async function loadGameStatus() {
             const plist = document.getElementById('active-players-list');
             if (d.data.takenCardsDetails) {
                 const playerMap = new Map();
-                
                 Object.entries(d.data.takenCardsDetails).forEach(([cardNum, data]) => {
                     if (!playerMap.has(data.userId)) playerMap.set(data.userId, { name: data.userName, isBot: data.isBot, cards: [] });
                     playerMap.get(data.userId).cards.push(cardNum);
                 });
 
-                // ✅ Real ተጫዋቾች መጀመሪያ እንዲታዩ (Sorting)
                 const sortedPlayers = Array.from(playerMap.entries()).sort((a, b) => {
                     if (a[1].isBot === b[1].isBot) return 0;
                     return a[1].isBot ? 1 : -1;
@@ -498,7 +512,6 @@ async function loadGameStatus() {
                     let bgColor = info.isBot ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)';
                     let borderColor = info.isBot ? 'var(--blue)' : 'var(--primary)';
                     let botBadge = info.isBot ? '<span style="font-size:10px; background:var(--blue); color:#fff; padding:1px 5px; border-radius:10px; margin-left:5px;">BOT</span>' : '';
-                    
                     html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:160px;">
                         <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}>
                             <i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}
@@ -532,7 +545,6 @@ async function toggleForceWin() {
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
 function generateCardLayout(cn) { const cols = [[], [], [], [], []]; const seedBase = cn * 100; for (let c = 0; c < 5; c++) { const min = c * 15 + 1, max = c * 15 + 15; const avail = []; for (let n = min; n <= max; n++) avail.push(n); const seed = seedBase + c; const rand = mulberry32(seed); for (let i = avail.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [avail[i], avail[j]] = [avail[j], avail[i]]; } cols[c] = avail.slice(0, 5); } cols[2][2] = 'FREE'; return cols; }
 
-// ✅ አዲስ የተጨመረ: ከ Live Game Control ላይ በቀጥታ ካርቴላ ለማየት
 async function viewCardsDirect(userId, userName) {
     const modalBody = document.getElementById('cards-modal-body');
     document.getElementById('cards-modal-title').innerText = `${userName}'s Cards`;
@@ -610,15 +622,58 @@ function renderPlayers(players) {
 }
 function filterPlayers() { const q = document.getElementById('player-search').value.toLowerCase(); renderPlayers(allPlayersData.filter(u => u.name?.toLowerCase().includes(q) || u.id.includes(q))); }
 
+// ✅ UPDATED REFERRALS LOGIC (Sorted & Detailed)
 async function loadReferrals() {
-    const tbody = document.getElementById('referral-table-body'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    const tbody = document.getElementById('referral-table-body'); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     try {
         const d = await apiFetch('/api/admin/referrals');
         if (d.success) {
-            tbody.innerHTML = ''; if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No referrals yet.</td></tr>';
-            d.data.forEach(r => { tbody.innerHTML += `<tr><td><span class="user-link" onclick="fetchAndOpenPlayer('${r.referrer_id}')">${escapeHtml(r.referrer_name)}</span></td><td><span class="user-link" onclick="fetchAndOpenPlayer('${r.new_user_id}')">${escapeHtml(r.new_user_name)}</span></td><td>${new Date(r.created_at).toLocaleDateString()}</td><td style="color:var(--success);">30 + 20 ETB</td></tr>`; });
+            tbody.innerHTML = '';
+            if(d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No referrals yet.</td></tr>'; return; }
+
+            // Group by referrer
+            const referrers = {};
+            d.data.forEach(r => {
+                if(!referrers[r.referrer_id]) {
+                    referrers[r.referrer_id] = { name: r.referrer_name, count: 0, bonus: 0, users: [] };
+                }
+                referrers[r.referrer_id].count += 1;
+                referrers[r.referrer_id].bonus += 50; // 30 for inviter + 20 for new user (or just track 30 if backend does)
+                referrers[r.referrer_id].users.push(r.new_user_name);
+            });
+
+            // Sort by count descending
+            const sorted = Object.values(referrers).sort((a, b) => b.count - a.count);
+            let medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]; 
+
+            sorted.forEach((r, i) => {
+                let usersList = r.users.join(', ');
+                tbody.innerHTML += `<tr>
+                    <td style="font-size:20px;">${medals[i] || (i+1)}</td>
+                    <td style="font-weight:bold; color:var(--blue); cursor:pointer;" onclick="fetchAndOpenPlayer('${r.referrer_id}')">${escapeHtml(r.name)}</td>
+                    <td style="font-weight:bold; color:var(--gold);">${r.count} Users</td>
+                    <td style="font-weight:bold; color:var(--success);">${r.bonus} ETB</td>
+                    <td><div style="font-size:12px; color:var(--text-muted); max-height:60px; overflow-y:auto;">${escapeHtml(usersList)}</div></td>
+                </tr>`;
+            });
         }
-    } catch(e) {}
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; }
+}
+
+// ✅ RESTORED GAME HISTORY LOGIC
+async function loadGameHistory() {
+    const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const d = await apiFetch('/api/admin/game-history');
+        if (d.success) {
+            tbody.innerHTML = '';
+            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No games played.</td></tr>';
+            d.data.forEach(g => {
+                let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 <span class="user-link" onclick="fetchAndOpenPlayer('${w.id}')">${escapeHtml(w.name)}</span>`).join('<br>') : 'No Winner';
+                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td>${winnersHtml}</td><td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td><td>${g.totalPlayers}</td></tr>`;
+            });
+        }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading game history</td></tr>'; }
 }
 
 async function loadDashboardData() {
