@@ -191,7 +191,7 @@ let gameTimerInterval = null, callInterval = null, autoRestartTimer = null, botS
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
 const CARD_PRICE = 10, DERASH_PER_CARD = 8;
 
-// ✅ ሮቦችን በየ 5 ሰከንዱ ቀስ በቀስ ማስገባት
+// ✅ የተስተካከለው የሮቦች ማስገቢያ (በሰዓቱ መጠን መሰረት በራስ-ሰር ይስተካከላል)
 function startBotSpawning() {
     if (!gameState.settings.botEnabled) return;
     if (botSpawnInterval) clearInterval(botSpawnInterval);
@@ -207,40 +207,41 @@ function startBotSpawning() {
         finalBotNames.push(name);
     }
 
-    // በየ 5 ሰከንዱ 3 ሮቦች ይገባሉ
+    // ሮቦች በጨዋታ ሰዓት (Countdown) ውስጥ በሙሉ እንዲገቡ ፍጥነቱን ማስላት (ከመጨረሻው 3 ሰከንድ በፊት ጨርሰው እንዲያበቁ)
+    const timeToSpawn = (gameState.settings.countdownTime || 50) * 1000 - 3000;
+    const intervalMs = Math.max(50, Math.floor(timeToSpawn / targetBots)); 
+
     botSpawnInterval = setInterval(() => {
         if (gameState.phase !== 'countdown' || spawnedCount >= targetBots) {
             clearInterval(botSpawnInterval);
             return;
         }
 
-        for(let b=0; b<3; b++) {
-            if (spawnedCount >= targetBots) break;
-            const availableCards = [];
-            for (let i = 1; i <= gameState.settings.maxCards; i++) {
-                if (!gameState.takenCards[i]) availableCards.push(i);
-            }
-            if (availableCards.length === 0) break;
-
-            const cardNum = availableCards[Math.floor(Math.random() * availableCards.length)];
-            const botName = finalBotNames[spawnedCount];
-            const botId = `bot_${Date.now()}_${spawnedCount}`;
-
-            gameState.takenCards[cardNum] = { userId: botId, isBot: true, botName: botName };
-            
-            const cardCols = getCardCols(cardNum);
-            cardCols.forEach(col => {
-                col.forEach(num => {
-                    if (num !== 'FREE') {
-                        if (!gameState.numberToCardsMap[num]) gameState.numberToCardsMap[num] = new Set();
-                        gameState.numberToCardsMap[num].add(cardNum);
-                    }
-                });
-            });
-            spawnedCount++;
+        const availableCards = [];
+        for (let i = 1; i <= gameState.settings.maxCards; i++) {
+            if (!gameState.takenCards[i]) availableCards.push(i);
         }
+        if (availableCards.length === 0) return clearInterval(botSpawnInterval);
 
-        // ✅ የተጫዋች ቁጥር ስሌት፡ የሮቦች ብዛት + የተጫዋቾች ካርቴላ
+        const cardNum = availableCards[Math.floor(Math.random() * availableCards.length)];
+        const botName = finalBotNames[spawnedCount];
+        const botId = `bot_${Date.now()}_${spawnedCount}`;
+
+        gameState.takenCards[cardNum] = { userId: botId, isBot: true, botName: botName };
+        
+        const cardCols = getCardCols(cardNum);
+        cardCols.forEach(col => {
+            col.forEach(num => {
+                if (num !== 'FREE') {
+                    if (!gameState.numberToCardsMap[num]) gameState.numberToCardsMap[num] = new Set();
+                    gameState.numberToCardsMap[num].add(cardNum);
+                }
+            });
+        });
+
+        spawnedCount++;
+
+        // የተጫዋች ቁጥር ስሌት፡ የገቡት ሮቦች + የተጫዋቾች ካርቴላ
         const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length;
         const currentFake = Math.floor((spawnedCount / targetBots) * gameState.settings.visualPlayers);
         const totalPlayersDisplay = currentFake + realCardsCount;
@@ -251,7 +252,7 @@ function startBotSpawning() {
             totalCards: Object.keys(gameState.takenCards).length 
         });
 
-    }, 5000); // 5000 ms = 5 ሰከንድ
+    }, intervalMs); 
 }
 
 /* ─── ADMIN & API ─── */
