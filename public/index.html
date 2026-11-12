@@ -251,7 +251,6 @@ body { background: var(--bg-color); color: var(--text-color); height: 100vh; dis
   <button class="nav-item" id="nav-btn-profile" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span>PROFILE</span></button>
 </nav>
 
-<!-- ✅ የ Game Over አሸናፊ ማሳያ (የጊዜ ቆጣሪው አለው) -->
 <div id="game-over-overlay" class="hidden">
   <div class="game-over-title">🏆 BINGO! 🏆</div>
   <div class="winner-text" id="winner-text">--</div>
@@ -277,7 +276,6 @@ try {
         userProfile.id = String(tgUser.id);
         localStorage.setItem('tg_user_profile', JSON.stringify(userProfile));
 
-        // ✅ የግብዣ ሊንክ ማረጋገጫ
         const urlParams = new URLSearchParams(window.location.search);
         const refId = urlParams.get('start') || tg?.initDataUnsafe?.start_param;
         if (refId && refId !== userProfile.id) {
@@ -345,7 +343,12 @@ function updateCardClickability() {
 function updateCardCounter() { const counter = document.getElementById('selected-count-display'); if (counter) counter.innerText = `የተመረጡ ካርቴላዎች፦ ${selectedCards.size}`; }
 function updateWalletUI() { document.getElementById('wallet-display').innerText = currentWallet.toFixed(2); document.getElementById('wallet-page-val').innerText = currentWallet.toFixed(2); document.getElementById('win-wallet-display').innerText = currentWinWallet.toFixed(2); updateCardClickability(); }
 function updateProfileUI() { document.getElementById('profile-name-val').innerText = userProfile.name; document.getElementById('profile-id-val').innerText = userProfile.id; document.getElementById('profile-games-val').innerText = userTotalGames; document.getElementById('profile-wins-val').innerText = userTotalWins; document.getElementById('profile-phone-val').innerText = userPhone || "አልተመዘገበም"; document.getElementById('invite-link-input').value = 'https://t.me/Ethiobongo_bot?start=' + userProfile.id; }
-function updateLiveStats(totalCards) { document.getElementById('players-val-top').innerText = totalCards; document.getElementById('derash-val-top').innerText = totalCards * 8; document.getElementById('players-val').innerText = totalCards; document.getElementById('derash-val').innerText = totalCards * 8; }
+function updateLiveStats(totalPlayers) { 
+    document.getElementById('players-val-top').innerText = totalPlayers; 
+    document.getElementById('derash-val-top').innerText = totalPlayers * 8; // Assumes average 2 cards/player
+    document.getElementById('players-val').innerText = totalPlayers; 
+    document.getElementById('derash-val').innerText = totalPlayers * 8; 
+}
 
 async function loadWallet() {
     const now = Date.now(); if ((now - _lastWalletLoad) < WALLET_LOAD_MIN_INTERVAL) return; _lastWalletLoad = now;
@@ -471,7 +474,6 @@ socket.on('new_number_called', (data) => { calledNumbersSet.add(data.number); up
 socket.on('daily_bonus_claimed', (data) => { showFooterNotification(`🎉 የዕለት ቦነስ ${data.amount} ብር አግኝተዋል!`); });
 socket.on('reset_game', () => { selectedCards.clear(); calledNumbersSet.clear(); gamePhase = 'waiting'; _liveCardsRendered.clear(); initGrid(); switchTab('ticket'); document.getElementById('game-over-overlay').classList.add('hidden'); document.getElementById('current-call-display').innerText = '--'; document.getElementById('call-count').innerText = '0'; document.getElementById('recent-calls-container').innerHTML = ''; updatePreviewUI(); updateCardCounter(); loadWallet(); });
 
-// ✅ የተስተካከለው የ Game Over ክፍል (የአሸናፊውን ስም የሚያሳይ)
 socket.on('game_over', (data) => { 
     if (isModalShown) return; isModalShown = true;
     const totalWinners = data.winners.length; 
