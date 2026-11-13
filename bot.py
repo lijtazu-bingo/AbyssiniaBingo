@@ -91,6 +91,7 @@ TEXTS = {
         'share_contact': "📱 ስልክ ቁጥሬን አጋራ", 'already_registered': "✅ እርስዎ አስቀድመው ተመዝግበዋል!",
         'registered': "✅ <b>በተሳካ ሁኔታ ተመዝግበዋል!</b>\n📱 ስልክ ቁጥርዎ፦ <code>{phone}</code>\n\n🎉 ወደ Abyssinia Bingo መተግበሪያ በደህና መጡ!\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
         'welcome_back': "🎉 <b>ወደ Abyssinia Bingo መተግበሪያ በደህና መጡ!</b>\n\n👇 ከታች ያለውን አማራጭ ይምረጡ",
+        'registration_required': "⚠️ <b>እባክዎ መጀመሪያ ይመዝገቡ!</b>\n\nለመጫወት ወይም ሌሎች አገልግሎቶችን ለመጠቀም በመጀመሪያ የስልክ ቁጥርዎን ማጋራት አለብዎት።",
         
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 ገቢ (Deposit)", 'menu_withdraw': "💸 ወጪ (Withdraw)",
         'menu_balance': "🏦 ባላንስ (Balance)", 'menu_invite': "👥 ግብዣ (Invite)", 'menu_history': "📜 ታሪክ (History)",
@@ -183,6 +184,7 @@ TEXTS = {
         'share_contact': "📱 Share Phone Number", 'already_registered': "✅ You are already registered!",
         'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abyssinia Bingo App!\n\n👇 Choose an option below",
         'welcome_back': "🎉 <b>Welcome to the Abyssinia Bingo App!</b>\n\n👇 Choose an option below",
+        'registration_required': "⚠️ <b>Please register first!</b>\n\nTo play or use other services, you must share your phone number first.",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Deposit", 'menu_withdraw': "💸 Withdraw",
         'menu_balance': "🏦 Balance", 'menu_invite': "👥 Invite", 'menu_history': "📜 History",
         'menu_support': "💬 Support", 'menu_register': "🔢 Register", 'menu_lang': "🌐 Language",
@@ -264,6 +266,7 @@ You win by completing any of the following:
         'share_contact': "📱 ቁጽሪ ተሌፎነይ ኣካፍል", 'already_registered': "✅ ተመዝጊብኩም ኢኹም!",
         'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abyssinia Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
         'welcome_back': "🎉 <b>እንቋዕ ናብ Abyssinia Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
+        'registration_required': "⚠️ <b>በጃኹም መጀመርታ ተመዝገቡ!</b>\n\nንምጽዋት ወይ ካልእ ኣገልግሎት ንምጥቃም መጀመርታ ቁጽሪ ተሌፎንኩም ከተካፍሉ ኣለኩም።",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 ኣታዊ (Deposit)", 'menu_withdraw': "💸 ወጻኢ (Withdraw)",
         'menu_balance': "🏦 ተረፍ (Balance)", 'menu_invite': "👥 ዕድመ (Invite)", 'menu_history': "📜 ታሪኽ (History)",
         'menu_support': "💬 ደገፍ (Support)", 'menu_register': "🔢 ምዝገባ (Register)", 'menu_lang': "🌐 ቋንቋ (Language)",
@@ -296,6 +299,7 @@ You win by completing any of the following:
         'share_contact': "📱 Lakkoofsa Bilbilaa Qoodi", 'already_registered': "✅ Duraan galmeeffamtanii jirtu!",
         'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abyssinia Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
         'welcome_back': "🎉 <b>Baga gara Abyssinia Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
+        'registration_required': "⚠️ <b>Maaloo duraan galmaa'aa!</b>\n\nTaphachuuf ykn tajaajila biraa fayyadamuuf duraan lakkoofsa bilbila keessan qooduu qabdu.",
         'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Galii (Deposit)", 'menu_withdraw': "💸 Baasii (Withdraw)",
         'menu_balance': "🏦 Hajaa (Balance)", 'menu_invite': "👥 Affeera (Invite)", 'menu_history': "📜 Seenaa (History)",
         'menu_support': "💬 Deeggarsa (Support)", 'menu_register': "🔢 Galmee (Register)", 'menu_lang': "🌐 Afaan (Language)",
@@ -354,6 +358,7 @@ async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ─── Commands ───
+# ✅✅✅ የተስተካከለ: START — መጀመሪያ ስልክ እንዲያጋራ ማስገደድ ✅✅✅
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -363,12 +368,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
+        # ✅ Referrer ለመመዝገብ
         if context.args and len(context.args) > 0:
             referrer_id = context.args[0]
             if referrer_id != str(user.id):
                 context.user_data['pending_referrer'] = referrer_id
         return
     
+    # ✅ Referral (ስልክ ስላለው)
     if context.args and len(context.args) > 0 and not user.is_bot:
         referrer_id = context.args[0]
         if referrer_id != str(user.id):
@@ -385,6 +392,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    phone, _ = get_user_data(user.id)
+    
+    # ✅ ስልክ ከሌለው መጫወት አይችልም
+    if not phone:
+        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(get_text(user.id, 'registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        return
+
     _, lang = get_user_data(user.id)
     webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}" 
     web_app_btn = InlineKeyboardButton(text=get_text(user.id, 'play_inline_btn'), web_app=WebAppInfo(url=webapp_url_with_lang))
@@ -393,6 +409,7 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
+# ✅✅✅ የተስተካከለ: CONTACT — ስም መላክ + Referral ማስተናገድ ✅✅✅
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
@@ -426,6 +443,14 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ─── Deposit Flow ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    phone, _ = get_user_data(user.id)
+    
+    if not phone:
+        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(get_text(user.id, 'registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        return ConversationHandler.END
+
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
     await update.message.reply_text(get_text(user.id, 'dep_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
     return DEPOSIT_AMOUNT
@@ -494,6 +519,14 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
 # ─── Withdraw Flow ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    phone, _ = get_user_data(user.id)
+    
+    if not phone:
+        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(get_text(user.id, 'registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        return ConversationHandler.END
+
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr (Self)", callback_data="wd_telebirr_self")],
         [InlineKeyboardButton("📱 TeleBirr (Other)", callback_data="wd_telebirr_other")],
@@ -512,7 +545,6 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
     await query.edit_message_text(get_text(user.id, 'wd_enter_amt'), parse_mode='HTML')
     return WITHDRAW_AMOUNT
 
-# ✅✅✅ የተስተካከለ: WITHDRAW AMOUNT VALIDATION (Win balance check) ✅✅✅
 async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     
@@ -630,6 +662,14 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     is_history = any(text == TEXTS[l].get('menu_history') for l in TEXTS)
     is_rank = any(text == TEXTS[l].get('menu_rank') for l in TEXTS)
     is_rules = any(text == TEXTS[l].get('menu_rules') for l in TEXTS)
+
+    # ✅ ስልክ ከሌለው ማንኛውንም አዝራር ከመጫኑ በፊት መመዝገብ አለበት
+    phone, _ = get_user_data(user.id)
+    if not phone and not is_register and not is_lang:
+        keyboard = [[KeyboardButton(text=t('share_contact'), request_contact=True)]]
+        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(t('registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        return
 
     if is_play:
         webapp_url_with_lang = f"{WEBAPP_URL}?lang={lang}"
