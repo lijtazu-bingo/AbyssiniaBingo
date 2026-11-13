@@ -56,7 +56,6 @@ def save_user(user_id, username, first_name, phone=None, lang=None):
     else:
         if phone: c.execute("UPDATE users SET phone = ? WHERE user_id = ?", (phone, str(user_id)))
         if lang: c.execute("UPDATE users SET lang = ? WHERE user_id = ?", (lang, str(user_id)))
-        # ✅ ስምን ሁልጊዜ ማዘመን
         if first_name:
             c.execute("UPDATE users SET first_name = ? WHERE user_id = ?", (first_name, str(user_id)))
     conn.commit()
@@ -122,6 +121,7 @@ TEXTS = {
         'lang_choose': "🌐 <b>እባክዎ ቋንቋ ይምረጡ፦</b>", 'lang_changed': "✅ ቋንቋ ወደ አማርኛ ተቀይሯል!",
         'invalid_amt': "❌ እባክዎ ትክክለኛ ቁጥር ያስገቡ።", 'min_wd': "❌ ዝቅተኛው የወጭ መጠን 100 ETB ነው።",
         'min_dep': "❌ ዝቅተኛው የገቢ መጠን 10 ETB ነው።", 'invalid_phone': "❌ ትክክለኛ ስልክ ቁጥር ያስገቡ።", 'cancelled': "❌ ሂደቱ ተሰርዟል።",
+        'insufficient_win': "❌ <b>በቂ የWin Wallet ባላንስ የለዎትም!</b>\n\n🟡 ያለዎት Win Balance፦ <b>{win} ETB</b>\n⚠️ ማውጣት የሚችሉት በWin Wallet ውስጥ ያለውን ገንዘብ ብቻ ነው።",
         'gw_success': "🎉 <b>እንኳን ደስ አለዎት!</b>\n\nየ {amount} ETB ቦነስ በተሳካ ሁኔታ አግኝተዋል። በ Play Walletዎ ውስጥ ይገኛል።",
         'gw_expired': "⏳ <b>ይቅርታ!</b>\n\nይህ ቦነስ ጊዜው አልፎበታል ወይም ተጠቃሚዎች ሙሉውን ወስደዋል። በሚቀጥለው ጊዜ ይሞክሩ!",
         'gw_claimed': "⚠️ ይህን ቦነስ አስቀድመው አግኝተዋል።",
@@ -204,6 +204,7 @@ TEXTS = {
         'lang_choose': "🌐 <b>Choose a language:</b>", 'lang_changed': "✅ Language changed to English!",
         'invalid_amt': "❌ Please enter a valid number.", 'min_wd': "❌ Minimum withdrawal is 100 ETB.",
         'min_dep': "❌ Minimum deposit is 10 ETB.", 'invalid_phone': "❌ Please enter a valid phone number.", 'cancelled': "❌ Process cancelled.",
+        'insufficient_win': "❌ <b>Insufficient Win Wallet balance!</b>\n\n🟡 Your Win Balance: <b>{win} ETB</b>\n⚠️ You can only withdraw from your Win Wallet.",
         'gw_success': "🎉 <b>Congratulations!</b>\n\nYou have successfully claimed {amount} ETB bonus. It is now in your Play Wallet.",
         'gw_expired': "⏳ <b>Sorry!</b>\n\nThis giveaway has expired or all bonuses have been claimed. Try again next time!",
         'gw_claimed': "⚠️ You already claimed this bonus.", 'gw_error': "❌ Error occurred. Try again later.",
@@ -284,6 +285,7 @@ You win by completing any of the following:
         'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>", 'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
         'invalid_amt': "❌ ትኽክለኛ ቁጽሪ ኣእትዉ።", 'min_wd': "❌ ዝቕነይ ወጻኢ 100 ETB እዩ።",
         'min_dep': "❌ ዝቕነይ ኣታዊ 10 ETB እዩ።", 'invalid_phone': "❌ ትኽክለኛ ቁጽሪ ተሌፎን ኣእትዉ።", 'cancelled': "❌ መስርሕ ተሰሪዙ።",
+        'insufficient_win': "❌ <b>በቂ የWin Wallet ባላንስ የለዎትም!</b>\n\n🟡 ያለዎት Win Balance፦ <b>{win} ETB</b>\n⚠️ ማውጣት የሚችሉት በWin Wallet ውስጥ ያለውን ገንዘብ ብቻ ነው።",
         'gw_success': "🎉 <b>እንቋዕ ደስ ኣለኩም!</b>\n\nናይ {amount} ETB ቦነስ ብዓወት ረኺብኩም። ኣብ Play Walletኩም ይርከብ።",
         'gw_expired': "⏳ <b>ይቕሬታ!</b>\n\nእዚ ቦነስ ግዜኡ ሓሊፉ ወይ ተጠቀምቲ ኩሉ ወሲዶምዎ። ኣብ ዝቕጽል ግዜ ፈትኑ!",
         'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።",
@@ -315,6 +317,7 @@ You win by completing any of the following:
         'lang_choose': "🌐 <b>Afaan filadhaa:</b>", 'lang_changed': "✅ Afaan gara Afaan Oromootti jijjiirameera!",
         'invalid_amt': "❌ Lakkoofsa sirrii galchaa.", 'min_wd': "❌ Baasiin xiqqaan 100 ETB dha.",
         'min_dep': "❌ Galiin xiqqaan 10 ETB dha.", 'invalid_phone': "❌ Lakkoofsa bilbila sirrii galchaa.", 'cancelled': "❌ Adeemsi haqameera.",
+        'insufficient_win': "❌ <b>Hajaa Win Wallet gahaa hin qabdan!</b>\n\n🟡 Hajaa Win Wallet keessan: <b>{win} ETB</b>\n⚠️ Maallaqa Win Wallet keessa jiru qofa baasuu dandeessu.",
         'gw_success': "🎉 <b>Baga gammaddan!</b>\n\nBoonsii {amount} ETB milkaa'inaan argattan. Play Wallet keessan keessa jira.",
         'gw_expired': "⏳ <b>Dhiifama!</b>\n\nBoonsiin kun yeroon isaa darbeera ykn hunda fudhatameera. Yeroo biraa yaalaa!",
         'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa.",
@@ -351,7 +354,6 @@ async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ─── Commands ───
-# ✅✅✅ የተስተካከለ: START — ስምን እና referral በትክክል ማስተናገድ ✅✅✅
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -361,14 +363,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
-        # ✅ Referrer ለመመዝገብ
         if context.args and len(context.args) > 0:
             referrer_id = context.args[0]
             if referrer_id != str(user.id):
                 context.user_data['pending_referrer'] = referrer_id
         return
     
-    # ✅ Referral (ስልክ ስላለው)
     if context.args and len(context.args) > 0 and not user.is_bot:
         referrer_id = context.args[0]
         if referrer_id != str(user.id):
@@ -376,7 +376,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 requests.post(f"{SERVER_API_URL}/api/user/referral", json={
                     "new_user_id": str(user.id), 
                     "referrer_id": referrer_id,
-                    "new_user_name": user.first_name  # ✅ ስምን መላክ
+                    "new_user_name": user.first_name
                 }, timeout=5)
             except Exception as e:
                 logger.error(f"Referral error: {e}")
@@ -393,7 +393,6 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
-# ✅✅✅ የተስተካከለ: CONTACT — ስም መላክ + Referral ማስተናገድ ✅✅✅
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
@@ -401,7 +400,6 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = contact.phone_number
         save_user(user.id, user.username, user.first_name, phone)
         
-        # ✅ ስምን ወደ ሰርቨር መላክ
         try: 
             requests.post(f"{SERVER_API_URL}/api/user/phone", json={
                 "user_id": str(user.id), 
@@ -411,14 +409,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Phone save error: {e}")
         
-        # ✅ Pending referrer ካለ ማስተናገድ
         pending_referrer = context.user_data.get('pending_referrer')
         if pending_referrer and pending_referrer != str(user.id):
             try:
                 requests.post(f"{SERVER_API_URL}/api/user/referral", json={
                     "new_user_id": str(user.id),
                     "referrer_id": pending_referrer,
-                    "new_user_name": user.first_name  # ✅ ስምን መላክ
+                    "new_user_name": user.first_name
                 }, timeout=5)
                 context.user_data.pop('pending_referrer', None)
             except Exception as e:
@@ -515,8 +512,11 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
     await query.edit_message_text(get_text(user.id, 'wd_enter_amt'), parse_mode='HTML')
     return WITHDRAW_AMOUNT
 
+# ✅✅✅ የተስተካከለ: WITHDRAW AMOUNT VALIDATION (Win balance check) ✅✅✅
 async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    
+    # 1. የቁጥር ማረጋገጫ
     try:
         amount = float(update.message.text)
         if amount < 100:
@@ -525,6 +525,30 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
     except:
         await update.message.reply_text(get_text(user.id, 'invalid_amt'))
         return WITHDRAW_AMOUNT
+    
+    # 2. ✅ የ Win Wallet ባላንስ ማረጋገጫ
+    win_balance = 0.0
+    try:
+        res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=5)
+        if res.ok:
+            data = res.json().get("data", {})
+            win_balance = float(data.get('win_balance', 0))
+        else:
+            await update.message.reply_text("❌ ባላንስዎን ማረጋገጥ አልተቻለም። እባክዎ በኋላ ይሞክሩ።")
+            return WITHDRAW_AMOUNT
+    except Exception as e:
+        logger.error(f"Balance check error: {e}")
+        await update.message.reply_text("❌ ሰርቨር ስህተት። እባክዎ በኋላ ይሞክሩ።")
+        return WITHDRAW_AMOUNT
+
+    if amount > win_balance:
+        await update.message.reply_text(
+            get_text(user.id, 'insufficient_win', win=f"{win_balance:.2f}"), 
+            parse_mode='HTML'
+        )
+        return WITHDRAW_AMOUNT
+
+    # 3. ቁራጭ ማስቀመጥ እና ወደ ቀጣዩ ደረጃ መሄድ
     context.user_data['withdraw_amount'] = amount
     method = context.user_data.get('withdraw_method', '')
     if method == 'Telebirr (Self)':
