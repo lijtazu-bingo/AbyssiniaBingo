@@ -113,7 +113,6 @@ const Giveaway = mongoose.model('Giveaway', GiveawaySchema);
 const Broadcast = mongoose.model('Broadcast', BroadcastSchema);
 const PromoCode = mongoose.model('PromoCode', PromoCodeSchema);
 
-// ✅✅✅ አዲስ የተጨመረ: ወደ ተጠቃሚ የቴሌግራም መልእክት የመላኪያ helper ✅✅✅
 async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
     try {
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -132,7 +131,6 @@ async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
         return false;
     }
 }
-// ✅✅✅ መጨረሻ ✅✅✅
 
 function verifyTelegramInitData(initData, botToken) {
     try {
@@ -388,16 +386,42 @@ app.get('/api/admin/referrals', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅✅✅ የተስተካከለ: የተጋባዡ ስም እንዲቀመጥ ✅✅✅
+app.post('/api/user/phone', async (req, res) => {
+    try {
+        const { user_id, phone, name } = req.body;
+        if (!user_id || !phone) return res.status(400).json({ success: false, error: 'Missing fields' });
+        await User.findOneAndUpdate(
+            { id: String(user_id) },
+            { $set: { phone: phone, name: name || 'Player', registered: true } },
+            { upsert: true, new: true }
+        );
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// ✅✅✅ የተስተካከለ: REFERRAL — የተጋባዡ ስም እንዲቀመጥ ✅✅✅
 app.post('/api/user/referral', async (req, res) => {
     try {
-        const { new_user_id, referrer_id } = req.body;
+        const { new_user_id, referrer_id, new_user_name } = req.body;
         if (!new_user_id || !referrer_id || new_user_id === referrer_id) return res.status(400).json({ success: false, error: 'Invalid referral' });
+        
         const newUser = await User.findOne({ id: String(new_user_id) });
         if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' });
+        
         const referrer = await User.findOne({ id: String(referrer_id) });
         if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
+        
+        // ✅ ለጋባዡ 30 ብር መጨመር
         await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
-        await User.findOneAndUpdate({ id: String(new_user_id) }, { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id) } }, { upsert: true });
+        
+        // ✅ የተጋባዡን ስም እና referred_by ማስቀመጥ
+        await User.findOneAndUpdate(
+            { id: String(new_user_id) },
+            { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id), name: new_user_name || 'Player' } },
+            { upsert: true }
+        );
+        
         io.to(`user_${referrer_id}`).emit('wallet_updated', {});
         io.to(`user_${new_user_id}`).emit('wallet_updated', {});
         res.json({ success: true, message: 'Referral bonus applied' });
@@ -514,7 +538,6 @@ app.get('/api/admin/transactions', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅✅✅ የተስተካከለ: DEPOSIT APPROVE — ተጫዋቹ መልእክት ይደርሳል ✅✅✅
 app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'approved' } }, { new: true });
@@ -532,7 +555,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
             );
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {});
 
-            // ✅ ለተጫዋቹ የቴሌግራም መልእክት መላክ
             const bonusText = (totalToAdd > txn.amount) ? `\n🎁 <b>Double Deposit Bonus!</b> (${totalToAdd} ETB)` : '';
             const message = `✅ <b>የDeposit ጥያቄዎ ተፈቅዷል!</b>\n\n` +
                 `💰 <b>መጠን፦</b> ${txn.amount} ETB${bonusText}\n` +
@@ -543,7 +565,6 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
             await sendTelegramMessage(txn.user_id, message);
 
         } else if (txn.type === 'withdrawal') {
-            // (ለሌላ አማራጭ ከሆነ — withdrawal approve ሲደረግ ገንዘቡ ቀድሞ ተቀንሶ ነበር)
             const message = `✅ <b>የWithdraw ጥያቄዎ ተፈቅዷል!</b>\n\n` +
                 `💰 <b>መጠን፦</b> ${txn.amount} ETB\n` +
                 `📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n` +
@@ -558,9 +579,7 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
         res.status(500).json({ success: false, error: e.message });
     }
 });
-// ✅✅✅ መጨረሻ ✅✅✅
 
-// ✅✅✅ የተስተካከለ: DEPOSIT/WITHDRAWAL REJECT — ተጫዋቹ መልእክት ይደርሳል ✅✅✅
 app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     try {
         const txn = await Transaction.findOneAndUpdate({ id: req.params.id, status: 'pending' }, { $set: { status: 'rejected' } }, { new: true });
@@ -574,7 +593,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
             );
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {});
 
-            // ✅ ለተጫዋቹ የቴሌግራም መልእክት መላክ
             const message = `❌ <b>የWithdraw ጥያቄዎ ተከስሷል!</b>\n\n` +
                 `💰 <b>መጠን፦</b> ${txn.amount} ETB\n` +
                 `📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n\n` +
@@ -598,7 +616,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
         res.status(500).json({ success: false, error: e.message });
     }
 });
-// ✅✅✅ መጨረሻ ✅✅✅
 
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
@@ -635,7 +652,6 @@ app.delete('/api/admin/giveaways/:id', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅✅✅ አዲስ የተጨመረ: GAME HISTORY ENDPOINT ✅✅✅
 app.get('/api/admin/game-history', adminAuth, async (req, res) => {
     try {
         const history = await GameHistory.find({})
@@ -648,7 +664,6 @@ app.get('/api/admin/game-history', adminAuth, async (req, res) => {
         res.status(500).json({ success: false, error: e.message });
     }
 });
-// ✅✅✅ መጨረሻ ✅✅✅
 
 app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
     try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); }
@@ -752,13 +767,23 @@ app.delete('/api/wallet/history/clear', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅✅✅ የተስተካከለ: WITHDRAW REQUEST VALIDATION ✅✅✅
 app.post('/api/wallet/withdraw-request', async (req, res) => {
     try {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
+        
+        // ✅ ከ 100 በታች ከሆነ አይፈቀድም
         if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
-        if (!result) return res.status(400).json({ success: false, error: 'Insufficient balance' });
+        
+        // ✅ ከ win_balance በላይ ከሆነ አይፈቀድም
+        const result = await User.findOneAndUpdate(
+            { id: String(user.id), win_balance: { $gte: amt } }, 
+            { $inc: { win_balance: -amt } }, 
+            { new: true }
+        );
+        if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
+        
         const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
         io.to(`user_${user.id}`).emit('wallet_updated', {});
@@ -783,7 +808,6 @@ app.post('/api/bot/create-txn', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-// ✅ Giveaway Claim Endpoint
 app.post('/api/bot/giveaway-claim', async (req, res) => {
     try {
         const { giveaway_id, user_id } = req.body;

@@ -56,6 +56,9 @@ def save_user(user_id, username, first_name, phone=None, lang=None):
     else:
         if phone: c.execute("UPDATE users SET phone = ? WHERE user_id = ?", (phone, str(user_id)))
         if lang: c.execute("UPDATE users SET lang = ? WHERE user_id = ?", (lang, str(user_id)))
+        # ✅ ስምን ሁልጊዜ ማዘመን
+        if first_name:
+            c.execute("UPDATE users SET first_name = ? WHERE user_id = ?", (first_name, str(user_id)))
     conn.commit()
     conn.close()
 
@@ -342,28 +345,42 @@ def get_main_menu(user_id):
     ]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, is_persistent=True)
 
-# ✅ INTERRUPT HANDLER
 async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await handle_menu_buttons(update, context)
     return ConversationHandler.END
 
 # ─── Commands ───
+# ✅✅✅ የተስተካከለ: START — ስምን እና referral በትክክል ማስተናገድ ✅✅✅
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
+    
     phone, _ = get_user_data(user.id)
     if not phone:
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
+        # ✅ Referrer ለመመዝገብ
+        if context.args and len(context.args) > 0:
+            referrer_id = context.args[0]
+            if referrer_id != str(user.id):
+                context.user_data['pending_referrer'] = referrer_id
         return
-    args = context.args
-    if args and len(args) > 0 and not user.is_bot:
-        referrer_id = args[0]
+    
+    # ✅ Referral (ስልክ ስላለው)
+    if context.args and len(context.args) > 0 and not user.is_bot:
+        referrer_id = context.args[0]
         if referrer_id != str(user.id):
-            try: requests.post(f"{SERVER_API_URL}/api/user/referral", json={"new_user_id": str(user.id), "referrer_id": referrer_id}, timeout=5)
-            except: pass
+            try: 
+                requests.post(f"{SERVER_API_URL}/api/user/referral", json={
+                    "new_user_id": str(user.id), 
+                    "referrer_id": referrer_id,
+                    "new_user_name": user.first_name  # ✅ ስምን መላክ
+                }, timeout=5)
+            except Exception as e:
+                logger.error(f"Referral error: {e}")
+    
     await update.message.reply_text(get_text(user.id, 'welcome_back'), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
 async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -376,14 +393,37 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
+# ✅✅✅ የተስተካከለ: CONTACT — ስም መላክ + Referral ማስተናገድ ✅✅✅
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
         user = update.effective_user
         phone = contact.phone_number
         save_user(user.id, user.username, user.first_name, phone)
-        try: requests.post(f"{SERVER_API_URL}/api/user/phone", json={"user_id": str(user.id), "phone": phone, "name": user.first_name}, timeout=5)
-        except: pass
+        
+        # ✅ ስምን ወደ ሰርቨር መላክ
+        try: 
+            requests.post(f"{SERVER_API_URL}/api/user/phone", json={
+                "user_id": str(user.id), 
+                "phone": phone, 
+                "name": user.first_name
+            }, timeout=5)
+        except Exception as e:
+            logger.error(f"Phone save error: {e}")
+        
+        # ✅ Pending referrer ካለ ማስተናገድ
+        pending_referrer = context.user_data.get('pending_referrer')
+        if pending_referrer and pending_referrer != str(user.id):
+            try:
+                requests.post(f"{SERVER_API_URL}/api/user/referral", json={
+                    "new_user_id": str(user.id),
+                    "referrer_id": pending_referrer,
+                    "new_user_name": user.first_name  # ✅ ስምን መላክ
+                }, timeout=5)
+                context.user_data.pop('pending_referrer', None)
+            except Exception as e:
+                logger.error(f"Referral error: {e}")
+        
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
 # ─── Deposit Flow ───
@@ -607,7 +647,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     elif is_rules:
         await update.message.reply_text(t('rules_msg'), parse_mode='HTML')
 
-# ✅✅✅ የተስተካከለ: GIVEAWAY CLAIM CALLBACK (የተሻሻለ error handling) ✅✅✅
 async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -621,13 +660,11 @@ async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_
             timeout=10
         )
         
-        # ✅ HTTP status ፍተሻ
         if not response.ok:
             logger.error(f"Giveaway API HTTP {response.status_code}: {response.text[:200]}")
             await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
             return
         
-        # ✅ JSON parse ስህተት ከሆነ
         try:
             res = response.json()
         except ValueError:
@@ -657,7 +694,6 @@ async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_
     except Exception as e:
         logger.error(f"Giveaway claim error: {e}", exc_info=True)
         await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
-# ✅✅✅ የተስተካከለ መጨረሻ ✅✅✅
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.warning('Update "%s" caused error "%s"', update, context.error)
