@@ -84,6 +84,7 @@
     #admin-toast.show { opacity: 1; transform: translateY(0); }
     #admin-toast.error { background: var(--danger); color: #fff; }
     #mobile-menu-btn { display: none; background: transparent; border: none; color: var(--text); font-size: 20px; cursor: pointer; }
+    .notif-badge { background: var(--danger); color: white; border-radius: 10px; padding: 2px 8px; font-size: 10px; margin-left: auto; font-weight: bold; }
     @media (max-width: 768px) { #sidebar { position: absolute; left: -260px; height: 100vh; z-index: 100; } #sidebar.active { left: 0; } #mobile-menu-btn { display: block; } .stats-row { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -108,9 +109,9 @@
             <div class="menu-label">Main</div>
             <div class="menu-item active" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
             <div class="menu-item" onclick="switchPage('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users</div>
-            <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> Deposits</div>
-            <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals</div>
+            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users <span id="notif-users" class="notif-badge hidden">0</span></div>
+            <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> Deposits <span id="notif-deposits" class="notif-badge hidden">0</span></div>
+            <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals <span id="notif-withdrawals" class="notif-badge hidden">0</span></div>
             
             <div class="menu-label">System</div>
             <div class="menu-item" onclick="switchPage('bots', this)"><i class="fas fa-robot"></i> Bot Management</div>
@@ -118,7 +119,6 @@
             <div class="menu-item" onclick="switchPage('promo', this)"><i class="fas fa-tags"></i> Promo Codes</div>
             <div class="menu-item" onclick="switchPage('broadcast', this)"><i class="fas fa-bullhorn"></i> Broadcast</div>
             <div class="menu-item" onclick="switchPage('giveaway', this)"><i class="fas fa-gift"></i> Giveaway</div>
-            <!-- ✅ Game History Restored -->
             <div class="menu-item" onclick="switchPage('history', this)"><i class="fas fa-history"></i> Game History</div>
             <div class="menu-item" onclick="switchPage('settings', this)"><i class="fas fa-cog"></i> Settings</div>
         </div>
@@ -190,9 +190,17 @@
             </div>
 
             <div id="page-dashboard" class="page">
-                <div class="stats-row">
-                    <div class="stat-box"><div class="stat-box-title">NET REVENUE</div><div class="stat-box-value" id="stat-net-revenue">ETB 0.00</div></div>
+                <div class="stats-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
+                    <div class="stat-box"><div class="stat-box-title">NET REVENUE (ALL)</div><div class="stat-box-value" id="stat-net-revenue">ETB 0.00</div></div>
                     <div class="stat-box"><div class="stat-box-title">TOTAL PLAYERS</div><div class="stat-box-value" id="stat-unique-players">0</div></div>
+                    <div class="stat-box"><div class="stat-box-title">TODAY'S DEPOSIT</div><div class="stat-box-value green" id="daily-dep">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title">TODAY'S WITHDRAW</div><div class="stat-box-value" style="color:var(--danger)" id="daily-wd">ETB 0.00</div></div>
+                </div>
+                <div class="stats-row" style="grid-template-columns: repeat(4, 1fr); margin-bottom:20px;">
+                    <div class="stat-box"><div class="stat-box-title">WEEKLY DEPOSIT</div><div class="stat-box-value green" id="weekly-dep">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title">WEEKLY WITHDRAW</div><div class="stat-box-value" style="color:var(--danger)" id="weekly-wd">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title">MONTHLY DEPOSIT</div><div class="stat-box-value green" id="monthly-dep">ETB 0.00</div></div>
+                    <div class="stat-box"><div class="stat-box-title">MONTHLY WITHDRAW</div><div class="stat-box-value" style="color:var(--danger)" id="monthly-wd">ETB 0.00</div></div>
                 </div>
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Recent Activity</h3></div>
@@ -235,7 +243,6 @@
                 </div>
             </div>
 
-            <!-- ✅ UPDATED REFERRALS PAGE -->
             <div id="page-referrals" class="page">
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Referral Leaderboard (Top Inviters)</h3><button class="btn btn-primary btn-sm" onclick="loadReferrals()"><i class="fas fa-sync"></i></button></div>
@@ -294,6 +301,7 @@
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
                     <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Amount per User (ETB)</label><input type="number" id="giveaway-amount" class="form-control mt-1" placeholder="e.g. 14"></div>
                     <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Total Users (Limit)</label><input type="number" id="giveaway-total-users" class="form-control mt-1" placeholder="e.g. 750"></div>
+                    <div style="margin-bottom: 15px;"><label style="color:var(--text-muted); font-size:13px;">Duration (Minutes)</label><input type="number" id="giveaway-duration" class="form-control mt-1" placeholder="e.g. 60" value="60"></div>
                     <button class="btn btn-success" style="width: 100%; padding: 15px;" onclick="createGiveaway()"><i class="fas fa-paper-plane"></i> Send Giveaway</button>
                 </div>
                 <div class="table-wrapper">
@@ -302,11 +310,10 @@
                 </div>
             </div>
 
-            <!-- ✅ RESTORED GAME HISTORY PAGE -->
             <div id="page-history" class="page">
                 <div class="table-wrapper">
                     <div class="table-header"><h3>Game History & Logs</h3><button class="btn btn-primary btn-sm" onclick="loadGameHistory()"><i class="fas fa-sync"></i></button></div>
-                    <div class="table-responsive"><table><thead><tr><th>Date</th><th>Winners</th><th>Total Prize</th><th>Players</th></tr></thead><tbody id="history-table-body"></tbody></table></div>
+                    <div class="table-responsive"><table><thead><tr><th>Date</th><th>Winners</th><th>Total Prize</th><th>Players</th><th>Action</th></tr></thead><tbody id="history-table-body"></tbody></table></div>
                 </div>
             </div>
 
@@ -332,6 +339,10 @@
                             <option value="40">40 ሰከንድ</option>
                             <option value="30">30 ሰከንድ</option>
                         </select>
+                    </div>
+                    <div style="margin-bottom: 15px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: rgba(0,0,0,0.2);">
+                        <label style="display: block; margin-bottom: 5px; font-size: 13px; color: var(--blue); font-weight: bold;">🃏 Max Cartela Number (1-1000)</label>
+                        <input type="number" id="set-max-cards" class="form-control" min="10" max="1000">
                     </div>
                     <button class="btn btn-success" onclick="saveSettings()" style="width: 100%;"><i class="fas fa-save"></i> Save Changes</button>
                 </div>
@@ -361,6 +372,14 @@
         <div class="info-row"><span>Joined:</span><span id="p-joined">-</span></div>
         <div class="info-row"><span>Referred By:</span><span id="p-referrer">None</span></div>
         
+        <div style="margin-top: 15px;">
+            <label style="font-size:13px; color:var(--text-muted);">Direct Message to User</label>
+            <div style="display:flex; gap:10px; margin-top:5px;">
+                <input type="text" id="direct-msg-input" class="form-control" placeholder="Type message...">
+                <button class="btn btn-primary" onclick="sendDirectMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+
         <div style="display: flex; gap: 10px; flex-direction: column; margin-top: 20px;">
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="viewPlayerCards()"><i class="fas fa-eye"></i> View Cards</button>
             <button class="btn btn-warning" style="width: 100%; justify-content: center;" onclick="editPlayerBalance()"><i class="fas fa-edit"></i> Edit Balance</button>
@@ -437,8 +456,8 @@ function switchPage(pageId, element) {
     else if (pageId === 'bots') loadBotSettings();
     else if (pageId === 'referrals') loadReferrals();
     else if (pageId === 'users') loadPlayers();
-    else if (pageId === 'deposits') loadTransactions('deposit');
-    else if (pageId === 'withdrawals') loadTransactions('withdrawal');
+    else if (pageId === 'deposits') { loadTransactions('deposit'); clearNotif('notif-deposits'); }
+    else if (pageId === 'withdrawals') { loadTransactions('withdrawal'); clearNotif('notif-withdrawals'); }
     else if (pageId === 'promo') loadPromoCodes();
     else if (pageId === 'broadcast') loadBroadcasts();
     else if (pageId === 'giveaway') loadGiveaways();
@@ -448,10 +467,54 @@ function switchPage(pageId, element) {
     if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
 }
 
+// ✅ 3ኛ: NOTIFICATION BADGE
+function updateNotifBadge(id, count) {
+    const el = document.getElementById(id);
+    if (count > 0) {
+        el.innerText = count;
+        el.classList.remove('hidden');
+    } else {
+        el.classList.add('hidden');
+    }
+}
+function clearNotif(id) {
+    document.getElementById(id).classList.add('hidden');
+    document.getElementById(id).innerText = '0';
+}
+
+// ✅ 3ኛ እና 6ኛ: DASHBOARD LOAD
+async function loadDashboardData() {
+    try { 
+        const d = await apiFetch('/api/admin/dashboard'); 
+        if(d.success) { 
+            document.getElementById('stat-net-revenue').innerText = `ETB ${d.data.netBalance.toFixed(2)}`;
+            document.getElementById('stat-unique-players').innerText = d.data.totalPlayers;
+            document.getElementById('daily-dep').innerText = `ETB ${d.data.dailyDep.toFixed(2)}`;
+            document.getElementById('daily-wd').innerText = `ETB ${d.data.dailyWd.toFixed(2)}`;
+            document.getElementById('weekly-dep').innerText = `ETB ${d.data.weeklyDep.toFixed(2)}`;
+            document.getElementById('weekly-wd').innerText = `ETB ${d.data.weeklyWd.toFixed(2)}`;
+            document.getElementById('monthly-dep').innerText = `ETB ${d.data.monthlyDep.toFixed(2)}`;
+            document.getElementById('monthly-wd').innerText = `ETB ${d.data.monthlyWd.toFixed(2)}`;
+            
+            updateNotifBadge('notif-deposits', d.data.pendingDeposits);
+            updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
+        } 
+    } catch(e){}
+    
+    apiFetch('/api/admin/transactions').then(d => { 
+        if(d.success) { 
+            const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = ''; 
+            d.data.slice(0, 5).forEach(txn => { 
+                let color = txn.status === 'approved' ? 'var(--success)' : (txn.status === 'rejected' ? 'var(--danger)' : 'var(--gold)'); 
+                tbody.innerHTML += `<tr><td><span class="user-link" onclick="fetchAndOpenPlayer('${txn.user_id}')">${escapeHtml(txn.user_name)}</span></td><td style="text-transform:capitalize;">${txn.type}</td><td style="font-weight:bold; color:var(--gold);">${txn.amount} ETB</td><td><span style="color:${color}; font-weight:bold;">${txn.status}</span></td><td>${new Date(txn.created).toLocaleDateString()}</td></tr>`; 
+            }); 
+        } 
+    });
+}
+
 async function loadBotSettings() {
     try { const d = await apiFetch('/api/settings'); if (d.success && d.data) { document.getElementById('bot-enabled').checked = d.data.botEnabled; document.getElementById('bot-visual-players').value = d.data.visualPlayers; document.getElementById('bot-count').value = d.data.botCount || 350; document.getElementById('bot-win-rate').value = d.data.botWinRate; document.getElementById('bot-names').value = (d.data.botNames || []).join(', '); } } catch(e) {}
 }
-
 async function saveBotSettings() {
     const enabled = document.getElementById('bot-enabled').checked; const visual = Number(document.getElementById('bot-visual-players').value); const botCount = Number(document.getElementById('bot-count').value); const winRate = Number(document.getElementById('bot-win-rate').value); const namesRaw = document.getElementById('bot-names').value; const names = namesRaw.split(',').map(s => s.trim()).filter(s => s);
     try { const res = await apiFetch('/api/admin/settings', 'POST', { botEnabled: enabled, visualPlayers: visual, botCount: botCount, botWinRate: winRate, botNames: names }); if (res.success) showToast('Bot settings saved!'); } catch(e) { showToast('Save failed', true); }
@@ -484,15 +547,7 @@ async function loadGameStatus() {
             latestCalledNumbers = d.data.calledNumbers || [];
 
             const fwBtn = document.getElementById('force-win-btn');
-            if (d.data.isForceWinActive) {
-                fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: ON';
-                fwBtn.style.background = '#10b981';
-                fwBtn.style.color = '#000';
-            } else {
-                fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: OFF';
-                fwBtn.style.background = 'var(--danger)';
-                fwBtn.style.color = '#fff';
-            }
+            if (d.data.isForceWinActive) { fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: ON'; fwBtn.style.background = '#10b981'; fwBtn.style.color = '#000'; } else { fwBtn.innerHTML = '<i class="fas fa-bolt"></i> Force Win: OFF'; fwBtn.style.background = 'var(--danger)'; fwBtn.style.color = '#fff'; }
 
             const plist = document.getElementById('active-players-list');
             if (d.data.takenCardsDetails) {
@@ -501,21 +556,14 @@ async function loadGameStatus() {
                     if (!playerMap.has(data.userId)) playerMap.set(data.userId, { name: data.userName, isBot: data.isBot, cards: [] });
                     playerMap.get(data.userId).cards.push(cardNum);
                 });
-
-                const sortedPlayers = Array.from(playerMap.entries()).sort((a, b) => {
-                    if (a[1].isBot === b[1].isBot) return 0;
-                    return a[1].isBot ? 1 : -1;
-                });
-
+                const sortedPlayers = Array.from(playerMap.entries()).sort((a, b) => { if (a[1].isBot === b[1].isBot) return 0; return a[1].isBot ? 1 : -1; });
                 let html = '';
                 sortedPlayers.forEach(([userId, info]) => {
                     let bgColor = info.isBot ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)';
                     let borderColor = info.isBot ? 'var(--blue)' : 'var(--primary)';
                     let botBadge = info.isBot ? '<span style="font-size:10px; background:var(--blue); color:#fff; padding:1px 5px; border-radius:10px; margin-left:5px;">BOT</span>' : '';
                     html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:160px;">
-                        <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}>
-                            <i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}
-                        </div>
+                        <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}><i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}</div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">${info.cards.length} Cards</div>
                         ${!info.isBot ? `<button class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center;" onclick="viewCardsDirect('${userId}', '${escapeHtml(info.name)}')"><i class="fas fa-eye"></i> View Cards</button>` : ''}
                     </div>`;
@@ -533,13 +581,7 @@ async function loadGameStatus() {
 async function toggleForceWin() {
     const btn = document.getElementById('force-win-btn');
     const isCurrentlyOn = btn.innerHTML.includes('ON');
-    try {
-        const res = await apiFetch('/api/admin/toggle-force-win', 'POST', { active: !isCurrentlyOn });
-        if (res.success) {
-            showToast(!isCurrentlyOn ? '⚡ Force Bot Win Activated!' : 'Force Bot Win Deactivated');
-            loadGameStatus();
-        }
-    } catch (e) { showToast('Action failed', true); }
+    try { const res = await apiFetch('/api/admin/toggle-force-win', 'POST', { active: !isCurrentlyOn }); if (res.success) { showToast(!isCurrentlyOn ? '⚡ Force Bot Win Activated!' : 'Force Bot Win Deactivated'); loadGameStatus(); } } catch (e) { showToast('Action failed', true); }
 }
 
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
@@ -550,21 +592,15 @@ async function viewCardsDirect(userId, userName) {
     document.getElementById('cards-modal-title').innerText = `${userName}'s Cards`;
     modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--text-muted);">Loading grids...</div>';
     document.getElementById('cards-modal').classList.add('active');
-
     try {
         const d = await apiFetch(`/api/admin/user-cards/${userId}`);
         if (!d.success) throw new Error('Failed');
         const userCards = d.data.userCards; const called = d.data.calledNumbers;
-        
         if(userCards.length === 0) { modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--danger);">Player has no cards in the current game.</div>'; return; }
-
         let html = '';
         userCards.forEach(cardNum => {
             const matrix = generateCardLayout(cardNum);
-            html += `<div class="bingo-grid">
-                <div style="text-align:center; color:var(--gold); margin-bottom:10px; font-weight:bold;">BOARD ${cardNum}</div>
-                <div class="grid-letters"><div style="background:#3b82f6;">B</div><div style="background:#ef4444;">I</div><div style="background:#10b981;">N</div><div style="background:#f59e0b;">G</div><div style="background:#8b5cf6;">O</div></div>
-                <div class="grid-cells">`;
+            html += `<div class="bingo-grid"><div style="text-align:center; color:var(--gold); margin-bottom:10px; font-weight:bold;">BOARD ${cardNum}</div><div class="grid-letters"><div style="background:#3b82f6;">B</div><div style="background:#ef4444;">I</div><div style="background:#10b981;">N</div><div style="background:#f59e0b;">G</div><div style="background:#8b5cf6;">O</div></div><div class="grid-cells">`;
             for(let r=0; r<5; r++) { for(let c=0; c<5; c++) { let val = matrix[c][r]; if (val === 'FREE') { html += `<div class="grid-cell free">FREE</div>`; } else { const isCalled = called.includes(val); html += `<div class="grid-cell ${isCalled ? 'marked' : ''}">${val}</div>`; } } }
             html += `</div></div>`;
         });
@@ -572,10 +608,7 @@ async function viewCardsDirect(userId, userName) {
     } catch(e) { modalBody.innerHTML = '<div style="text-align:center; width:100%; color:var(--danger);">Error loading cards.</div>'; }
 }
 
-async function viewPlayerCards() {
-    if (!currentSelectedPlayer) return;
-    await viewCardsDirect(currentSelectedPlayer.id, currentSelectedPlayer.name);
-}
+async function viewPlayerCards() { if (!currentSelectedPlayer) return; await viewCardsDirect(currentSelectedPlayer.id, currentSelectedPlayer.name); }
 
 async function fetchAndOpenPlayer(id) {
     try {
@@ -594,7 +627,20 @@ async function fetchAndOpenPlayer(id) {
         }
     } catch(e) {}
 }
+
 function closePlayerPanel() { document.getElementById('player-overlay').classList.remove('active'); document.getElementById('player-panel').classList.remove('active'); currentSelectedPlayer = null; }
+
+// ✅ 4ኛ: ዳይሬክት መሴጅ
+async function sendDirectMessage() {
+    if (!currentSelectedPlayer) return;
+    const msg = document.getElementById('direct-msg-input').value.trim();
+    if (!msg) return showToast('Enter a message', true);
+    try {
+        const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/message`, 'POST', { message: msg });
+        if (res.success) { showToast('Message sent!'); document.getElementById('direct-msg-input').value = ''; }
+        else showToast(res.error || 'Failed', true);
+    } catch (e) { showToast('Error sending message', true); }
+}
 
 async function deletePlayerProfile() {
     if (!currentSelectedPlayer) return;
@@ -622,7 +668,6 @@ function renderPlayers(players) {
 }
 function filterPlayers() { const q = document.getElementById('player-search').value.toLowerCase(); renderPlayers(allPlayersData.filter(u => u.name?.toLowerCase().includes(q) || u.id.includes(q))); }
 
-// ✅ UPDATED REFERRALS LOGIC (Sorted & Detailed)
 async function loadReferrals() {
     const tbody = document.getElementById('referral-table-body'); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     try {
@@ -631,18 +676,14 @@ async function loadReferrals() {
             tbody.innerHTML = '';
             if(d.data.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No referrals yet.</td></tr>'; return; }
 
-            // Group by referrer
             const referrers = {};
             d.data.forEach(r => {
-                if(!referrers[r.referrer_id]) {
-                    referrers[r.referrer_id] = { name: r.referrer_name, count: 0, bonus: 0, users: [] };
-                }
+                if(!referrers[r.referrer_id]) { referrers[r.referrer_id] = { name: r.referrer_name, count: 0, bonus: 0, users: [] }; }
                 referrers[r.referrer_id].count += 1;
-                referrers[r.referrer_id].bonus += 50; // 30 for inviter + 20 for new user (or just track 30 if backend does)
+                referrers[r.referrer_id].bonus += 30; 
                 referrers[r.referrer_id].users.push(r.new_user_name);
             });
 
-            // Sort by count descending
             const sorted = Object.values(referrers).sort((a, b) => b.count - a.count);
             let medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]; 
 
@@ -660,25 +701,24 @@ async function loadReferrals() {
     } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Error loading referrals</td></tr>'; }
 }
 
-// ✅ RESTORED GAME HISTORY LOGIC
+// ✅ 2ኛ: GAME HISTORY
 async function loadGameHistory() {
-    const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+    const tbody = document.getElementById('history-table-body'); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     try {
         const d = await apiFetch('/api/admin/game-history');
         if (d.success) {
             tbody.innerHTML = '';
-            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No games played.</td></tr>';
+            if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No games played.</td></tr>';
             d.data.forEach(g => {
                 let winnersHtml = g.winners.length > 0 ? g.winners.map(w => `🏆 <span class="user-link" onclick="fetchAndOpenPlayer('${w.id}')">${escapeHtml(w.name)}</span>`).join('<br>') : 'No Winner';
-                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td>${winnersHtml}</td><td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td><td>${g.totalPlayers}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td>${winnersHtml}</td><td style="color:var(--primary); font-weight:bold;">${g.totalPrize} ETB</td><td>${g.totalPlayers}</td><td><button class="btn btn-danger btn-sm" onclick="deleteGameHistory('${g._id}')"><i class="fas fa-trash"></i></button></td></tr>`;
             });
         }
-    } catch(e) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--danger)">Error loading game history</td></tr>'; }
+    } catch(e) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger)">Error loading game history</td></tr>'; }
 }
-
-async function loadDashboardData() {
-    try { const d = await apiFetch('/api/admin/dashboard'); if(d.success) { document.getElementById('stat-net-revenue').innerText = `ETB ${(d.data.totalDeposits - d.data.totalWithdrawals).toFixed(2)}`; document.getElementById('stat-unique-players').innerText = d.data.totalPlayers; } } catch(e){}
-    apiFetch('/api/admin/transactions').then(d => { if(d.success) { const tbody = document.getElementById('dashboard-recent-txns'); tbody.innerHTML = ''; d.data.slice(0, 5).forEach(txn => { let color = txn.status === 'approved' ? 'var(--success)' : (txn.status === 'rejected' ? 'var(--danger)' : 'var(--gold)'); tbody.innerHTML += `<tr><td><span class="user-link" onclick="fetchAndOpenPlayer('${txn.user_id}')">${escapeHtml(txn.user_name)}</span></td><td style="text-transform:capitalize;">${txn.type}</td><td style="font-weight:bold; color:var(--gold);">${txn.amount} ETB</td><td><span style="color:${color}; font-weight:bold;">${txn.status}</span></td><td>${new Date(txn.created).toLocaleDateString()}</td></tr>`; }); } });
+async function deleteGameHistory(id) {
+    if (!confirm('Delete this game history?')) return;
+    try { const d = await apiFetch(`/api/admin/game-history/${id}`, 'DELETE'); if (d.success) { showToast('Deleted'); loadGameHistory(); } } catch(e) { showToast('Failed', true); }
 }
 
 async function loadTransactions(type) {
@@ -690,7 +730,7 @@ async function loadTransactions(type) {
 }
 async function actionTxn(id, action) {
     if(!confirm(`Confirm ${action}?`)) return;
-    try { const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); if(d.success) { showToast('Success'); loadPendingTransactions(); if(currentPage==='deposits'||currentPage==='withdrawals') loadTransactions(currentPage); } else showToast(d.error || 'Failed', true); } catch(e){}
+    try { const d = await apiFetch(`/api/admin/transactions/${id}/${action}`, 'POST'); if(d.success) { showToast('Success'); loadPendingTransactions(); if(currentPage==='deposits'||currentPage==='withdrawals') loadTransactions(currentPage); loadDashboardData(); } else showToast(d.error || 'Failed', true); } catch(e){}
 }
 
 async function createPromoCode() {
@@ -726,10 +766,14 @@ async function loadBroadcasts() {
 }
 async function deleteBroadcast(id) { if (!confirm("Delete this message for ALL users?")) return; try { const d = await apiFetch(`/api/admin/broadcasts/${id}`, 'DELETE'); if (d.success) { showToast('Deleted!'); loadBroadcasts(); } } catch(e) {} }
 
+// ✅ 5ኛ: GIVEAWAY
 async function createGiveaway() {
-    const amount = parseFloat(document.getElementById('giveaway-amount').value); const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
-    if (!amount || !totalUsers) return showToast('Fill all fields', true); if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users?`)) return;
-    try { const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, message: "", durationMinutes: 60 }); if (res.success) { showToast(`Giveaway sent!`); loadGiveaways(); } else showToast(res.error || 'Error', true); } catch(e) { showToast('Server Error', true); }
+    const amount = parseFloat(document.getElementById('giveaway-amount').value); 
+    const totalUsers = parseInt(document.getElementById('giveaway-total-users').value);
+    const duration = parseInt(document.getElementById('giveaway-duration').value);
+    if (!amount || !totalUsers) return showToast('Fill all fields', true); 
+    if (!confirm(`Send ${amount} ETB giveaway to ${totalUsers} users?`)) return;
+    try { const res = await apiFetch('/api/admin/giveaway', 'POST', { amount, totalUsers, durationMinutes: duration, message: "" }); if (res.success) { showToast(`Giveaway sent!`); loadGiveaways(); } else showToast(res.error || 'Error', true); } catch(e) { showToast('Server Error', true); }
 }
 async function loadGiveaways() {
     const tbody = document.getElementById('giveaway-table-body'); tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
@@ -737,14 +781,20 @@ async function loadGiveaways() {
         const d = await apiFetch('/api/admin/giveaways');
         if (d.success) {
             tbody.innerHTML = ''; if(d.data.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No giveaways.</td></tr>';
-            d.data.forEach(g => { tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td style="font-weight:bold; color:var(--gold);">${g.amount} ETB</td><td>${g.totalUsers}</td><td>${g.claimedBy ? g.claimedBy.length : 0}</td><td>${g.status.toUpperCase()}</td><td><button class="btn btn-danger btn-sm" onclick="deleteGiveaway('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>`; });
+            d.data.forEach(g => { 
+                let statusClass = g.status === 'active' ? 'approved' : 'rejected';
+                tbody.innerHTML += `<tr><td>${new Date(g.createdAt).toLocaleString()}</td><td style="font-weight:bold; color:var(--gold);">${g.amount} ETB</td><td>${g.totalUsers}</td><td>${g.claimedBy ? g.claimedBy.length : 0}</td><td><span class="badge ${statusClass}">${g.status.toUpperCase()}</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteGiveaway('${g.id}')"><i class="fas fa-trash"></i></button></td></tr>`; 
+            });
         }
     } catch(e) {}
 }
-async function deleteGiveaway(id) { if (!confirm("Delete this giveaway?")) return; try { const d = await apiFetch(`/api/admin/giveaways/${id}`, 'DELETE'); if (d.success) { showToast('Deleted!'); loadGiveaways(); } } catch(e) {} }
+async function deleteGiveaway(id) { 
+    if (!confirm("Delete this giveaway?")) return; 
+    try { const d = await apiFetch(`/api/admin/giveaways/${id}`, 'DELETE'); if (d.success) { showToast('Deleted!'); loadGiveaways(); } } catch(e) {} 
+}
 
-async function loadSettings() { try { const d = await apiFetch('/api/settings'); if(d.success && d.data) { document.getElementById('set-telebirr').value = d.data.telebirr_number; document.getElementById('set-telebirr-name').value = d.data.telebirr_name; document.getElementById('enable-cbe').checked = d.data.enable_cbe !== false; document.getElementById('enable-double-deposit').checked = d.data.doubleDepositActive || false; document.getElementById('set-countdown-time').value = d.data.countdownTime || 50; } } catch(e){} }
-async function saveSettings() { try { const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: document.getElementById('set-telebirr').value, telebirr_name: document.getElementById('set-telebirr-name').value, enable_cbe: document.getElementById('enable-cbe').checked, doubleDepositActive: document.getElementById('enable-double-deposit').checked, countdownTime: Number(document.getElementById('set-countdown-time').value) }); if(d.success) showToast('Saved'); } catch(e){ showToast('Save failed', true); } }
+async function loadSettings() { try { const d = await apiFetch('/api/settings'); if(d.success && d.data) { document.getElementById('set-telebirr').value = d.data.telebirr_number; document.getElementById('set-telebirr-name').value = d.data.telebirr_name; document.getElementById('enable-cbe').checked = d.data.enable_cbe !== false; document.getElementById('enable-double-deposit').checked = d.data.doubleDepositActive || false; document.getElementById('set-countdown-time').value = d.data.countdownTime || 50; document.getElementById('set-max-cards').value = d.data.maxCards || 1000; } } catch(e){} }
+async function saveSettings() { try { const d = await apiFetch('/api/admin/settings', 'POST', { telebirr_number: document.getElementById('set-telebirr').value, telebirr_name: document.getElementById('set-telebirr-name').value, enable_cbe: document.getElementById('enable-cbe').checked, doubleDepositActive: document.getElementById('enable-double-deposit').checked, countdownTime: Number(document.getElementById('set-countdown-time').value), maxCards: Number(document.getElementById('set-max-cards').value) }); if(d.success) showToast('Saved'); } catch(e){ showToast('Save failed', true); } }
 
 async function callSpecificNumber() { const num = parseInt(document.getElementById('manual-call-input').value); if (isNaN(num) || num < 1 || num > 75) return showToast("Enter 1-75", true); try { const d = await apiFetch('/api/admin/call-number', 'POST', { number: num }); if (d.success) { document.getElementById('manual-call-input').value = ''; loadGameStatus(); } else showToast(d.message || "Failed", true); } catch (e) { showToast("Server Error", true); } }
 async function gameAction(action) { try { const d = await apiFetch(`/api/admin/${action}`, 'POST'); if (d.success) loadGameStatus(); else showToast(d.error || 'Action failed', true); } catch (e) {} }

@@ -237,8 +237,10 @@ body { background: var(--bg-color); color: var(--text-color); height: 100vh; dis
     </div>
     <div id="history-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
+  
+  <!-- ✅ RANK PAGE ርዕስ ወደ Top 3 ተቀይሯል -->
   <div id="page-rank" class="page-inner-content hidden">
-    <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 10)</div>
+    <div class="sec-title">🏆 ከፍተኛ አሸናፊዎች (Top 3)</div>
     <div id="leaderboard-list" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
@@ -282,7 +284,7 @@ try {
             fetch('/api/user/referral', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ new_user_id: userProfile.id, referrer_id: refId })
+                body: JSON.stringify({ new_user_id: userProfile.id, referrer_id: refId, new_user_name: userProfile.name })
             }).then(r => r.json()).then(d => {
                 if(d.success) console.log("Referral bonus applied!");
             }).catch(e => console.log("Ref error", e));
@@ -480,14 +482,11 @@ socket.on('game_over', (data) => {
     const totalWinners = data.winners.length; 
     const isMeWinner = data.winners.some(w => String(w.id) === String(userProfile.id));
     
-    // የአሸናፊዎች ስም እና ካርቴላ ቁጥር ማዘጋጀት
     let winnerNamesList = data.winners.map(w => `${w.name} #${w.cardNum}`).join(', ');
 
     if (totalWinners === 1) { 
-        // አንድ ሰው ብቻ ካሸነፈ
         document.getElementById('winner-text').innerHTML = `${data.winners[0].name} #${data.winners[0].cardNum} has won this round`; 
     } else { 
-        // ከአንድ በላይ ሰዎች ካሸነፉ
         document.getElementById('winner-text').innerHTML = `${totalWinners} ተጫዋቾች አሸንፈዋል!<br><span style="font-size:14px; color:#cbd5e1; font-weight:normal; margin-top:5px; display:block;">${winnerNamesList}</span>`; 
     }
     

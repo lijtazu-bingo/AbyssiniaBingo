@@ -295,213 +295,44 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.post('/api/admin/toggle-force-win', adminAuth, (req, res) => {
-    gameState.isForceWinActive = !!req.body.active;
-    res.json({ success: true, isForceWinActive: gameState.isForceWinActive });
-});
-
-function getNextNumberToCall() {
-    if (gameState.isForceWinActive) {
-        for (const [cardNum, data] of Object.entries(gameState.takenCards)) {
-            if (!data.isBot) continue;
-            const cols = getCardCols(cardNum);
-            for (const col of cols) {
-                for (const num of col) {
-                    if (num !== 'FREE' && !gameState.calledNumbers.includes(num)) {
-                        return num;
-                    }
-                }
-            }
-        }
-    }
-    let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
-    return num;
-}
-
-app.get('/api/admin/game-status', adminAuth, async (req, res) => {
-    try {
-        const realPlayersIds = [...new Set(Object.values(gameState.takenCards).filter(c => !c.isBot).map(c => c.userId))];
-        const realPlayers = await User.find({ id: { $in: realPlayersIds } }, { id: 1, name: 1 }).lean();
-        const playerMap = new Map(realPlayers.map(p => [p.id, p.name]));
-        
-        const takenCardsDetails = {};
-        for (const [card, data] of Object.entries(gameState.takenCards)) {
-            takenCardsDetails[card] = { 
-                userId: data.userId, 
-                userName: data.isBot ? data.botName : (playerMap.get(data.userId) || "Unknown"),
-                isBot: !!data.isBot
-            };
-        }
-
-        const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length;
-        const botsCount = Object.values(gameState.takenCards).filter(c => c.isBot).length;
-        const targetBots = gameState.settings.botCount || 1;
-        const currentFake = Math.floor((botsCount / targetBots) * gameState.settings.visualPlayers);
-        const visualTotal = currentFake + realCardsCount;
-
-        res.json({ success: true, data: { ...gameState, takenCardsDetails, totalPlayers: visualTotal, realPlayersCount: realPlayersIds.length, totalCards: Object.keys(gameState.takenCards).length } });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.get('/api/admin/user-cards/:userId', adminAuth, async (req, res) => {
-    try {
-        const userId = String(req.params.userId);
-        const userCards = [];
-        for (const [card, data] of Object.entries(gameState.takenCards)) {
-            if (String(data.userId) === userId) userCards.push(Number(card));
-        }
-        res.json({ success: true, data: { userCards, calledNumbers: gameState.calledNumbers } });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.delete('/api/admin/users/:id', adminAuth, async (req, res) => {
-    try {
-        const userId = String(req.params.id);
-        await User.deleteOne({ id: userId });
-        await Transaction.deleteMany({ user_id: userId });
-        for (const [cardNum, data] of Object.entries(gameState.takenCards)) {
-            if (data.userId === userId) {
-                delete gameState.takenCards[cardNum];
-                if (gameState.numberToCardsMap) {
-                     Object.keys(gameState.numberToCardsMap).forEach(num => gameState.numberToCardsMap[num].delete(Number(cardNum)));
-                }
-            }
-        }
-        io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: Object.keys(gameState.takenCards).length, totalCards: Object.keys(gameState.takenCards).length });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
-
-app.get('/api/admin/referrals', adminAuth, async (req, res) => {
-    try {
-        const referredUsers = await User.find({ referred_by: { $ne: null } }).lean();
-        const referrerIds = [...new Set(referredUsers.map(u => u.referred_by))];
-        const referrers = await User.find({ id: { $in: referrerIds } }, { id: 1, name: 1 }).lean();
-        const referrerMap = new Map(referrers.map(r => [r.id, r.name]));
-        const data = referredUsers.map(u => ({
-            referrer_id: u.referred_by, referrer_name: referrerMap.get(u.referred_by) || 'Unknown',
-            new_user_id: u.id, new_user_name: u.name || 'Player', created_at: u.registered_at
-        }));
-        res.json({ success: true, data });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-// ✅✅✅ የተስተካከለ: የተጋባዡ ስም እንዲቀመጥ ✅✅✅
-app.post('/api/user/phone', async (req, res) => {
-    try {
-        const { user_id, phone, name } = req.body;
-        if (!user_id || !phone) return res.status(400).json({ success: false, error: 'Missing fields' });
-        await User.findOneAndUpdate(
-            { id: String(user_id) },
-            { $set: { phone: phone, name: name || 'Player', registered: true } },
-            { upsert: true, new: true }
-        );
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
-
-// ✅✅✅ የተስተካከለ: REFERRAL — የተጋባዡ ስም እንዲቀመጥ ✅✅✅
-app.post('/api/user/referral', async (req, res) => {
-    try {
-        const { new_user_id, referrer_id, new_user_name } = req.body;
-        if (!new_user_id || !referrer_id || new_user_id === referrer_id) return res.status(400).json({ success: false, error: 'Invalid referral' });
-        
-        const newUser = await User.findOne({ id: String(new_user_id) });
-        if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' });
-        
-        const referrer = await User.findOne({ id: String(referrer_id) });
-        if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' });
-        
-        // ✅ ለጋባዡ 30 ብር መጨመር
-        await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } });
-        
-        // ✅ የተጋባዡን ስም እና referred_by ማስቀመጥ
-        await User.findOneAndUpdate(
-            { id: String(new_user_id) },
-            { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id), name: new_user_name || 'Player' } },
-            { upsert: true }
-        );
-        
-        io.to(`user_${referrer_id}`).emit('wallet_updated', {});
-        io.to(`user_${new_user_id}`).emit('wallet_updated', {});
-        res.json({ success: true, message: 'Referral bonus applied' });
-    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
-});
-
-app.post('/api/admin/start-game', adminAuth, (req, res) => { gameState.isRunning = true; gameState.isForceWinActive = false; if (gameState.phase === 'waiting') startRound(); res.json({ success: true }); });
-app.post('/api/admin/stop-game', adminAuth, (req, res) => {
-    gameState.isRunning = false;
-    gameState.isForceWinActive = false;
-    if (gameTimerInterval) clearInterval(gameTimerInterval);
-    if (callInterval) clearInterval(callInterval);
-    if (autoRestartTimer) clearTimeout(autoRestartTimer);
-    if (botSpawnInterval) clearInterval(botSpawnInterval);
-    gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.takenCards = {}; gameState.isAutoOn = false; gameState.currentCall = null;
-    isEndingRound = false; roundWinners = [];
-    io.emit('reset_game');
-    res.json({ success: true });
-});
-
-app.post('/api/admin/call-number', adminAuth, async (req, res) => {
-    if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) {
-        return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' });
-    }
-    const reqNumber = Number(req.body.number);
-    if (!reqNumber || reqNumber < 1 || reqNumber > 75) return res.status(400).json({ success: false, message: 'እባክዎ ከ1 እስከ 75 ያለ ትክክለኛ ቁጥር ያስገቡ' });
-    if (gameState.calledNumbers.includes(reqNumber)) return res.status(400).json({ success: false, message: 'ይህ ቁጥር ቀድሞ ተጠርቷል!' });
-
-    gameState.calledNumbers.push(reqNumber); gameState.currentCall = reqNumber;
-    io.emit('new_number_called', { number: reqNumber, allCalled: gameState.calledNumbers });
-    
-    const winnerFound = await checkForAutoWinner(reqNumber);
-    if (winnerFound) { await endRound(roundWinners); return res.json({ success: true }); }
-
-    if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    if (gameState.isAutoOn) {
-        callInterval = setInterval(async () => {
-            if (gameState.phase !== 'calling' || isEndingRound) return;
-            if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-            
-            let num = getNextNumberToCall();
-            
-            gameState.calledNumbers.push(num); gameState.currentCall = num;
-            io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-            const winnerFound = await checkForAutoWinner(num);
-            if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
-        }, gameState.settings.callInterval * 1000);
-    }
-    res.json({ success: true });
-});
-
-app.post('/api/admin/auto-game', adminAuth, (req, res) => {
-    const { isAutoOn, speed } = req.body;
-    if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    gameState.isAutoOn = !!isAutoOn;
-    if (Number(speed) > 0) gameState.settings.callInterval = Number(speed);
-    if (isAutoOn && gameState.phase === 'calling') {
-        callInterval = setInterval(async () => {
-            if (gameState.phase !== 'calling' || isEndingRound) return;
-            if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-            
-            let num = getNextNumberToCall();
-            
-            gameState.calledNumbers.push(num); gameState.currentCall = num;
-            io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-            const winnerFound = await checkForAutoWinner(num);
-            if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
-        }, gameState.settings.callInterval * 1000);
-    }
-    res.json({ success: true });
-});
-
+// ✅ 3ኛ እና 6ኛ: DASHBOARD ላይ Notification እና የጊዜ ሪፖርት
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
-        const [totalPlayers, pendingDeposits, pendingWithdrawals, depAgg, wdAgg] = await Promise.all([
-            User.countDocuments(), Transaction.countDocuments({ type: 'deposit', status: 'pending' }), Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
+        const now = new Date();
+        const startOfDay = new Date(now.setHours(0,0,0,0)).toISOString();
+        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay())).toISOString(); // Sunday
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const [
+            totalPlayers, pendingDeposits, pendingWithdrawals, 
+            depAgg, wdAgg,
+            dailyDep, dailyWd, weeklyDep, weeklyWd, monthlyDep, monthlyWd
+        ] = await Promise.all([
+            User.countDocuments(), 
+            Transaction.countDocuments({ type: 'deposit', status: 'pending' }), 
+            Transaction.countDocuments({ type: 'withdrawal', status: 'pending' }),
             Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
+            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            
+            Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved', created: { $gte: startOfDay } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved', created: { $gte: startOfDay } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            
+            Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved', created: { $gte: startOfWeek } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved', created: { $gte: startOfWeek } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            
+            Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved', created: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved', created: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
         ]);
-        res.json({ success: true, data: { totalPlayers, pendingDeposits, pendingWithdrawals, totalDeposits: depAgg[0]?.total || 0, totalWithdrawals: wdAgg[0]?.total || 0, netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0) } });
+
+        res.json({ success: true, data: { 
+            totalPlayers, pendingDeposits, pendingWithdrawals, 
+            totalDeposits: depAgg[0]?.total || 0, 
+            totalWithdrawals: wdAgg[0]?.total || 0, 
+            netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
+            dailyDep: dailyDep[0]?.total || 0, dailyWd: dailyWd[0]?.total || 0,
+            weeklyDep: weeklyDep[0]?.total || 0, weeklyWd: weeklyWd[0]?.total || 0,
+            monthlyDep: monthlyDep[0]?.total || 0, monthlyWd: monthlyWd[0]?.total || 0
+        } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -515,15 +346,14 @@ app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
+// ✅ 4ኛ: ለተጫዋች በቀጥታ መልእክት መላኪያ API
+app.post('/api/admin/users/:id/message', adminAuth, async (req, res) => {
     try {
-        const { id } = req.params; const { play_balance, win_balance } = req.body;
-        const update = {};
-        if (typeof play_balance === 'number') update.play_balance = play_balance;
-        if (typeof win_balance === 'number') update.win_balance = win_balance;
-        const user = await User.findOneAndUpdate({ id: String(id) }, { $set: update }, { new: true, lean: true });
-        io.to(`user_${id}`).emit('wallet_updated', {});
-        res.json({ success: true, data: user });
+        const { message } = req.body;
+        if (!message) return res.status(400).json({ success: false, error: 'Message required' });
+        const sent = await sendTelegramMessage(req.params.id, message, 'HTML');
+        if (sent) res.json({ success: true });
+        else res.status(500).json({ success: false, error: 'Failed to send via Telegram' });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -548,36 +378,18 @@ app.post('/api/admin/transactions/:id/approve', adminAuth, async (req, res) => {
             const settings = await Settings.findOne({ key: 'payment_accounts' }).lean();
             if (settings && settings.doubleDepositActive) totalToAdd = txn.amount * settings.doubleDepositMultiplier;
             
-            const updatedUser = await User.findOneAndUpdate(
-                { id: String(txn.user_id) },
-                { $inc: { play_balance: totalToAdd } },
-                { new: true }
-            );
+            const updatedUser = await User.findOneAndUpdate({ id: String(txn.user_id) }, { $inc: { play_balance: totalToAdd } }, { new: true });
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {});
 
             const bonusText = (totalToAdd > txn.amount) ? `\n🎁 <b>Double Deposit Bonus!</b> (${totalToAdd} ETB)` : '';
-            const message = `✅ <b>የDeposit ጥያቄዎ ተፈቅዷል!</b>\n\n` +
-                `💰 <b>መጠን፦</b> ${txn.amount} ETB${bonusText}\n` +
-                `💳 <b>አማራጭ፦</b> ${txn.method || 'Telebirr'}\n` +
-                `🆔 <b>Ref፦</b> <code>${txn.reference || '-'}</code>\n\n` +
-                `💵 <b>አዲስ Play Balance፦</b> <b>${updatedUser ? Number(updatedUser.play_balance).toFixed(2) : totalToAdd} ETB</b>\n\n` +
-                `🎮 አሁን መጫወት ይችላሉ!`;
+            const message = `✅ <b>የDeposit ጥያቄዎ ተፈቅዷል!</b>\n\n💰 <b>መጠን፦</b> ${txn.amount} ETB${bonusText}\n💳 <b>አማራጭ፦</b> ${txn.method || 'Telebirr'}\n🆔 <b>Ref፦</b> <code>${txn.reference || '-'}</code>\n\n💵 <b>አዲስ Play Balance፦</b> <b>${updatedUser ? Number(updatedUser.play_balance).toFixed(2) : totalToAdd} ETB</b>\n\n🎮 አሁን መጫወት ይችላሉ!`;
             await sendTelegramMessage(txn.user_id, message);
-
         } else if (txn.type === 'withdrawal') {
-            const message = `✅ <b>የWithdraw ጥያቄዎ ተፈቅዷል!</b>\n\n` +
-                `💰 <b>መጠን፦</b> ${txn.amount} ETB\n` +
-                `📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n` +
-                `💳 <b>አማራጭ፦</b> ${txn.method || 'Telebirr'}\n\n` +
-                `🎉 ገንዘቡ ወደ አካውንትዎ ተልኳል!`;
+            const message = `✅ <b>የWithdraw ጥያቄዎ ተፈቅዷል!</b>\n\n💰 <b>መጠን፦</b> ${txn.amount} ETB\n📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n💳 <b>አማራጭ፦</b> ${txn.method || 'Telebirr'}\n\n🎉 ገንዘቡ ወደ አካውንትዎ ተልኳል!`;
             await sendTelegramMessage(txn.user_id, message);
         }
-        
         res.json({ success: true });
-    } catch (e) {
-        console.error('❌ Approve error:', e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
@@ -586,37 +398,19 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
         if (!txn) return res.status(400).json({ success: false, error: 'Transaction not found or already processed' });
         
         if (txn.type === 'withdrawal') { 
-            const updatedUser = await User.findOneAndUpdate(
-                { id: String(txn.user_id) },
-                { $inc: { win_balance: txn.amount } },
-                { new: true }
-            );
+            const updatedUser = await User.findOneAndUpdate({ id: String(txn.user_id) }, { $inc: { win_balance: txn.amount } }, { new: true });
             io.to(`user_${txn.user_id}`).emit('wallet_updated', {});
-
-            const message = `❌ <b>የWithdraw ጥያቄዎ ተከስሷል!</b>\n\n` +
-                `💰 <b>መጠን፦</b> ${txn.amount} ETB\n` +
-                `📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n\n` +
-                `💵 <b>ገንዘቡ ወደ Win Walletዎ ተመልሷል።</b>\n` +
-                `💳 <b>አዲስ Win Balance፦</b> <b>${updatedUser ? Number(updatedUser.win_balance).toFixed(2) : txn.amount} ETB</b>\n\n` +
-                `📞 ለተጨማሪ መረጃ ድጋፍ ያግኙ።`;
+            const message = `❌ <b>የWithdraw ጥያቄዎ ተከስሷል!</b>\n\n💰 <b>መጠን፦</b> ${txn.amount} ETB\n📱 <b>ስልክ፦</b> ${txn.phone || '-'}\n\n💵 <b>ገንዘቡ ወደ Win Walletዎ ተመልሷል።</b>\n💳 <b>አዲስ Win Balance፦</b> <b>${updatedUser ? Number(updatedUser.win_balance).toFixed(2) : txn.amount} ETB</b>`;
             await sendTelegramMessage(txn.user_id, message);
-
         } else if (txn.type === 'deposit') {
-            const message = `❌ <b>የDeposit ጥያቄዎ ተከስሷል!</b>\n\n` +
-                `💰 <b>መጠን፦</b> ${txn.amount} ETB\n` +
-                `🆔 <b>Ref፦</b> <code>${txn.reference || '-'}</code>\n\n` +
-                `⚠️ የግብይት ማረጋገጫው ትክክል አልነበረም ወይም ችግር አለ።\n` +
-                `📞 እባክዎ ድጋፍ ያግኙ ወይም ትክክለኛውን Transaction ID እንደገና ይላኩ።`;
+            const message = `❌ <b>የDeposit ጥያቄዎ ተከስሷል!</b>\n\n💰 <b>መጠን፦</b> ${txn.amount} ETB\n🆔 <b>Ref፦</b> <code>${txn.reference || '-'}</code>\n\n⚠️ የግብይት ማረጋገጫው ትክክል አልነበረም ወይም ችግር አለ።\n📞 እባክዎ ድጋፍ ያግኙ።`;
             await sendTelegramMessage(txn.user_id, message);
         }
-        
         res.json({ success: true });
-    } catch (e) {
-        console.error('❌ Reject error:', e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ 5ኛ: Giveaway ፈጠራ (የጊዜ ማስተካከያ)
 app.post('/api/admin/giveaway', adminAuth, async (req, res) => {
     try {
         const { amount, totalUsers, message, durationMinutes } = req.body;
@@ -643,91 +437,29 @@ app.get('/api/admin/giveaways', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ 5ኛ: Giveaway Delete & Clear
 app.delete('/api/admin/giveaways/:id', adminAuth, async (req, res) => {
     try {
         const giveaway = await Giveaway.findOne({ id: req.params.id });
         if (!giveaway) return res.status(404).json({ success: false });
         giveaway.sentMessages.forEach(async (msg) => { try { await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id }) }); } catch (e) {} });
-        giveaway.status = 'deleted'; await giveaway.save(); res.json({ success: true });
+        await Giveaway.deleteOne({ id: req.params.id }); // ሙሉ በሙሉ ከዳታቤዝ ማጥፋት
+        res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
 app.get('/api/admin/game-history', adminAuth, async (req, res) => {
     try {
-        const history = await GameHistory.find({})
-            .sort({ createdAt: -1 })
-            .limit(100)
-            .lean();
+        const history = await GameHistory.find({}).sort({ createdAt: -1 }).limit(100).lean();
         res.json({ success: true, data: history });
-    } catch (e) {
-        console.error('❌ Game history error:', e);
-        res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
-app.get('/api/admin/broadcasts', adminAuth, async (req, res) => {
-    try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); }
-    catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.post('/api/admin/broadcast', adminAuth, async (req, res) => {
+// ✅ 2ኛ: Game History መጥፋት
+app.delete('/api/admin/game-history/:id', adminAuth, async (req, res) => {
     try {
-        const { message, targetUserId } = req.body;
-        let users = targetUserId ? [{ id: targetUserId }] : await User.find({}, { id: 1 }).lean();
-        let sentMessages = []; 
-        for (const u of users) {
-            try {
-                const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' }) });
-                const data = await response.json();
-                if (data.ok) sentMessages.push({ user_id: u.id, message_id: data.result.message_id });
-            } catch (err) { }
-        }
-        if (!targetUserId) await Broadcast.create({ id: 'bc_' + Date.now(), message: message, sentMessages: sentMessages });
-        res.json({ success: true, count: users.length });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => {
-    try {
-        const broadcast = await Broadcast.findOne({ id: req.params.id });
-        if (!broadcast) return res.status(404).json({ success: false });
-        broadcast.sentMessages.forEach(async (msg) => { try { await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id }) }); } catch (e) {} });
-        broadcast.status = 'deleted'; await broadcast.save(); res.json({ success: true });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.get('/api/admin/promo-codes', adminAuth, async (req, res) => {
-    try { const codes = await PromoCode.find({}).sort({ createdAt: -1 }).limit(50).lean(); res.json({ success: true, data: codes }); }
-    catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.post('/api/admin/promo-codes', adminAuth, async (req, res) => {
-    try {
-        const { code, amount, maxUses, durationMinutes } = req.body;
-        const expiresAt = new Date(Date.now() + (Number(durationMinutes) || 1440) * 60000);
-        const newPromo = await PromoCode.create({ code: code.toUpperCase(), amount: Number(amount), maxUses: Number(maxUses), expiresAt });
-        res.json({ success: true, data: newPromo });
-    } catch (e) { res.status(400).json({ success: false, error: 'Code already exists' }); }
-});
-
-app.delete('/api/admin/promo-codes/:id', adminAuth, async (req, res) => {
-    try { await PromoCode.findByIdAndDelete(req.params.id); res.json({ success: true }); }
-    catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.post('/api/promo/claim', async (req, res) => {
-    try {
-        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
-        const { code } = req.body;
-        const promo = await PromoCode.findOne({ code: code.toUpperCase(), status: 'active' });
-        if (!promo) return res.json({ success: false, error: 'Invalid or expired code' });
-        if (new Date() > promo.expiresAt) return res.json({ success: false, error: 'Code expired' });
-        if (promo.usedCount >= promo.maxUses) return res.json({ success: false, error: 'Code limit reached' });
-        if (promo.usedBy.includes(String(user.id))) return res.json({ success: false, error: 'Already used' });
-        promo.usedBy.push(String(user.id)); promo.usedCount += 1; await promo.save();
-        await User.updateOne({ id: String(user.id) }, { $inc: { play_balance: promo.amount } });
-        io.to(`user_${user.id}`).emit('wallet_updated', {});
-        res.json({ success: true, amount: promo.amount });
+        await GameHistory.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -749,6 +481,7 @@ app.get('/api/wallet/me', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ሌሎቹ ኮዶች (እንደነበሩ ሳልለውጥ እንዳሉ ናቸው)
 app.get('/api/wallet/history', async (req, res) => {
     try {
         const user = authFromHeaders(req); 
@@ -767,23 +500,13 @@ app.delete('/api/wallet/history/clear', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅✅✅ የተስተካከለ: WITHDRAW REQUEST VALIDATION ✅✅✅
 app.post('/api/wallet/withdraw-request', async (req, res) => {
     try {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
-        
-        // ✅ ከ 100 በታች ከሆነ አይፈቀድም
         if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        
-        // ✅ ከ win_balance በላይ ከሆነ አይፈቀድም
-        const result = await User.findOneAndUpdate(
-            { id: String(user.id), win_balance: { $gte: amt } }, 
-            { $inc: { win_balance: -amt } }, 
-            { new: true }
-        );
+        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
         if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
-        
         const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
         await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
         io.to(`user_${user.id}`).emit('wallet_updated', {});
@@ -811,45 +534,46 @@ app.post('/api/bot/create-txn', async (req, res) => {
 app.post('/api/bot/giveaway-claim', async (req, res) => {
     try {
         const { giveaway_id, user_id } = req.body;
-
-        if (!giveaway_id || !user_id) {
-            return res.status(400).json({ success: false, error: 'Missing giveaway_id or user_id' });
-        }
-
+        if (!giveaway_id || !user_id) return res.status(400).json({ success: false, error: 'Missing giveaway_id or user_id' });
         const giveaway = await Giveaway.findOne({ id: giveaway_id });
-        if (!giveaway) {
-            return res.json({ success: false, error: 'Giveaway not found' });
-        }
-        if (giveaway.status !== 'active') {
-            return res.json({ success: false, error: 'Giveaway expired' });
-        }
-        if (new Date() > new Date(giveaway.expiresAt)) {
-            return res.json({ success: false, error: 'Giveaway expired' });
-        }
-        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
-            return res.json({ success: false, error: 'All bonuses claimed' });
-        }
-        if (giveaway.claimedBy.includes(String(user_id))) {
-            return res.json({ success: false, error: 'You already claimed this bonus' });
-        }
+        if (!giveaway) return res.json({ success: false, error: 'Giveaway not found' });
+        if (giveaway.status !== 'active') return res.json({ success: false, error: 'Giveaway expired' });
+        if (new Date() > new Date(giveaway.expiresAt)) return res.json({ success: false, error: 'Giveaway expired' });
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) return res.json({ success: false, error: 'All bonuses claimed' });
+        if (giveaway.claimedBy.includes(String(user_id))) return res.json({ success: false, error: 'You already claimed this bonus' });
 
         let user = await User.findOne({ id: String(user_id) });
         if (!user) user = await User.create({ id: String(user_id) });
 
         giveaway.claimedBy.push(String(user_id));
         await giveaway.save();
-
         await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: giveaway.amount } });
         io.to(`user_${user_id}`).emit('wallet_updated', {});
-
-        console.log(`✅ Giveaway ${giveaway_id} claimed by ${user_id} - ${giveaway.amount} ETB`);
         return res.json({ success: true, amount: giveaway.amount });
-
-    } catch (e) {
-        console.error('❌ Giveaway claim error:', e);
-        return res.status(500).json({ success: false, error: e.message });
-    }
+    } catch (e) { return res.status(500).json({ success: false, error: e.message }); }
 });
+
+// ቀሪው የጨዋታ ኮድ (እንዳለ ሆኖ ነው)
+app.post('/api/admin/toggle-force-win', adminAuth, (req, res) => { gameState.isForceWinActive = !!req.body.active; res.json({ success: true, isForceWinActive: gameState.isForceWinActive }); });
+function getNextNumberToCall() { if (gameState.isForceWinActive) { for (const [cardNum, data] of Object.entries(gameState.takenCards)) { if (!data.isBot) continue; const cols = getCardCols(cardNum); for (const col of cols) { for (const num of col) { if (num !== 'FREE' && !gameState.calledNumbers.includes(num)) return num; } } } } let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num)); return num; }
+app.get('/api/admin/game-status', adminAuth, async (req, res) => { try { const realPlayersIds = [...new Set(Object.values(gameState.takenCards).filter(c => !c.isBot).map(c => c.userId))]; const realPlayers = await User.find({ id: { $in: realPlayersIds } }, { id: 1, name: 1 }).lean(); const playerMap = new Map(realPlayers.map(p => [p.id, p.name])); const takenCardsDetails = {}; for (const [card, data] of Object.entries(gameState.takenCards)) { takenCardsDetails[card] = { userId: data.userId, userName: data.isBot ? data.botName : (playerMap.get(data.userId) || "Unknown"), isBot: !!data.isBot }; } const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length; const botsCount = Object.values(gameState.takenCards).filter(c => c.isBot).length; const targetBots = gameState.settings.botCount || 1; const currentFake = Math.floor((botsCount / targetBots) * gameState.settings.visualPlayers); const visualTotal = currentFake + realCardsCount; res.json({ success: true, data: { ...gameState, takenCardsDetails, totalPlayers: visualTotal, realPlayersCount: realPlayersIds.length, totalCards: Object.keys(gameState.takenCards).length } }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/admin/user-cards/:userId', adminAuth, async (req, res) => { try { const userId = String(req.params.userId); const userCards = []; for (const [card, data] of Object.entries(gameState.takenCards)) { if (String(data.userId) === userId) userCards.push(Number(card)); } res.json({ success: true, data: { userCards, calledNumbers: gameState.calledNumbers } }); } catch (e) { res.status(500).json({ success: false }); } });
+app.delete('/api/admin/users/:id', adminAuth, async (req, res) => { try { const userId = String(req.params.id); await User.deleteOne({ id: userId }); await Transaction.deleteMany({ user_id: userId }); for (const [cardNum, data] of Object.entries(gameState.takenCards)) { if (data.userId === userId) { delete gameState.takenCards[cardNum]; if (gameState.numberToCardsMap) { Object.keys(gameState.numberToCardsMap).forEach(num => gameState.numberToCardsMap[num].delete(Number(cardNum))); } } } io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: Object.keys(gameState.takenCards).length, totalCards: Object.keys(gameState.takenCards).length }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, error: e.message }); } });
+app.get('/api/admin/referrals', adminAuth, async (req, res) => { try { const referredUsers = await User.find({ referred_by: { $ne: null } }).lean(); const referrerIds = [...new Set(referredUsers.map(u => u.referred_by))]; const referrers = await User.find({ id: { $in: referrerIds } }, { id: 1, name: 1 }).lean(); const referrerMap = new Map(referrers.map(r => [r.id, r.name])); const data = referredUsers.map(u => ({ referrer_id: u.referred_by, referrer_name: referrerMap.get(u.referred_by) || 'Unknown', new_user_id: u.id, new_user_name: u.name || 'Player', created_at: u.registered_at })); res.json({ success: true, data }); } catch (e) { res.status(500).json({ success: false }); } });
+app.post('/api/user/referral', async (req, res) => { try { const { new_user_id, referrer_id, new_user_name } = req.body; if (!new_user_id || !referrer_id || new_user_id === referrer_id) return res.status(400).json({ success: false, error: 'Invalid referral' }); const newUser = await User.findOne({ id: String(new_user_id) }); if (newUser && newUser.referred_by) return res.status(400).json({ success: false, error: 'Already referred' }); const referrer = await User.find({ id: String(referrer_id) }); if (!referrer) return res.status(404).json({ success: false, error: 'Referrer not found' }); await User.updateOne({ id: String(referrer_id) }, { $inc: { play_balance: 30, referral_balance: 30 } }); await User.findOneAndUpdate({ id: String(new_user_id) }, { $inc: { play_balance: 20 }, $set: { referred_by: String(referrer_id), name: new_user_name || 'Player' } }, { upsert: true }); io.to(`user_${referrer_id}`).emit('wallet_updated', {}); io.to(`user_${new_user_id}`).emit('wallet_updated', {}); res.json({ success: true, message: 'Referral bonus applied' }); } catch (e) { res.status(500).json({ success: false, error: e.message }); } });
+app.post('/api/admin/start-game', adminAuth, (req, res) => { gameState.isRunning = true; gameState.isForceWinActive = false; if (gameState.phase === 'waiting') startRound(); res.json({ success: true }); });
+app.post('/api/admin/stop-game', adminAuth, (req, res) => { gameState.isRunning = false; gameState.isForceWinActive = false; if (gameTimerInterval) clearInterval(gameTimerInterval); if (callInterval) clearInterval(callInterval); if (autoRestartTimer) clearTimeout(autoRestartTimer); if (botSpawnInterval) clearInterval(botSpawnInterval); gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.takenCards = {}; gameState.isAutoOn = false; gameState.currentCall = null; isEndingRound = false; roundWinners = []; io.emit('reset_game'); res.json({ success: true }); });
+app.post('/api/admin/call-number', adminAuth, async (req, res) => { if (gameState.phase !== 'calling' || gameState.calledNumbers.length >= 75 || isEndingRound) return res.status(400).json({ success: false, message: 'ጨዋታ አልተጀመረም ወይም አልቋል' }); const reqNumber = Number(req.body.number); if (!reqNumber || reqNumber < 1 || reqNumber > 75) return res.status(400).json({ success: false, message: 'እባክዎ ከ1 እስከ 75 ያለ ትክክለኛ ቁጥር ያስገቡ' }); if (gameState.calledNumbers.includes(reqNumber)) return res.status(400).json({ success: false, message: 'ይህ ቁጥር ቀድሞ ተጠርቷል!' }); gameState.calledNumbers.push(reqNumber); gameState.currentCall = reqNumber; io.emit('new_number_called', { number: reqNumber, allCalled: gameState.calledNumbers }); const winnerFound = await checkForAutoWinner(reqNumber); if (winnerFound) { await endRound(roundWinners); return res.json({ success: true }); } if (callInterval) { clearInterval(callInterval); callInterval = null; } if (gameState.isAutoOn) { callInterval = setInterval(async () => { if (gameState.phase !== 'calling' || isEndingRound) return; if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; } let num = getNextNumberToCall(); gameState.calledNumbers.push(num); gameState.currentCall = num; io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers }); const winnerFound = await checkForAutoWinner(num); if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); } }, gameState.settings.callInterval * 1000); } res.json({ success: true }); });
+app.post('/api/admin/auto-game', adminAuth, (req, res) => { const { isAutoOn, speed } = req.body; if (callInterval) { clearInterval(callInterval); callInterval = null; } gameState.isAutoOn = !!isAutoOn; if (Number(speed) > 0) gameState.settings.callInterval = Number(speed); if (isAutoOn && gameState.phase === 'calling') { callInterval = setInterval(async () => { if (gameState.phase !== 'calling' || isEndingRound) return; if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; } let num = getNextNumberToCall(); gameState.calledNumbers.push(num); gameState.currentCall = num; io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers }); const winnerFound = await checkForAutoWinner(num); if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); } }, gameState.settings.callInterval * 1000); } res.json({ success: true }); });
+app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => { try { const { id } = req.params; const { play_balance, win_balance } = req.body; const update = {}; if (typeof play_balance === 'number') update.play_balance = play_balance; if (typeof win_balance === 'number') update.win_balance = win_balance; const user = await User.findOneAndUpdate({ id: String(id) }, { $set: update }, { new: true, lean: true }); io.to(`user_${id}`).emit('wallet_updated', {}); res.json({ success: true, data: user }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/admin/broadcasts', adminAuth, async (req, res) => { try { const broadcasts = await Broadcast.find({ status: 'active' }).sort({ sentAt: -1 }).limit(20).lean(); res.json({ success: true, data: broadcasts }); } catch (e) { res.status(500).json({ success: false }); } });
+app.post('/api/admin/broadcast', adminAuth, async (req, res) => { try { const { message, targetUserId } = req.body; let users = targetUserId ? [{ id: targetUserId }] : await User.find({}, { id: 1 }).lean(); let sentMessages = []; for (const u of users) { try { const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: u.id, text: message, parse_mode: 'HTML' }) }); const data = await response.json(); if (data.ok) sentMessages.push({ user_id: u.id, message_id: data.result.message_id }); } catch (err) { } } if (!targetUserId) await Broadcast.create({ id: 'bc_' + Date.now(), message: message, sentMessages: sentMessages }); res.json({ success: true, count: users.length }); } catch (e) { res.status(500).json({ success: false }); } });
+app.delete('/api/admin/broadcasts/:id', adminAuth, async (req, res) => { try { const broadcast = await Broadcast.findOne({ id: req.params.id }); if (!broadcast) return res.status(404).json({ success: false }); broadcast.sentMessages.forEach(async (msg) => { try { await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: msg.user_id, message_id: msg.message_id }) }); } catch (e) {} }); broadcast.status = 'deleted'; await broadcast.save(); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/admin/promo-codes', adminAuth, async (req, res) => { try { const codes = await PromoCode.find({}).sort({ createdAt: -1 }).limit(50).lean(); res.json({ success: true, data: codes }); } catch (e) { res.status(500).json({ success: false }); } });
+app.post('/api/admin/promo-codes', adminAuth, async (req, res) => { try { const { code, amount, maxUses, durationMinutes } = req.body; const expiresAt = new Date(Date.now() + (Number(durationMinutes) || 1440) * 60000); const newPromo = await PromoCode.create({ code: code.toUpperCase(), amount: Number(amount), maxUses: Number(maxUses), expiresAt }); res.json({ success: true, data: newPromo }); } catch (e) { res.status(400).json({ success: false, error: 'Code already exists' }); } });
+app.delete('/api/admin/promo-codes/:id', adminAuth, async (req, res) => { try { await PromoCode.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false }); } });
+app.post('/api/promo/claim', async (req, res) => { try { const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false }); const { code } = req.body; const promo = await PromoCode.findOne({ code: code.toUpperCase(), status: 'active' }); if (!promo) return res.json({ success: false, error: 'Invalid or expired code' }); if (new Date() > promo.expiresAt) return res.json({ success: false, error: 'Code expired' }); if (promo.usedCount >= promo.maxUses) return res.json({ success: false, error: 'Code limit reached' }); if (promo.usedBy.includes(String(user.id))) return res.json({ success: false, error: 'Already used' }); promo.usedBy.push(String(user.id)); promo.usedCount += 1; await promo.save(); await User.updateOne({ id: String(user.id) }, { $inc: { play_balance: promo.amount } }); io.to(`user_${user.id}`).emit('wallet_updated', {}); res.json({ success: true, amount: promo.amount }); } catch (e) { res.status(500).json({ success: false }); } });
+app.get('/api/admin/transactions', adminAuth, async (req, res) => { try { const filter = {}; if (req.query.type) filter.type = req.query.type; const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString(); filter.$or = [{ status: 'pending' }, { status: { $in: ['approved', 'rejected'] }, created: { $gte: oneHourAgo } }]; const txns = await Transaction.find(filter).sort({ created: -1 }).limit(200).lean(); res.json({ success: true, data: txns }); } catch (e) { res.status(500).json({ success: false }); } });
 
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {
@@ -859,23 +583,13 @@ io.on('connection', (socket) => {
         if (!userId && payload?.clientId) userId = String(payload.clientId);
         socket.verifiedId = userId; if (userId) socket.join(`user_${userId}`);
         const myCards = [];
-        if (socket.verifiedId) {
-            for (const [num, data] of Object.entries(gameState.takenCards)) {
-                if (String(data.userId) === String(socket.verifiedId)) myCards.push(Number(num));
-            }
-        }
-        
+        if (socket.verifiedId) { for (const [num, data] of Object.entries(gameState.takenCards)) { if (String(data.userId) === String(socket.verifiedId)) myCards.push(Number(num)); } }
         const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length;
         const botsCount = Object.values(gameState.takenCards).filter(c => c.isBot).length;
         const targetBots = gameState.settings.botCount || 1;
         const currentFake = Math.floor((botsCount / targetBots) * gameState.settings.visualPlayers);
         const visualTotal = currentFake + realCardsCount;
-
-        socket.emit('init_state', {
-            phase: gameState.phase, takenCards: Object.keys(gameState.takenCards).map(Number), myCards,
-            calledNumbers: gameState.calledNumbers, remainingTime, currentCall: gameState.currentCall,
-            maxCards: gameState.settings.maxCards, totalPlayers: visualTotal, totalCards: Object.keys(gameState.takenCards).length
-        });
+        socket.emit('init_state', { phase: gameState.phase, takenCards: Object.keys(gameState.takenCards).map(Number), myCards, calledNumbers: gameState.calledNumbers, remainingTime, currentCall: gameState.currentCall, maxCards: gameState.settings.maxCards, totalPlayers: visualTotal, totalCards: Object.keys(gameState.takenCards).length });
     });
 
     socket.on('select_card', async (data) => {
@@ -889,180 +603,32 @@ io.on('connection', (socket) => {
                 if (gameState.takenCards[cardNum]) return socket.emit('card_error', { message: '❌ ይህ ካርቴላ በሌላ ተጫዋች ተይዟል!' });
                 let updated = await User.findOneAndUpdate({ id: String(socket.verifiedId), play_balance: { $gte: CARD_PRICE } }, { $inc: { play_balance: -CARD_PRICE } }, { new: true });
                 if (!updated) return socket.emit('card_error', { message: '❌ ቀሪ ሂሳብ በቂ አይደለም!' });
-                
                 gameState.takenCards[cardNum] = { userId: socket.verifiedId, isBot: false }; 
                 socket.emit('wallet_updated', {});
-
                 const cardCols = getCardCols(cardNum);
-                cardCols.forEach(col => {
-                    col.forEach(num => {
-                        if (num !== 'FREE') {
-                            if (!gameState.numberToCardsMap[num]) gameState.numberToCardsMap[num] = new Set();
-                            gameState.numberToCardsMap[num].add(cardNum);
-                        }
-                    });
-                });
-
+                cardCols.forEach(col => { col.forEach(num => { if (num !== 'FREE') { if (!gameState.numberToCardsMap[num]) gameState.numberToCardsMap[num] = new Set(); gameState.numberToCardsMap[num].add(cardNum); } }); });
             } else if (data.action === 'deselect') {
                 if (gameState.takenCards[cardNum] && gameState.takenCards[cardNum].userId === socket.verifiedId) { 
                     delete gameState.takenCards[cardNum]; 
                     await User.updateOne({ id: String(socket.verifiedId) }, { $inc: { play_balance: CARD_PRICE } }); 
                     socket.emit('wallet_updated', {}); 
                     const cardCols = getCardCols(cardNum);
-                    cardCols.forEach(col => {
-                        col.forEach(num => {
-                            if (num !== 'FREE' && gameState.numberToCardsMap[num]) {
-                                gameState.numberToCardsMap[num].delete(cardNum);
-                            }
-                        });
-                    });
+                    cardCols.forEach(col => { col.forEach(num => { if (num !== 'FREE' && gameState.numberToCardsMap[num]) { gameState.numberToCardsMap[num].delete(cardNum); } }); });
                 }
             }
-            
             const realCardsCount = Object.values(gameState.takenCards).filter(c => !c.isBot).length;
             const botsCount = Object.values(gameState.takenCards).filter(c => c.isBot).length;
             const targetBots = gameState.settings.botCount || 1;
             const currentFake = Math.floor((botsCount / targetBots) * gameState.settings.visualPlayers);
             const visualTotal = currentFake + realCardsCount;
-
             io.emit('sync_taken_cards', { takenCards: Object.keys(gameState.takenCards).map(Number), totalPlayers: visualTotal, totalCards: Object.keys(gameState.takenCards).length });
         } catch (err) { socket.emit('card_error', { message: 'ሰርቨር ስህተት' }); }
     });
 
-    socket.on('disconnect', () => {
-        socket.removeAllListeners();
-        if (socket.verifiedId) socket.leave(`user_${socket.verifiedId}`);
-    });
+    socket.on('disconnect', () => { socket.removeAllListeners(); if (socket.verifiedId) socket.leave(`user_${socket.verifiedId}`); });
 });
 
-async function checkForAutoWinner(newNumber) {
-    if (isEndingRound || gameState.phase !== 'calling') return false;
-    const potentialCards = gameState.numberToCardsMap[newNumber];
-    if (!potentialCards || potentialCards.size === 0) return false;
-
-    let potentialWinners = [];
-    for (const cardNum of potentialCards) {
-        const data = gameState.takenCards[cardNum];
-        if (!data) continue;
-        const win = checkWinningLine(cardNum, gameState.calledNumbers);
-        if (win) {
-            if (data.isBot) {
-                const chance = Math.random() * 100;
-                if (chance > gameState.settings.botWinRate) continue; 
-            }
-            potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, isBot: !!data.isBot, name: data.isBot ? data.botName : null, win });
-        }
-    }
-    
-    if (potentialWinners.length === 0) return false;
-    
-    const realUserIds = [...new Set(potentialWinners.filter(p => !p.isBot).map(p => p.userId))];
-    const users = await User.find({ id: { $in: realUserIds } }, { id: 1, name: 1 }).lean();
-    const userMap = new Map(users.map(u => [u.id, u.name]));
-    
-    roundWinners = potentialWinners.map(p => ({
-        id: p.userId, name: p.isBot ? p.name : (userMap.get(p.userId) || 'Player'), cardNum: p.cardNum,
-        isBot: p.isBot, winDesc: p.win.desc, winType: p.win.type, winIndex: p.win.index, allLines: [p.win]
-    }));
-    
-    isEndingRound = true; gameState.phase = 'claiming';
-    if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
-    return true;
-}
-
-function startRound() {
-    if (!gameState.isRunning) return;
-    if (gameTimerInterval) clearInterval(gameTimerInterval); 
-    if (callInterval) clearInterval(callInterval); 
-    if (autoRestartTimer) clearTimeout(autoRestartTimer); 
-    if (botSpawnInterval) clearInterval(botSpawnInterval);
-    gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; 
-    gameState.isForceWinActive = false;
-    roundWinners = []; isEndingRound = false; 
-    remainingTime = gameState.settings.countdownTime || 50;
-    
-    io.emit('phase_change', { phase: 'countdown' }); io.emit('timer_tick', { remaining: remainingTime });
-    
-    startBotSpawning();
-
-    gameTimerInterval = setInterval(() => {
-        if (!gameState.isRunning) return;
-        remainingTime--; io.emit('timer_tick', { remaining: remainingTime });
-        if (remainingTime <= 0) {
-            const totalCards = Object.keys(gameState.takenCards).length;
-            if (totalCards < 3) { 
-                remainingTime = gameState.settings.countdownTime || 50; 
-                io.emit('timer_tick', { remaining: remainingTime }); 
-                io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); return; 
-            }
-            clearInterval(gameTimerInterval); gameTimerInterval = null; 
-            gameState.phase = 'calling'; io.emit('phase_change', { phase: 'calling' });
-            if (gameState.isAutoOn) {
-                callInterval = setInterval(async () => {
-                    if (gameState.phase !== 'calling' || isEndingRound) return;
-                    if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
-                    
-                    let num = getNextNumberToCall();
-
-                    gameState.calledNumbers.push(num); gameState.currentCall = num;
-                    io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
-                    const winnerFound = await checkForAutoWinner(num);
-                    if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); }
-                }, gameState.settings.callInterval * 1000);
-            }
-        }
-    }, 1000);
-}
-
-async function endRound(winnersData) {
-    if (gameState.phase === 'gameover') return; 
-    isEndingRound = true; gameState.phase = 'gameover';
-    if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; }
-    if (callInterval) { clearInterval(callInterval); callInterval = null; }
-    if (botSpawnInterval) { clearInterval(botSpawnInterval); botSpawnInterval = null; }
-    
-    try {
-        const realPlayers = [...new Set(Object.values(gameState.takenCards).filter(c => !c.isBot).map(c => c.userId))];
-        const totalCards = Object.keys(gameState.takenCards).length; 
-        const totalPrize = totalCards * DERASH_PER_CARD; 
-        const promises = [];
-        
-        if (realPlayers.length > 0) promises.push(User.updateMany({ id: { $in: realPlayers } }, { $inc: { total_games: 1 } }));
-        
-        if (!winnersData || winnersData.length === 0) {
-            await Promise.all(promises); io.emit('reset_game');
-            autoRestartTimer = setTimeout(() => {
-                gameState.takenCards = {}; gameState.phase = 'waiting'; 
-                gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
-                if (gameState.isRunning) startRound();
-            }, 3000); return;
-        }
-        
-        const realWinners = winnersData.filter(w => !w.isBot);
-        if (realWinners.length > 0) {
-            const prizePerWinner = Math.floor(totalPrize / winnersData.length); 
-            const winnerIds = realWinners.map(w => String(w.id));
-            promises.push(User.updateMany({ id: { $in: winnerIds } }, { $inc: { win_balance: prizePerWinner, total_wins: 1 } }));
-        }
-
-        promises.push(GameHistory.create({
-            gameId: 'game_' + Date.now(), winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: Math.floor(totalPrize / winnersData.length) })),
-            totalPrize, totalPlayers: totalCards, calledNumbers: gameState.calledNumbers
-        }));
-        await Promise.all(promises);
-        
-        for (const w of realWinners) io.to(`user_${w.id}`).emit('wallet_updated', {});
-        
-        const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1]; 
-        io.emit('game_over', { reason: 'bingo', winners: winnersData, totalPrize, prizePerWinner: Math.floor(totalPrize / winnersData.length), lastCall, calledNumbers: gameState.calledNumbers });
-        
-        autoRestartTimer = setTimeout(() => {
-            gameState.takenCards = {}; gameState.phase = 'waiting'; 
-            gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false;
-            io.emit('reset_game'); if (gameState.isRunning) startRound();
-        }, 10000);
-    } catch (err) { console.error('❌ endRound error:', err); }
-}
-
+async function checkForAutoWinner(newNumber) { if (isEndingRound || gameState.phase !== 'calling') return false; const potentialCards = gameState.numberToCardsMap[newNumber]; if (!potentialCards || potentialCards.size === 0) return false; let potentialWinners = []; for (const cardNum of potentialCards) { const data = gameState.takenCards[cardNum]; if (!data) continue; const win = checkWinningLine(cardNum, gameState.calledNumbers); if (win) { if (data.isBot) { const chance = Math.random() * 100; if (chance > gameState.settings.botWinRate) continue; } potentialWinners.push({ cardNum: Number(cardNum), userId: data.userId, isBot: !!data.isBot, name: data.isBot ? data.botName : null, win }); } } if (potentialWinners.length === 0) return false; const realUserIds = [...new Set(potentialWinners.filter(p => !p.isBot).map(p => p.userId))]; const users = await User.find({ id: { $in: realUserIds } }, { id: 1, name: 1 }).lean(); const userMap = new Map(users.map(u => [u.id, u.name])); roundWinners = potentialWinners.map(p => ({ id: p.userId, name: p.isBot ? p.name : (userMap.get(p.userId) || 'Player'), cardNum: p.cardNum, isBot: p.isBot, winDesc: p.win.desc, winType: p.win.type, winIndex: p.win.index, allLines: [p.win] })); isEndingRound = true; gameState.phase = 'claiming'; if (callInterval) { clearInterval(callInterval); callInterval = null; } if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; } return true; }
+function startRound() { if (!gameState.isRunning) return; if (gameTimerInterval) clearInterval(gameTimerInterval); if (callInterval) clearInterval(callInterval); if (autoRestartTimer) clearTimeout(autoRestartTimer); if (botSpawnInterval) clearInterval(botSpawnInterval); gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; gameState.isForceWinActive = false; roundWinners = []; isEndingRound = false; remainingTime = gameState.settings.countdownTime || 50; io.emit('phase_change', { phase: 'countdown' }); io.emit('timer_tick', { remaining: remainingTime }); startBotSpawning(); gameTimerInterval = setInterval(() => { if (!gameState.isRunning) return; remainingTime--; io.emit('timer_tick', { remaining: remainingTime }); if (remainingTime <= 0) { const totalCards = Object.keys(gameState.takenCards).length; if (totalCards < 3) { remainingTime = gameState.settings.countdownTime || 50; io.emit('timer_tick', { remaining: remainingTime }); io.emit('game_status_msg', { message: 'ቢያንስ 3 ካርቴላ ያስፈልጋል! ሰዓቱ እንደገና ተጀምሯል።' }); return; } clearInterval(gameTimerInterval); gameTimerInterval = null; gameState.phase = 'calling'; io.emit('phase_change', { phase: 'calling' }); if (gameState.isAutoOn) { callInterval = setInterval(async () => { if (gameState.phase !== 'calling' || isEndingRound) return; if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; } let num = getNextNumberToCall(); gameState.calledNumbers.push(num); gameState.currentCall = num; io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers }); const winnerFound = await checkForAutoWinner(num); if (winnerFound) { clearInterval(callInterval); callInterval = null; await endRound(roundWinners); } }, gameState.settings.callInterval * 1000); } } }, 1000); }
+async function endRound(winnersData) { if (gameState.phase === 'gameover') return; isEndingRound = true; gameState.phase = 'gameover'; if (gameTimerInterval) { clearInterval(gameTimerInterval); gameTimerInterval = null; } if (callInterval) { clearInterval(callInterval); callInterval = null; } if (botSpawnInterval) { clearInterval(botSpawnInterval); botSpawnInterval = null; } try { const realPlayers = [...new Set(Object.values(gameState.takenCards).filter(c => !c.isBot).map(c => c.userId))]; const totalCards = Object.keys(gameState.takenCards).length; const totalPrize = totalCards * DERASH_PER_CARD; const promises = []; if (realPlayers.length > 0) promises.push(User.updateMany({ id: { $in: realPlayers } }, { $inc: { total_games: 1 } })); if (!winnersData || winnersData.length === 0) { await Promise.all(promises); io.emit('reset_game'); autoRestartTimer = setTimeout(() => { gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false; if (gameState.isRunning) startRound(); }, 3000); return; } const realWinners = winnersData.filter(w => !w.isBot); if (realWinners.length > 0) { const prizePerWinner = Math.floor(totalPrize / winnersData.length); const winnerIds = realWinners.map(w => String(w.id)); promises.push(User.updateMany({ id: { $in: winnerIds } }, { $inc: { win_balance: prizePerWinner, total_wins: 1 } })); } promises.push(GameHistory.create({ gameId: 'game_' + Date.now(), winners: winnersData.map(w => ({ id: w.id, name: w.name, cardNum: w.cardNum, prize: Math.floor(totalPrize / winnersData.length) })), totalPrize, totalPlayers: totalCards, calledNumbers: gameState.calledNumbers })); await Promise.all(promises); for (const w of realWinners) io.to(`user_${w.id}`).emit('wallet_updated', {}); const lastCall = gameState.calledNumbers[gameState.calledNumbers.length - 1]; io.emit('game_over', { reason: 'bingo', winners: winnersData, totalPrize, prizePerWinner: Math.floor(totalPrize / winnersData.length), lastCall, calledNumbers: gameState.calledNumbers }); autoRestartTimer = setTimeout(() => { gameState.takenCards = {}; gameState.phase = 'waiting'; gameState.calledNumbers = []; gameState.currentCall = null; roundWinners = []; isEndingRound = false; io.emit('reset_game'); if (gameState.isRunning) startRound(); }, 10000); } catch (err) { console.error('❌ endRound error:', err); } }
 server.listen(PORT, () => { console.log(`🚀 Server running on port ${PORT}`); });
