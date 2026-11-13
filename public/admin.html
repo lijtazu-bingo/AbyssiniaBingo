@@ -26,6 +26,18 @@
     .menu-item:hover, .menu-item.active { background: rgba(16, 185, 129, 0.1); color: var(--primary); border-left-color: var(--primary); }
     .menu-item i { width: 20px; text-align: center; }
     .notif-badge { background: var(--danger); color: white; border-radius: 10px; padding: 2px 8px; font-size: 10px; margin-left: auto; font-weight: bold; }
+    
+    /* ✅ አዲስ የላይኛው ፖፕ-አፕ ኖቲፊኬሽን ስታይል */
+    #push-notification-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
+    .push-notification { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); color: #fff; padding: 15px; border-radius: 12px; border: 1px solid var(--blue); box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 15px; transform: translateY(-100px); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: auto; cursor: pointer; }
+    .push-notification.show { transform: translateY(0); opacity: 1; }
+    .push-notification.deposit { border-color: var(--success); }
+    .push-notification.withdraw { border-color: var(--gold); }
+    .push-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.1); }
+    .push-content { flex: 1; }
+    .push-title { font-weight: bold; font-size: 14px; margin-bottom: 3px; }
+    .push-desc { font-size: 12px; color: var(--text-muted); }
+
     .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--bg); }
     .top-bar { height: 75px; background: var(--bg-card); display: flex; align-items: center; justify-content: space-between; padding: 0 30px; border-bottom: 1px solid var(--border); }
     .header-title-area h2 { font-size: 22px; font-weight: 800; color: var(--text); }
@@ -101,6 +113,8 @@
 </div>
 
 <div id="admin-toast"></div>
+<!-- ✅ አዲስ የላይኛው ፖፕ-አፕ ኖቲፊኬሽን መያዣ -->
+<div id="push-notification-container"></div>
 
 <div id="main-content">
     <div id="sidebar">
@@ -109,7 +123,8 @@
             <div class="menu-label">Main</div>
             <div class="menu-item active" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
             <div class="menu-item" onclick="switchPage('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users <span id="notif-users" class="notif-badge hidden">0</span></div>
+            <!-- ✅ Users ባጅ ተወግዷል -->
+            <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users</div>
             <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> Deposits <span id="notif-deposits" class="notif-badge hidden">0</span></div>
             <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals <span id="notif-withdrawals" class="notif-badge hidden">0</span></div>
             
@@ -284,7 +299,6 @@
                 </div>
             </div>
 
-            <!-- ✅ BROADCAST MULTI-SELECT DELETE -->
             <div id="page-broadcast" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-bullhorn"></i> Send Broadcast Message</h3>
@@ -303,7 +317,6 @@
                 </div>
             </div>
 
-            <!-- ✅ GIVEAWAY MULTI-SELECT DELETE -->
             <div id="page-giveaway" class="page">
                 <div class="table-wrapper" style="padding: 25px; max-width: 700px; margin-bottom: 25px;">
                     <h3 style="margin-bottom: 15px; color: var(--primary);"><i class="fas fa-gift"></i> Create Giveaway</h3>
@@ -324,7 +337,6 @@
                 </div>
             </div>
 
-            <!-- ✅ GAME HISTORY MULTI-SELECT DELETE -->
             <div id="page-history" class="page">
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -428,6 +440,10 @@ let allPlayersData = [];
 let currentSelectedPlayer = null;
 let latestCalledNumbers = []; 
 
+// ✅ ያለፈውን የ deposit/withdraw ብዛት ለማስታወስ (ለኖቲፊኬሽን ልዩነት ማወቂያ)
+let lastPendingDeposits = 0;
+let lastPendingWithdrawals = 0;
+
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 function showToast(msg, isError = false) { const toast = document.getElementById('admin-toast'); toast.innerText = msg; toast.classList.toggle('error', isError); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
@@ -490,21 +506,73 @@ function switchPage(pageId, element) {
     if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
 }
 
-// ✅ 2ኛ: NOTIFICATION POLLING (ሁልጊዜ በሰርቨር ላይ እያለ ኖቲፊኬሽን ይቀበላል)
+// ✅ 2ኛ: የላይኛው ፖፕ-አፕ ኖቲፊኬሽን (Pop-up Notification)
+function showPushNotification(type, amount) {
+    const container = document.getElementById('push-notification-container');
+    const notif = document.createElement('div');
+    notif.className = `push-notification ${type}`;
+    
+    let icon = type === 'deposit' ? '💰' : '💸';
+    let title = type === 'deposit' ? 'New Deposit Request!' : 'New Withdrawal Request!';
+    
+    notif.innerHTML = `
+        <div class="push-icon">${icon}</div>
+        <div class="push-content">
+            <div class="push-title">${title}</div>
+            <div class="push-desc">Amount: ${amount} ETB</div>
+        </div>
+    `;
+    
+    // ሲነካ ወደ ገጹ እንዲወስድ
+    notif.onclick = () => { switchPage(type === 'deposit' ? 'deposits' : 'withdrawals', document.querySelector(`.menu-item:nth-child(${type === 'deposit' ? 4 : 5})`)); notif.remove(); };
+    
+    container.appendChild(notif);
+    
+    // ትንሽ ሆኖ እንዲመጣ (Animation)
+    setTimeout(() => notif.classList.add('show'), 10);
+    
+    // ከ 5 ሰከንድ በኋላ በራሱ እንዲጠፋ
+    setTimeout(() => {
+        notif.classList.remove('show');
+        setTimeout(() => notif.remove(), 400);
+    }, 5000);
+}
+
+// ✅ የ Polling ሎጂክ (አዲስ ጥያቄ መኖሩን ለማወቅ)
 async function checkNotifications() {
     if (!AUTH_TOKEN) return;
     try {
         const d = await apiFetch('/api/admin/dashboard');
         if (d.success) {
+            // ባጆችን ማደስ
             updateNotifBadge('notif-deposits', d.data.pendingDeposits);
             updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
-            updateNotifBadge('notif-users', d.data.newUsersCount); // ✅ አዲስ ተጠቃሚዎች ብዛት
+            
+            // ✅ አዲስ Deposit ካለ ፖፕ-አፕ እንዲያሳይ
+            if (d.data.pendingDeposits > lastPendingDeposits) {
+                const diff = d.data.pendingDeposits - lastPendingDeposits;
+                if (lastPendingDeposits > 0 || d.data.pendingDeposits === 1) {
+                    showPushNotification('deposit', diff === 1 ? 'New' : `${diff} New`);
+                }
+            }
+            
+            // ✅ አዲስ Withdrawal ካለ ፖፕ-አፕ እንዲያሳይ
+            if (d.data.pendingWithdrawals > lastPendingWithdrawals) {
+                const diff = d.data.pendingWithdrawals - lastPendingWithdrawals;
+                if (lastPendingWithdrawals > 0 || d.data.pendingWithdrawals === 1) {
+                    showPushNotification('withdraw', diff === 1 ? 'New' : `${diff} New`);
+                }
+            }
+            
+            // የነበረውን ቁጥር ማደስ
+            lastPendingDeposits = d.data.pendingDeposits;
+            lastPendingWithdrawals = d.data.pendingWithdrawals;
         }
     } catch (e) {}
 }
 function startNotificationPolling() {
     if (pollInterval) clearInterval(pollInterval);
-    checkNotifications();
+    checkNotifications(); // መጀመሪያ ላይ ያለውን ያለ ኖቲፊኬሽን ለማስተካከል (ስፓም እንዳይሆን)
     pollInterval = setInterval(checkNotifications, 10000); // በየ 10 ሰከንዱ ያረጋግጣል
 }
 function updateNotifBadge(id, count) {
@@ -553,7 +621,7 @@ async function loadDashboardData() {
             
             updateNotifBadge('notif-deposits', d.data.pendingDeposits);
             updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
-            updateNotifBadge('notif-users', d.data.newUsersCount);
+            // ✅ Users ባጅ ተወግዷል
         } 
     } catch(e){}
     
