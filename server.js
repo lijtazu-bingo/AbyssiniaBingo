@@ -179,7 +179,7 @@ const gameState = {
         botEnabled: true, visualPlayers: 350, botCount: 350, botWinRate: 100, botNames: []
     },
     numberToCardsMap: {},
-    isForceWinActive: false // ✅ Force Win State
+    isForceWinActive: false
 };
 let gameTimerInterval = null, callInterval = null, autoRestartTimer = null, botSpawnInterval = null;
 let remainingTime = 50, roundWinners = [], isEndingRound = false;
@@ -276,29 +276,25 @@ app.post('/api/admin/settings', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ የForce Win መቀየሪያ API
 app.post('/api/admin/toggle-force-win', adminAuth, (req, res) => {
     gameState.isForceWinActive = !!req.body.active;
     res.json({ success: true, isForceWinActive: gameState.isForceWinActive });
 });
 
-// ✅ የተሻሻለው ቁጥር መጥሪያ (Force Win ላይ ሆኖ የሮቦችን ቁጥር ብቻ ይጠራል)
 function getNextNumberToCall() {
     if (gameState.isForceWinActive) {
-        // Force Win ላይ ከሆነ የሮቦችን ካርቴላ ብቻ መርምር
         for (const [cardNum, data] of Object.entries(gameState.takenCards)) {
             if (!data.isBot) continue;
             const cols = getCardCols(cardNum);
             for (const col of cols) {
                 for (const num of col) {
                     if (num !== 'FREE' && !gameState.calledNumbers.includes(num)) {
-                        return num; // የሮቦችን ካርቴላ የሚሞላ ቁጥር አገኘን
+                        return num;
                     }
                 }
             }
         }
     }
-    // መደበኛ የዘፈቀደ ጥሪ
     let num; do { num = Math.floor(Math.random() * 75) + 1; } while (gameState.calledNumbers.includes(num));
     return num;
 }
@@ -421,7 +417,7 @@ app.post('/api/admin/call-number', adminAuth, async (req, res) => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
             
-            let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+            let num = getNextNumberToCall();
             
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
@@ -442,7 +438,7 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
             if (gameState.phase !== 'calling' || isEndingRound) return;
             if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
             
-            let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+            let num = getNextNumberToCall();
             
             gameState.calledNumbers.push(num); gameState.currentCall = num;
             io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
@@ -452,9 +448,6 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     }
     res.json({ success: true });
 });
-
-// ... [The rest of the APIs: dashboard, users, transactions, giveaway, broadcast, promo, wallet, deposit, withdraw] ...
-// (They are identical to previous code, preserved fully)
 
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
@@ -695,6 +688,51 @@ app.post('/api/bot/create-txn', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// ✅✅✅ አዲስ የተጨመረ: Giveaway Claim Endpoint (የጎደለው ዋናው ክፍል) ✅✅✅
+app.post('/api/bot/giveaway-claim', async (req, res) => {
+    try {
+        const { giveaway_id, user_id } = req.body;
+
+        if (!giveaway_id || !user_id) {
+            return res.status(400).json({ success: false, error: 'Missing giveaway_id or user_id' });
+        }
+
+        const giveaway = await Giveaway.findOne({ id: giveaway_id });
+        if (!giveaway) {
+            return res.json({ success: false, error: 'Giveaway not found' });
+        }
+        if (giveaway.status !== 'active') {
+            return res.json({ success: false, error: 'Giveaway expired' });
+        }
+        if (new Date() > new Date(giveaway.expiresAt)) {
+            return res.json({ success: false, error: 'Giveaway expired' });
+        }
+        if (giveaway.claimedBy.length >= giveaway.totalUsers) {
+            return res.json({ success: false, error: 'All bonuses claimed' });
+        }
+        if (giveaway.claimedBy.includes(String(user_id))) {
+            return res.json({ success: false, error: 'You already claimed this bonus' });
+        }
+
+        let user = await User.findOne({ id: String(user_id) });
+        if (!user) user = await User.create({ id: String(user_id) });
+
+        giveaway.claimedBy.push(String(user_id));
+        await giveaway.save();
+
+        await User.updateOne({ id: String(user_id) }, { $inc: { play_balance: giveaway.amount } });
+        io.to(`user_${user_id}`).emit('wallet_updated', {});
+
+        console.log(`✅ Giveaway ${giveaway_id} claimed by ${user_id} - ${giveaway.amount} ETB`);
+        return res.json({ success: true, amount: giveaway.amount });
+
+    } catch (e) {
+        console.error('❌ Giveaway claim error:', e);
+        return res.status(500).json({ success: false, error: e.message });
+    }
+});
+// ✅✅✅ አዲስ የተጨመረ መጨረሻ ✅✅✅
+
 io.on('connection', (socket) => {
     socket.on('join_room', (payload) => {
         socket.join('abisinya_global_room');
@@ -822,7 +860,7 @@ function startRound() {
     if (autoRestartTimer) clearTimeout(autoRestartTimer); 
     if (botSpawnInterval) clearInterval(botSpawnInterval);
     gameState.phase = 'countdown'; gameState.currentCall = null; gameState.calledNumbers = []; 
-    gameState.isForceWinActive = false; // Reset Force Win
+    gameState.isForceWinActive = false;
     roundWinners = []; isEndingRound = false; 
     remainingTime = gameState.settings.countdownTime || 50;
     
@@ -847,7 +885,7 @@ function startRound() {
                     if (gameState.phase !== 'calling' || isEndingRound) return;
                     if (gameState.calledNumbers.length >= 75) { clearInterval(callInterval); callInterval = null; endRound([]); return; }
                     
-                    let num = getNextNumberToCall(); // ✅ Force Win ላይ የሮቦች ቁጥር ይመርጣል
+                    let num = getNextNumberToCall();
 
                     gameState.calledNumbers.push(num); gameState.currentCall = num;
                     io.emit('new_number_called', { number: num, allCalled: gameState.calledNumbers });
