@@ -468,7 +468,7 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ 1ኛ እና 3ኛ: DASHBOARD REPORT + NOTIFICATIONS
+// ✅ 1ኛ እና 3ኛ: DASHBOARD REPORT + NOTIFICATIONS (አሁን የገንዘብ መጠንም ይመልሳል)
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
         const now = new Date();
@@ -480,7 +480,8 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             totalPlayers, pendingDeposits, pendingWithdrawals, 
             depAgg, wdAgg,
             dailyDep, dailyWd, weeklyDep, weeklyWd, monthlyDep, monthlyWd,
-            newUsersCount // ✅ አዲስ የተመዘገቡ ተጫዋቾች ብዛት (ዛሬ)
+            newUsersCount,
+            pendingDepositAmount, pendingWithdrawalAmount // ✅ አዲስ የተጨመረ
         ] = await Promise.all([
             User.countDocuments(), 
             Transaction.countDocuments({ type: 'deposit', status: 'pending' }), 
@@ -497,7 +498,10 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             Transaction.aggregate([{ $match: { type: 'deposit', status: 'approved', created: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
             Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'approved', created: { $gte: startOfMonth } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
             
-            User.countDocuments({ registered_at: { $gte: startOfDay } })
+            User.countDocuments({ registered_at: { $gte: startOfDay } }),
+            
+            Transaction.aggregate([{ $match: { type: 'deposit', status: 'pending' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+            Transaction.aggregate([{ $match: { type: 'withdrawal', status: 'pending' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
         ]);
 
         res.json({ success: true, data: { 
@@ -507,7 +511,9 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             netBalance: (depAgg[0]?.total || 0) - (wdAgg[0]?.total || 0),
             dailyDep: dailyDep[0]?.total || 0, dailyWd: dailyWd[0]?.total || 0,
             weeklyDep: weeklyDep[0]?.total || 0, weeklyWd: weeklyWd[0]?.total || 0,
-            monthlyDep: monthlyDep[0]?.total || 0, monthlyWd: monthlyWd[0]?.total || 0
+            monthlyDep: monthlyDep[0]?.total || 0, monthlyWd: monthlyWd[0]?.total || 0,
+            pendingDepositAmount: pendingDepositAmount[0]?.total || 0,
+            pendingWithdrawalAmount: pendingWithdrawalAmount[0]?.total || 0
         } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -632,7 +638,6 @@ app.delete('/api/admin/game-history/:id', adminAuth, async (req, res) => {
     try { await GameHistory.findByIdAndDelete(req.params.id); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ 3ኛ: BULK DELETE API (ሂስትሪ፣ ጊቭአዌይ፣ ብሮድካስት)
 app.post('/api/admin/bulk-delete', adminAuth, async (req, res) => {
     try {
         const { type, ids } = req.body;

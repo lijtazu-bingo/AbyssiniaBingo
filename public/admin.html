@@ -440,9 +440,11 @@ let allPlayersData = [];
 let currentSelectedPlayer = null;
 let latestCalledNumbers = []; 
 
-// ✅ ያለፈውን የ deposit/withdraw ብዛት ለማስታወስ (ለኖቲፊኬሽን ልዩነት ማወቂያ)
+// ✅ ያለፈውን የ deposit/withdraw ብዛት እና መጠን ለማስታወስ (ለኖቲፊኬሽን ልዩነት ማወቂያ)
 let lastPendingDeposits = 0;
+let lastPendingDepositsAmount = 0;
 let lastPendingWithdrawals = 0;
+let lastPendingWithdrawalsAmount = 0;
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 function showToast(msg, isError = false) { const toast = document.getElementById('admin-toast'); toast.innerText = msg; toast.classList.toggle('error', isError); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 3000); }
@@ -506,7 +508,7 @@ function switchPage(pageId, element) {
     if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
 }
 
-// ✅ 2ኛ: የላይኛው ፖፕ-አፕ ኖቲፊኬሽን (Pop-up Notification)
+// ✅ 2ኛ: የላይኛው ፖፕ-አፕ ኖቲፊኬሽን (Pop-up Notification) - የገንዘብ መጠን አካትቶ
 function showPushNotification(type, amount) {
     const container = document.getElementById('push-notification-container');
     const notif = document.createElement('div');
@@ -519,54 +521,49 @@ function showPushNotification(type, amount) {
         <div class="push-icon">${icon}</div>
         <div class="push-content">
             <div class="push-title">${title}</div>
-            <div class="push-desc">Amount: ${amount} ETB</div>
+            <div class="push-desc" style="font-size: 14px; font-weight: bold; color: var(--gold);">Amount: ${amount} ETB</div>
         </div>
     `;
     
-    // ሲነካ ወደ ገጹ እንዲወስድ
     notif.onclick = () => { switchPage(type === 'deposit' ? 'deposits' : 'withdrawals', document.querySelector(`.menu-item:nth-child(${type === 'deposit' ? 4 : 5})`)); notif.remove(); };
-    
     container.appendChild(notif);
-    
-    // ትንሽ ሆኖ እንዲመጣ (Animation)
     setTimeout(() => notif.classList.add('show'), 10);
-    
-    // ከ 5 ሰከንድ በኋላ በራሱ እንዲጠፋ
     setTimeout(() => {
         notif.classList.remove('show');
         setTimeout(() => notif.remove(), 400);
     }, 5000);
 }
 
-// ✅ የ Polling ሎጂክ (አዲስ ጥያቄ መኖሩን ለማወቅ)
+// ✅ የ Polling ሎጂክ (አዲስ ጥያቄ እና ገንዘብ መኖሩን ለማወቅ)
 async function checkNotifications() {
     if (!AUTH_TOKEN) return;
     try {
         const d = await apiFetch('/api/admin/dashboard');
         if (d.success) {
-            // ባጆችን ማደስ
             updateNotifBadge('notif-deposits', d.data.pendingDeposits);
             updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
             
-            // ✅ አዲስ Deposit ካለ ፖፕ-አፕ እንዲያሳይ
+            // ✅ አዲስ Deposit ካለ
             if (d.data.pendingDeposits > lastPendingDeposits) {
-                const diff = d.data.pendingDeposits - lastPendingDeposits;
+                const newAmount = d.data.pendingDepositAmount - lastPendingDepositsAmount;
                 if (lastPendingDeposits > 0 || d.data.pendingDeposits === 1) {
-                    showPushNotification('deposit', diff === 1 ? 'New' : `${diff} New`);
+                    showPushNotification('deposit', newAmount.toFixed(2));
                 }
             }
             
-            // ✅ አዲስ Withdrawal ካለ ፖፕ-አፕ እንዲያሳይ
+            // ✅ አዲስ Withdrawal ካለ
             if (d.data.pendingWithdrawals > lastPendingWithdrawals) {
-                const diff = d.data.pendingWithdrawals - lastPendingWithdrawals;
+                const newAmount = d.data.pendingWithdrawalAmount - lastPendingWithdrawalsAmount;
                 if (lastPendingWithdrawals > 0 || d.data.pendingWithdrawals === 1) {
-                    showPushNotification('withdraw', diff === 1 ? 'New' : `${diff} New`);
+                    showPushNotification('withdraw', newAmount.toFixed(2));
                 }
             }
             
-            // የነበረውን ቁጥር ማደስ
+            // የነበረውን ቁጥር እና መጠን ማደስ
             lastPendingDeposits = d.data.pendingDeposits;
+            lastPendingDepositsAmount = d.data.pendingDepositAmount || 0;
             lastPendingWithdrawals = d.data.pendingWithdrawals;
+            lastPendingWithdrawalsAmount = d.data.pendingWithdrawalAmount || 0;
         }
     } catch (e) {}
 }
@@ -621,7 +618,6 @@ async function loadDashboardData() {
             
             updateNotifBadge('notif-deposits', d.data.pendingDeposits);
             updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
-            // ✅ Users ባጅ ተወግዷል
         } 
     } catch(e){}
     
