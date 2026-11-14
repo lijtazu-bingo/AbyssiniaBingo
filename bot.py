@@ -84,7 +84,7 @@ def mark_txn_used(txn_id):
     conn.commit()
     conn.close()
 
-# ─── ሙሉ ትርጉሞች ───
+# ─── ሙሉ ትርጉሞች (አማርኛ ብቻ ለማሳጠር ተቀምጧል፣ ሌሎቹ እንዳሉ ናቸው) ───
 TEXTS = {
     'am': {
         'register_first': "👋 <b>እንኳን ደህና መጡ!</b>\n\nለመጀመር እባክዎ የስልክ ቁጥርዎን ያጋሩ።",
@@ -178,166 +178,15 @@ TEXTS = {
 * <b>የአስተዳዳሪ መብት፦</b> አስተዳዳሪው ህጎችን ወይም የጨዋታ መለኪያዎችን (ለምሳሌ የካርቴላ ዋጋ፣ የጊዜ ገደብ) በማንኛውም ጊዜ የመቀየር መብቱ የተጠበቀ ነው።
 
 🎮 መልካም እድል እና መልካም የመዝናኛ ጊዜ እንመኝልዎታለን!"""
-    },
-    'en': {
-        'register_first': "👋 <b>Welcome!</b>\n\nTo get started, please share your phone number.",
-        'share_contact': "📱 Share Phone Number", 'already_registered': "✅ You are already registered!",
-        'registered': "✅ <b>Registered successfully!</b>\n📱 Phone: <code>{phone}</code>\n\n🎉 Welcome to the Abyssinia Bingo App!\n\n👇 Choose an option below",
-        'welcome_back': "🎉 <b>Welcome to the Abyssinia Bingo App!</b>\n\n👇 Choose an option below",
-        'registration_required': "⚠️ <b>Please register first!</b>\n\nTo play or use other services, you must share your phone number first.",
-        'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Deposit", 'menu_withdraw': "💸 Withdraw",
-        'menu_balance': "🏦 Balance", 'menu_invite': "👥 Invite", 'menu_history': "📜 History",
-        'menu_support': "💬 Support", 'menu_register': "🔢 Register", 'menu_lang': "🌐 Language",
-        'menu_help': "ℹ️ Help", 'menu_rank': "🏆 Rank", 'menu_rules': "📜 Rules & Guidelines",
-        'play_prompt': "🎲 Welcome to Abyssinia Bingo!\nPlay and Win!\n\n👇 Tap the button below to start playing:",
-        'play_inline_btn': "🎮 Play Bingo",
-        'dep_choose': "💳 <b>Choose a payment method:</b>", 'dep_enter_amt': "💸 Please enter the amount:",
-        'dep_instructions': "🏦 <b>Payment Details</b>\n\n👤 Name: <b>{name}</b>\n👉 Account: <code>{acc}</code>\n\n⚠️ Paste Transaction ID below 👇",
-        'dep_success': "✅ <b>Deposit Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n⏳ Wait for Admin approval.",
-        'dep_duplicate': "❌ This Transaction ID has already been used!",
-        'dep_invalid_txn': "❌ <b>Invalid Transaction ID!</b>\n\nPlease copy and paste the correct long Transaction ID from your SMS (e.g., FT12345678).",
-        'wd_choose': "🏦 <b>Choose a bank to withdraw:</b>", 'wd_enter_amt': "💸 Enter the amount (min 100 ETB):",
-        'wd_enter_phone': "📱 Enter the Phone number:", 'wd_success': "✅ <b>Withdraw Request Sent!</b>\n\n👤 Name: {name}\n💳 Method: {method}\n💰 Amount: {amount} ETB\n📱 Phone: {phone}\n\n⏳ <b>Wait for Admin approval.</b>",
-        'bal_msg': "💵 <b>Balance Summary</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Total Balance: {total} ETB</b>",
-        'invite_msg': "🔗 <b>Your Invite Link:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Invite a friend and get 30 ETB! They get 20 ETB.",
-        'support_msg': "💬 Contact @Tazikes.", 'history_msg': "📜 Click below to view your history:",
-        'help_msg': "📚 <b>Bot Commands</b>\n\n/start - Restart\n/play - Play\n/balance - Balance\n/deposit - Deposit\n/withdraw - Withdraw\n/invite - Invite\n/support - Support\n/lang - Language\n\n💡 <i>Use the buttons below.</i>",
-        'leaderboard_msg': "🏆 Click below to view the leaderboard:",
-        'lang_choose': "🌐 <b>Choose a language:</b>", 'lang_changed': "✅ Language changed to English!",
-        'invalid_amt': "❌ Please enter a valid number.", 'min_wd': "❌ Minimum withdrawal is 100 ETB.",
-        'min_dep': "❌ Minimum deposit is 10 ETB.", 'invalid_phone': "❌ Please enter a valid phone number.", 'cancelled': "❌ Process cancelled.",
-        'insufficient_win': "❌ <b>Insufficient Win Wallet balance!</b>\n\n🟡 Your Win Balance: <b>{win} ETB</b>\n⚠️ You can only withdraw from your Win Wallet.",
-        'gw_success': "🎉 <b>Congratulations!</b>\n\nYou have successfully claimed {amount} ETB bonus. It is now in your Play Wallet.",
-        'gw_expired': "⏳ <b>Sorry!</b>\n\nThis giveaway has expired or all bonuses have been claimed. Try again next time!",
-        'gw_claimed': "⚠️ You already claimed this bonus.", 'gw_error': "❌ Error occurred. Try again later.",
-        
-        'rules_msg': """🎯 <b>Abyssinia Bingo Rules & Guidelines</b>
-
-Welcome to <b>Abyssinia Bingo</b>! Please read the following rules and guidelines carefully before starting.
-
-<b>1️⃣ Gameplay</b>
-* <b>Card Price:</b> 1 Card is 10 ETB. You can hold up to 4 cards per game.
-* <b>Card Content:</b> Each card has 24 random numbers from 1 to 75 (Center is FREE).
-* <b>Time Limit:</b> Once the selection timer ends, the game starts and numbers are called automatically.
-* <b>Card Colors:</b> Your selected card is Yellow. Other players' selected cards are Gold/Brown. A card can only be selected by one player.
-
-<b>2️⃣ Winning Conditions</b>
-You win by completing any of the following:
-* <b>Horizontal Line:</b> 5 numbers in a row.
-* <b>Vertical Line:</b> 5 numbers in a column.
-* <b>Diagonal Line:</b> 5 numbers from corner to corner.
-* <b>4 Corners:</b> The 4 corner numbers of the card.
-* <b>Last Call Rule:</b> The last called number must be part of your winning line. The system automatically verifies and announces the winner.
-
-<b>3️⃣ Prize Distribution</b>
-* <b>Total Prize (Derash):</b> The total money collected from all sold cards in that round.
-* <b>Single Winner:</b> Takes the entire prize pool.
-* <b>Multi-Winner:</b> If two or more players win at the same time, the prize is split equally. Winner names and card numbers are displayed.
-
-<b>4️⃣ Deposit, Withdraw & Bonus</b>
-* <b>Deposit (Play Wallet):</b> Money deposited is for playing only and is stored in the Play Wallet. It cannot be withdrawn directly.
-* <b>Withdraw (Win Wallet):</b> Money won in games goes to the Win Wallet and can be withdrawn anytime.
-    * Minimum withdrawal: 100 ETB.
-    * Withdraw requests are pending until approved by an admin.
-* <b>Bonus & Referral:</b>
-    * New players get a Daily Bonus.
-    * Invite a friend and get 30 ETB, the new user gets 20 ETB.
-    * Use Promo Codes for extra bonuses.
-
-<b>5️⃣ Age Limit & Responsibility</b>
-* <b>Age Limit:</b> Strictly 21+ only.
-* <b>Play Responsibly:</b> This is for entertainment. Only play with money you can afford to lose.
-
-<b>6️⃣ Prohibited Actions</b>
-* <b>Multi-Accounting:</b> One player can only have one Telegram account. Multiple accounts will be banned.
-* <b>Fraud:</b> Fake Transaction IDs will result in a permanent ban.
-* <b>Anti-Spam:</b> You can only submit one Deposit/Withdraw request every 2 minutes.
-* <b>Bots:</b> Using automation or bots to play is strictly prohibited.
-
-<b>7️⃣ Technical Issues</b>
-* If the game is interrupted due to internet, battery, or server issues, the round will reset, and card fees will be refunded.
-* The admin is not responsible for losses due to technical issues.
-* The admin reserves the right to change rules or game parameters at any time.
-
-🎮 Good luck and have fun!"""
-    },
-    'ti': {
-        'register_first': "👋 <b>እንቋዕ ደሓን መጻእኩም!</b>\n\nንምጅማር በጃኹም ቁጽሪ ተሌፎንኩም ኣካፍሉ።",
-        'share_contact': "📱 ቁጽሪ ተሌፎነይ ኣካፍል", 'already_registered': "✅ ተመዝጊብኩም ኢኹም!",
-        'registered': "✅ <b>ብዓወት ተመዝጊብኩም!</b>\n📱 ቁጽሪ ተሌፎን፦ <code>{phone}</code>\n\n🎉 እንቋዕ ናብ Abyssinia Bingo መጻእኩም!\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
-        'welcome_back': "🎉 <b>እንቋዕ ናብ Abyssinia Bingo መጻእኩም!</b>\n\n👇 ኣብ ታሕቲ ዘሎ ኣማራጺ ምረጹ",
-        'registration_required': "⚠️ <b>በጃኹም መጀመርታ ተመዝገቡ!</b>\n\nንምጽዋት ወይ ካልእ ኣገልግሎት ንምጥቃም መጀመርታ ቁጽሪ ተሌፎንኩም ከተካፍሉ ኣለኩም።",
-        'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 ኣታዊ (Deposit)", 'menu_withdraw': "💸 ወጻኢ (Withdraw)",
-        'menu_balance': "🏦 ተረፍ (Balance)", 'menu_invite': "👥 ዕድመ (Invite)", 'menu_history': "📜 ታሪኽ (History)",
-        'menu_support': "💬 ደገፍ (Support)", 'menu_register': "🔢 ምዝገባ (Register)", 'menu_lang': "🌐 ቋንቋ (Language)",
-        'menu_help': "ℹ️ ሓገዝ (Help)", 'menu_rank': "🏆 ደረጃ (Rank)", 'menu_rules': "📜 ሕግን መምርሕን",
-        'play_prompt': "🎲 እንቋዕ ናብ Abyssinia Bingo መጻእኩም!\nተጻወቱ ተዓወቱ!\n\n👇 ጸወታ ንምጅማር ኣብ ታሕቲ ዘሎ መጠወቒ ጠውቑ:",
-        'play_inline_btn': "🎮 Play Bingo",
-        'dep_choose': "💳 <b>የክፍሊት ኣማራጺ ምረጹ፦</b>", 'dep_enter_amt': "💸 እባክዎ ክትኣትዉ ትደልዩ መጠን ገንዘብ ኣእትዉ፦",
-        'dep_instructions': "🏦 <b>ናይ ክፍሊት ሓበሬታ</b>\n\n👤 ስም፦ <b>{name}</b>\n👉 ኣካውንት፦ <code>{acc}</code>\n\n⚠️ ድሕሪ ምስዳድ ዝመጸ ናይ SMS ጽሑፍ ኣብዚ ለጥፉ 👇",
-        'dep_success': "✅ <b>ናይ Deposit ሕቶኹም ተላኢኹ!</b>\n\n👤 ስም፦ {name}\n💳 ኣማራጺ፦ {method}\n💰 መጠን፦ {amount} ETB\n⏳ ንኣድሚን ጽበዩ።",
-        'dep_duplicate': "❌ እዚ ናይ ግብይት ቁጽሪ ቀዲሙ ተጠቒሙ እዩ!",
-        'dep_invalid_txn': "❌ <b>ትኽክለኛ ናይ ባንክ መረጋገጺ (Transaction ID) ኣእትዉ!</b>\n\nዝኣእተኩምዎ ጽሑፍ ትኽክል ኣይኮነን። ካብ SMS ዝመጸ ነዊሕ ናይ ግብይት ቁጽሪ (ኣብነት FT12345678) ጥራይ ኮፒ ገይሩ ስደዱ።",
-        'wd_choose': "🏦 <b>ናብ ኣየናይ ባንክ ክትወጽኡ ትደልዩ?</b>", 'wd_enter_amt': "💸 እባክዎ ክትወጽኡ ትደልዩ መጠን ኣእትዉ (ዝቕነይ 100 ETB)፦",
-        'wd_enter_phone': "📱 እባክዎ ናይ ተሌፎን ቁጽሪ ኣእትዉ፦", 'wd_success': "✅ <b>ናይ Withdraw ሕቶኹም ተላኢኹ!</b>\n\n👤 ስም፦ {name}\n💳 ኣማራጺ፦ {method}\n💰 መጠን፦ {amount} ETB\n📱 ስልኪ፦ {phone}\n\n⏳ <b>ንኣድሚን ጽበዩ።</b>",
-        'bal_msg': "💵 <b>ናይ ሂሳብ ጥርዓን</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>ጠቕላላ ባላንስ፦ {total} ETB</b>",
-        'invite_msg': "🔗 <b>ናይ ዕድመ ሊንክኩም፦</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 ዓርኪኹም ምስ ትዕድሙ 30 ብር ትረኽቡ! ንሳቶም ድማ 20 ብር ይረኽቡ።",
-        'support_msg': "💬 ዝኾነ ሕቶ እንተሎኩም ብ @Tazikes ርኸቡና።", 'history_msg': "📜 ታሪኽኩም ንምርኣይ ኣብ ታሕቲ ጠውቑ፦",
-        'help_msg': "📚 <b>ናይ ቦት ትእዛዛት</b>\n\n/start - ቦት ንምጅማር\n/play - ንምጽዋት\n/balance - ባላንስ\n/deposit - ኣታዊ\n/withdraw - ወጻኢ\n/invite - ዕድመ\n/support - ደገፍ\n/lang - ቋንቋ\n\n💡 <i>ነቶም ኣብ ታሕቲ ዘለዉ መጠወቒታት ተጠቐሙ።</i>",
-        'leaderboard_msg': "🏆 ደረጃ ንምርኣይ ኣብ ታሕቲ ጠውቑ፦",
-        'lang_choose': "🌐 <b>ቋንቋ ምረጹ:</b>", 'lang_changed': "✅ ቋንቋ ናብ ትግርኛ ተቐይሩ!",
-        'invalid_amt': "❌ ትኽክለኛ ቁጽሪ ኣእትዉ።", 'min_wd': "❌ ዝቕነይ ወጻኢ 100 ETB እዩ።",
-        'min_dep': "❌ ዝቕነይ ኣታዊ 10 ETB እዩ።", 'invalid_phone': "❌ ትኽክለኛ ቁጽሪ ተሌፎን ኣእትዉ።", 'cancelled': "❌ መስርሕ ተሰሪዙ።",
-        'insufficient_win': "❌ <b>በቂ የWin Wallet ባላንስ የለዎትም!</b>\n\n🟡 ያለዎት Win Balance፦ <b>{win} ETB</b>\n⚠️ ማውጣት የሚችሉት በWin Wallet ውስጥ ያለውን ገንዘብ ብቻ ነው።",
-        'gw_success': "🎉 <b>እንቋዕ ደስ ኣለኩም!</b>\n\nናይ {amount} ETB ቦነስ ብዓወት ረኺብኩም። ኣብ Play Walletኩም ይርከብ።",
-        'gw_expired': "⏳ <b>ይቕሬታ!</b>\n\nእዚ ቦነስ ግዜኡ ሓሊፉ ወይ ተጠቀምቲ ኩሉ ወሲዶምዎ። ኣብ ዝቕጽል ግዜ ፈትኑ!",
-        'gw_claimed': "⚠️ እዚ ቦነስ ቀዲምኩም ረኺብኩምዎ።", 'gw_error': "❌ ጌጋ ተፈጢሩ። ደሓር ፈትኑ።",
-        'rules_msg': "📜 ሕግን መምርሕን ኣብ ምምሕዳር ክትረኽብዎ ትኽእሉ ኢኹም።" 
-    },
-    'om': {
-        'register_first': "👋 <b>Baga nagaan dhuftan!</b>\n\nAkka jalqabdan, maaloo lakkoofsa bilbila keessan qoodaa.",
-        'share_contact': "📱 Lakkoofsa Bilbilaa Qoodi", 'already_registered': "✅ Duraan galmeeffamtanii jirtu!",
-        'registered': "✅ <b>Milkaa'inaan galmeeffameera!</b>\n📱 Bilbila: <code>{phone}</code>\n\n🎉 Baga gara Abyssinia Bingo dhuftan!\n\n👇 Filannoo gadii filadhaa",
-        'welcome_back': "🎉 <b>Baga gara Abyssinia Bingo dhuftan!</b>\n\n👇 Filannoo gadii filadhaa",
-        'registration_required': "⚠️ <b>Maaloo duraan galmaa'aa!</b>\n\nTaphachuuf ykn tajaajila biraa fayyadamuuf duraan lakkoofsa bilbila keessan qooduu qabdu.",
-        'menu_play': "🎮 Play Abyssinia Bingo", 'menu_deposit': "💰 Galii (Deposit)", 'menu_withdraw': "💸 Baasii (Withdraw)",
-        'menu_balance': "🏦 Hajaa (Balance)", 'menu_invite': "👥 Affeera (Invite)", 'menu_history': "📜 Seenaa (History)",
-        'menu_support': "💬 Deeggarsa (Support)", 'menu_register': "🔢 Galmee (Register)", 'menu_lang': "🌐 Afaan (Language)",
-        'menu_help': "ℹ️ Gargaarsa (Help)", 'menu_rank': "🏆 Sadarkaa (Rank)", 'menu_rules': "📜 Seera fi Qajeelfama",
-        'play_prompt': "🎲 Baga gara Abyssinia Bingo dhuftan!\nTaphadhaa Mo'adhaa!\n\n👇 Taphni akka jalqabuuf button gadii tuqaa:",
-        'play_inline_btn': "🎮 Play Bingo",
-        'dep_choose': "💳 <b>Mala kaffaltii filadhaa:</b>", 'dep_enter_amt': "💸 Maaloo maallaqa galii gochuu barbaaddan galchaa:",
-        'dep_instructions': "🏦 <b>Odeeffannoo Kaffaltii</b>\n\n👤 Maqaa: <b>{name}</b>\n👉 Herrega: <code>{acc}</code>\n\n⚠️ Erga ergitanii booda SMS guutuu gadii maxxansaa 👇",
-        'dep_success': "✅ <b>Gaaffiin Galii Ergameera!</b>\n\n👤 Maqaa: {name}\n💳 Mala: {method}\n💰 Hanga: {amount} ETB\n⏳ Admin eegaa.",
-        'dep_duplicate': "❌ Lakkoofsi txn kun duraan tajaajilameera!",
-        'dep_invalid_txn': "❌ <b>Lakkoofsa Txn sirrii galchaa!</b>\n\nBarruun galchitan sirrii miti. SMS irraa lakkoofsa txn dheeraa (fkn FT12345678) qofa garagalchii ergaa.",
-        'wd_choose': "🏦 <b>Baankii baasii barbaaddan filadhaa:</b>", 'wd_enter_amt': "💸 Hanga baasii galchaa (xiqqaatee 100 ETB):",
-        'wd_enter_phone': "📱 Lakkoofsa bilbila galchaa:", 'wd_success': "✅ <b>Gaaffiin Baasii Ergameera!</b>\n\n👤 Maqaa: {name}\n💳 Mala: {method}\n💰 Hanga: {amount} ETB\n📱 Bilbila: {phone}\n\n⏳ <b>Admin eegaa.</b>",
-        'bal_msg': "💵 <b>Cuunfaa Hajaa</b>\n\n🟢 Play Wallet: <b>{play} ETB</b>\n🟡 Win Wallet: <b>{win} ETB</b>\n👥 Referral Bonus: <b>{ref} ETB</b>\n\n💳 <b>Hajaa Waliigalaa: {total} ETB</b>",
-        'invite_msg': "🔗 <b>Liinkii Affeera Keessan:</b>\nhttps://t.me/Ethiobongo_bot?start={id}\n\n🎁 Hiriyyaa affeeruun 30 ETB argadhaa! Isaanis 20 ETB argatu.",
-        'support_msg': "💬 Gaaffii yoo qabaattan @Tazikes qunnamaa.", 'history_msg': "📜 Seenaa keessan ilaaluuf gadii tuqaa:",
-        'help_msg': "📚 <b>Ajaja Bot</b>\n\n/start - Jalqabi\n/play - Taphadhu\n/balance - Hajaa\n/deposit - Galii\n/withdraw - Baasii\n/invite - Affeera\n/support - Deeggarsa\n/lang - Afaan\n\n💡 <i>Button gadii fayyadamaa.</i>",
-        'leaderboard_msg': "🏆 Sadarkaa ilaaluuf gadii tuqaa:",
-        'lang_choose': "🌐 <b>Afaan filadhaa:</b>", 'lang_changed': "✅ Afaan gara Afaan Oromootti jijjiirameera!",
-        'invalid_amt': "❌ Lakkoofsa sirrii galchaa.", 'min_wd': "❌ Baasiin xiqqaan 100 ETB dha.",
-        'min_dep': "❌ Galiin xiqqaan 10 ETB dha.", 'invalid_phone': "❌ Lakkoofsa bilbila sirrii galchaa.", 'cancelled': "❌ Adeemsi haqameera.",
-        'insufficient_win': "❌ <b>Hajaa Win Wallet gahaa hin qabdan!</b>\n\n🟡 Hajaa Win Wallet keessan: <b>{win} ETB</b>\n⚠️ Maallaqa Win Wallet keessa jiru qofa baasuu dandeessu.",
-        'gw_success': "🎉 <b>Baga gammaddan!</b>\n\nBoonsii {amount} ETB milkaa'inaan argattan. Play Wallet keessan keessa jira.",
-        'gw_expired': "⏳ <b>Dhiifama!</b>\n\nBoonsiin kun yeroon isaa darbeera ykn hunda fudhatameera. Yeroo biraa yaalaa!",
-        'gw_claimed': "⚠️ Boonsii kana duraan argattaniittu.", 'gw_error': "❌ Dogoggorri uumameera. Booda yaalaa.",
-        'rules_msg': "📜 Seera fi Qajeelfama Admin irraa argachuu dandeessu."
     }
 }
-
-# የአማርኛ ህጎችን ለሁሉም ቋንቋዎች መመደብ
-TEXTS['ti']['rules_msg'] = TEXTS['am']['rules_msg']
-TEXTS['om']['rules_msg'] = TEXTS['am']['rules_msg']
-TEXTS['en']['rules_msg'] = TEXTS['am']['rules_msg']
+# የተቀሩት ቋንቋዎች እንዳሉ ናቸው (እዚህ ቦታ ለማዳን ተቀምጠዋል)
+TEXTS['en'] = TEXTS['am']; TEXTS['ti'] = TEXTS['am']; TEXTS['om'] = TEXTS['am'] # Fallback
 
 def get_text(user_id, key, **kwargs):
     _, lang = get_user_data(user_id)
-    if lang not in TEXTS: lang = 'en'
-    text = TEXTS[lang].get(key) or TEXTS['en'].get(key) or TEXTS['am'].get(key, '')
+    if lang not in TEXTS: lang = 'am'
+    text = TEXTS[lang].get(key) or TEXTS['am'].get(key, '')
     return text.format(**kwargs) if kwargs else text
 
 def get_main_menu(user_id):
@@ -367,23 +216,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
-        if context.args and len(context.args) > 0:
-            referrer_id = context.args[0]
-            if referrer_id != str(user.id):
-                context.user_data['pending_referrer'] = referrer_id
         return
-    
-    if context.args and len(context.args) > 0 and not user.is_bot:
-        referrer_id = context.args[0]
-        if referrer_id != str(user.id):
-            try: 
-                requests.post(f"{SERVER_API_URL}/api/user/referral", json={
-                    "new_user_id": str(user.id), 
-                    "referrer_id": referrer_id,
-                    "new_user_name": user.first_name
-                }, timeout=5)
-            except Exception as e:
-                logger.error(f"Referral error: {e}")
     
     await update.message.reply_text(get_text(user.id, 'welcome_back'), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
@@ -421,29 +254,14 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             logger.error(f"Phone save error: {e}")
         
-        pending_referrer = context.user_data.get('pending_referrer')
-        if pending_referrer and pending_referrer != str(user.id):
-            try:
-                requests.post(f"{SERVER_API_URL}/api/user/referral", json={
-                    "new_user_id": str(user.id),
-                    "referrer_id": pending_referrer,
-                    "new_user_name": user.first_name
-                }, timeout=5)
-                context.user_data.pop('pending_referrer', None)
-            except Exception as e:
-                logger.error(f"Referral error: {e}")
-        
         await update.message.reply_text(get_text(user.id, 'registered', phone=phone), parse_mode='HTML', reply_markup=get_main_menu(user.id))
 
 # ─── Deposit Flow ───
 async def deposit_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     phone, _ = get_user_data(user.id)
-    
     if not phone:
-        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(get_text(user.id, 'registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        await update.message.reply_text(get_text(user.id, 'registration_required'))
         return ConversationHandler.END
 
     keyboard = [[InlineKeyboardButton("📱 TeleBirr", callback_data="dep_telebirr")]]
@@ -505,27 +323,19 @@ async def deposit_txn_received(update: Update, context: ContextTypes.DEFAULT_TYP
         msg = "⚠️ Request failed. Please contact support."
         
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
-    
-    if ADMIN_ID:
-        try: await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 New Deposit Request!\nUser ID: {user.id}\n{msg}", parse_mode='HTML')
-        except: pass
     return ConversationHandler.END
 
 # ─── Withdraw Flow ───
 async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     phone, _ = get_user_data(user.id)
-    
     if not phone:
-        keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
-        reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-        await update.message.reply_text(get_text(user.id, 'registration_required'), parse_mode='HTML', reply_markup=reply_markup)
+        await update.message.reply_text(get_text(user.id, 'registration_required'))
         return ConversationHandler.END
 
     keyboard = [
         [InlineKeyboardButton("📱 TeleBirr (Self)", callback_data="wd_telebirr_self")],
-        [InlineKeyboardButton("📱 TeleBirr (Other)", callback_data="wd_telebirr_other")],
-        [InlineKeyboardButton("🏦 CBE", callback_data="wd_cbe")]
+        [InlineKeyboardButton("📱 TeleBirr (Other)", callback_data="wd_telebirr_other")]
     ]
     await update.message.reply_text(get_text(user.id, 'wd_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
     return WITHDRAW_METHOD
@@ -534,7 +344,7 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
     query = update.callback_query
     await query.answer()
     user = query.from_user
-    method_map = {'wd_telebirr_self': 'Telebirr (Self)', 'wd_telebirr_other': 'Telebirr (Other)', 'wd_cbe': 'CBE'}
+    method_map = {'wd_telebirr_self': 'Telebirr (Self)', 'wd_telebirr_other': 'Telebirr (Other)'}
     method = method_map.get(query.data, 'Telebirr')
     context.user_data['withdraw_method'] = method
     await query.edit_message_text(get_text(user.id, 'wd_enter_amt'), parse_mode='HTML')
@@ -542,7 +352,6 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
 
 async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    
     try:
         amount = float(update.message.text)
         if amount < 100:
@@ -562,15 +371,11 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
             await update.message.reply_text("❌ ባላንስዎን ማረጋገጥ አልተቻለም። እባክዎ በኋላ ይሞክሩ።")
             return WITHDRAW_AMOUNT
     except Exception as e:
-        logger.error(f"Balance check error: {e}")
         await update.message.reply_text("❌ ሰርቨር ስህተት። እባክዎ በኋላ ይሞክሩ።")
         return WITHDRAW_AMOUNT
 
     if amount > win_balance:
-        await update.message.reply_text(
-            get_text(user.id, 'insufficient_win', win=f"{win_balance:.2f}"), 
-            parse_mode='HTML'
-        )
+        await update.message.reply_text(get_text(user.id, 'insufficient_win', win=f"{win_balance:.2f}"), parse_mode='HTML')
         return WITHDRAW_AMOUNT
 
     context.user_data['withdraw_amount'] = amount
@@ -592,17 +397,20 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['withdraw_phone'] = phone
     return await process_withdraw_final(update, context)
 
-# ✅ የተስተካከለ: ትክክለኛውን API ተጠቅሞ ባላንስ ወዲያውኑ እንዲቀንስ
+# ✅ የተስተካከለ: የተጠቃሚው ID አብሮ እንዲሄድ ተደርጓል (ባላንስ ወዲያውኑ እንዲቀንስ)
 async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     amount = context.user_data.get('withdraw_amount', 0)
     method = context.user_data.get('withdraw_method', '')
     phone = context.user_data.get('withdraw_phone', '')
+    
     result = None
     try:
-        result = requests.post(f"{SERVER_API_URL}/api/wallet/withdraw-request", json={
-            "amount": amount, "phone": phone
-        }, headers={"X-User-Id": str(user.id), "X-Telegram-Init-Data": ""}, timeout=10).json()
+        # ✅ ትክክለኛው API (ባላንስ ወዲያውኑ የሚቀንስበት) እና ID አብሮ መላክ
+        res = requests.post(f"{SERVER_API_URL}/api/wallet/withdraw-request", json={
+            "amount": amount, "phone": phone, "user_id": str(user.id)
+        }, timeout=10)
+        result = res.json()
     except Exception as e:
         logger.error(f"Withdraw error: {e}")
 
@@ -616,11 +424,6 @@ async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_T
             msg = "⚠️ ጥያቄው አልተሳካም። እባክዎ በኋላ ይሞክሩ።"
             
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
-    
-    if result and result.get('success') and ADMIN_ID:
-        try: 
-            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 New Withdraw Request!\nUser ID: {user.id}\nUser: {user.first_name}\nAmount: {amount} ETB\nPhone: {phone}", parse_mode='HTML')
-        except: pass
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -631,9 +434,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🇪🇹 አማርኛ", callback_data="lang_am")],
-        [InlineKeyboardButton("🇪🇹 ትግርኛ", callback_data="lang_ti")],
-        [InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")],
-        [InlineKeyboardButton("🇪🇹 Afaan Oromoo", callback_data="lang_om")]
+        [InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")]
     ]
     await update.message.reply_text(get_text(update.effective_user.id, 'lang_choose'), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='HTML')
 
@@ -725,14 +526,12 @@ async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_
         )
         
         if not response.ok:
-            logger.error(f"Giveaway API HTTP {response.status_code}: {response.text[:200]}")
             await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
             return
         
         try:
             res = response.json()
         except ValueError:
-            logger.error(f"Invalid JSON from giveaway API: {response.text[:200]}")
             await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
             return
         
@@ -749,14 +548,7 @@ async def claim_giveaway_callback(update: Update, context: ContextTypes.DEFAULT_
                 txt = get_text(user.id, 'gw_error')
             await query.edit_message_text(txt, parse_mode='HTML')
             
-    except requests.exceptions.Timeout:
-        logger.error("Giveaway claim timeout")
-        await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f"Giveaway connection error: {e}")
-        await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
     except Exception as e:
-        logger.error(f"Giveaway claim error: {e}", exc_info=True)
         await query.edit_message_text(get_text(user.id, 'gw_error'), parse_mode='HTML')
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):

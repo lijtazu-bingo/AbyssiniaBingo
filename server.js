@@ -516,7 +516,6 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ 2ኛ: የተጫዋች ዝርዝር መረጃ (ዲፖዚት፣ ዊዝድራው፣ ሪፈራል ቆጣሪ ተጨምሯል)
 app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
     try { 
         const user = await User.findOne({ id: req.params.id }).lean(); 
@@ -601,7 +600,6 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ 1ኛ: ባላንስ በአድሚን ሲቀየር በትክክል እንዲቀመጥ
 app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
     try {
         const { id } = req.params; const { play_balance, win_balance } = req.body;
@@ -614,7 +612,25 @@ app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-// ✅ 3ኛ: ባላንስ በራሱ እንዳይጨምር የዕለት ቦነስ ሎጂክ ማስተካከል
+// ✅ የተስተካከለ: የዊዝድራው ጥያቄ ከቦት ወይም ከዌብ አፕ ሲመጣ user_id መቀበል እና ባላንስ ወዲያውኑ መቀነስ
+app.post('/api/wallet/withdraw-request', async (req, res) => {
+    try {
+        const userId = req.body.user_id || (authFromHeaders(req) ? String(authFromHeaders(req).id) : req.headers['x-user-id']);
+        if (!userId) return res.status(401).json({ success: false, error: 'Unauthorized' });
+        
+        const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
+        if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
+        
+        const result = await User.findOneAndUpdate({ id: String(userId), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
+        if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
+        
+        const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(userId), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
+        io.to(`user_${userId}`).emit('wallet_updated', {});
+        res.json({ success: true, data: { txnId } });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
 app.get('/api/wallet/me', async (req, res) => {
     try {
         const user = authFromHeaders(req);
@@ -624,7 +640,6 @@ app.get('/api/wallet/me', async (req, res) => {
         let dbUser = await User.findOne({ id: userId });
         if (!dbUser) dbUser = new User({ id: userId });
         
-        // የዕለት ቦነስ በቀን አንድ ጊዜ ብቻ እንዲሰጥ
         if (dbUser.last_daily_bonus !== todayStr) {
             dbUser.last_daily_bonus = todayStr;
             dbUser.play_balance = (Number(dbUser.play_balance) || 0) + 5;
@@ -632,21 +647,6 @@ app.get('/api/wallet/me', async (req, res) => {
             io.to(`user_${userId}`).emit('daily_bonus_claimed', { amount: 5 });
         }
         res.json({ success: true, data: dbUser });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-// ✅ 4ኛ: ዊዝድራው ሲጠየቅ ወዲያውኑ መቀነስ
-app.post('/api/wallet/withdraw-request', async (req, res) => {
-    try {
-        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
-        const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
-        if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
-        if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
-        const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
-        io.to(`user_${user.id}`).emit('wallet_updated', {});
-        res.json({ success: true, data: { txnId } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
