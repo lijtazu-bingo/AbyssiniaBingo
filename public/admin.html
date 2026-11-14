@@ -402,7 +402,6 @@
         <div class="info-row"><span>Joined:</span><span id="p-joined">-</span></div>
         <div class="info-row"><span>Referred By:</span><span id="p-referrer">None</span></div>
         
-        <!-- ✅ 2ኛ: አዲስ የተጨመሩ መረጃዎች -->
         <div class="info-row"><span>Total Deposit:</span><span id="p-total-deposit" style="color: var(--gold);">0.00 ETB</span></div>
         <div class="info-row"><span>Total Withdraw:</span><span id="p-total-withdraw" style="color: var(--danger);">0.00 ETB</span></div>
         <div class="info-row"><span>Total Referrals:</span><span id="p-total-refs" style="color: var(--blue);">0</span></div>
@@ -418,6 +417,7 @@
         <div style="display: flex; gap: 10px; flex-direction: column; margin-top: 20px;">
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="viewPlayerCards()"><i class="fas fa-eye"></i> View Cards</button>
             <button class="btn btn-warning" style="width: 100%; justify-content: center;" onclick="editPlayerBalance()"><i class="fas fa-edit"></i> Edit Balance</button>
+            <!-- ✅ Delete ቁልፍ ተመልሷል -->
             <button class="btn btn-danger" style="width: 100%; justify-content: center;" onclick="deletePlayerProfile()"><i class="fas fa-trash"></i> Delete Player</button>
         </div>
     </div>
@@ -647,7 +647,6 @@ async function loadGameStatus() {
                     let borderColor = info.isBot ? 'var(--blue)' : 'var(--primary)';
                     let botBadge = info.isBot ? '<span style="font-size:10px; background:var(--blue); color:#fff; padding:1px 5px; border-radius:10px; margin-left:5px;">BOT</span>' : '';
                     
-                    // ✅ 5ኛ: ለቦቶችም ጭምር View Cards እንዲኖር ተደርጓል
                     html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:160px;">
                         <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}><i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}</div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">${info.cards.length} Cards</div>
@@ -710,7 +709,6 @@ async function fetchAndOpenPlayer(id) {
             document.getElementById('p-joined').innerText = new Date(p.registered_at).toLocaleDateString();
             document.getElementById('p-referrer').innerText = p.referred_by || 'None';
             
-            // ✅ 2ኛ: አዲስ የተጨመሩ መረጃዎች
             document.getElementById('p-total-deposit').innerText = Number(p.totalDeposit || 0).toFixed(2) + ' ETB';
             document.getElementById('p-total-withdraw').innerText = Number(p.totalWithdraw || 0).toFixed(2) + ' ETB';
             document.getElementById('p-total-refs').innerText = p.totalReferrals || 0;
@@ -739,7 +737,6 @@ async function deletePlayerProfile() {
     try { const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}`, 'DELETE'); if (res.success) { showToast('Player deleted!'); closePlayerPanel(); if(currentPage === 'users') loadPlayers(); else if(currentPage === 'game') loadGameStatus(); } } catch (e) { showToast('Server Error', true); }
 }
 
-// ✅ 1ኛ: የባላንስ ማስተካከያ (ወደ ነበረበት እንዳይመለስ ተስተካክሏል)
 async function editPlayerBalance() {
     if(!currentSelectedPlayer) return;
     let np = prompt("New Play Balance:", currentSelectedPlayer.play_balance); if(np===null) return;
@@ -748,7 +745,7 @@ async function editPlayerBalance() {
         const r = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', {play_balance:Number(np), win_balance:Number(nw)}); 
         if(r.success) { 
             showToast('Updated'); 
-            await fetchAndOpenPlayer(currentSelectedPlayer.id); // ዳታውን እንደገና ጫን
+            await fetchAndOpenPlayer(currentSelectedPlayer.id);
             if(currentPage === 'users') loadPlayers(); 
         } 
     } catch(e){}

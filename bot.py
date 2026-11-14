@@ -358,7 +358,6 @@ async def interrupt_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 # ─── Commands ───
-# ✅✅✅ የተስተካከለ: START — መጀመሪያ ስልክ እንዲያጋራ ማስገደድ ✅✅✅
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     save_user(user.id, user.username, user.first_name)
@@ -368,14 +367,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
         await update.message.reply_text(get_text(user.id, 'register_first'), parse_mode='HTML', reply_markup=reply_markup)
-        # ✅ Referrer ለመመዝገብ
         if context.args and len(context.args) > 0:
             referrer_id = context.args[0]
             if referrer_id != str(user.id):
                 context.user_data['pending_referrer'] = referrer_id
         return
     
-    # ✅ Referral (ስልክ ስላለው)
     if context.args and len(context.args) > 0 and not user.is_bot:
         referrer_id = context.args[0]
         if referrer_id != str(user.id):
@@ -394,7 +391,6 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     phone, _ = get_user_data(user.id)
     
-    # ✅ ስልክ ከሌለው መጫወት አይችልም
     if not phone:
         keyboard = [[KeyboardButton(text=get_text(user.id, 'share_contact'), request_contact=True)]]
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
@@ -409,7 +405,6 @@ async def play_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(get_text(update.effective_user.id, 'help_msg'), parse_mode='HTML')
 
-# ✅✅✅ የተስተካከለ: CONTACT — ስም መላክ + Referral ማስተናገድ ✅✅✅
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     contact = update.message.contact
     if contact:
@@ -548,7 +543,6 @@ async def withdraw_method_chosen(update: Update, context: ContextTypes.DEFAULT_T
 async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     
-    # 1. የቁጥር ማረጋገጫ
     try:
         amount = float(update.message.text)
         if amount < 100:
@@ -558,7 +552,6 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
         await update.message.reply_text(get_text(user.id, 'invalid_amt'))
         return WITHDRAW_AMOUNT
     
-    # 2. ✅ የ Win Wallet ባላንስ ማረጋገጫ
     win_balance = 0.0
     try:
         res = requests.get(f"{SERVER_API_URL}/api/wallet/me", headers={"X-User-Id": str(user.id)}, timeout=5)
@@ -580,7 +573,6 @@ async def withdraw_amount_received(update: Update, context: ContextTypes.DEFAULT
         )
         return WITHDRAW_AMOUNT
 
-    # 3. ቁራጭ ማስቀመጥ እና ወደ ቀጣዩ ደረጃ መሄድ
     context.user_data['withdraw_amount'] = amount
     method = context.user_data.get('withdraw_method', '')
     if method == 'Telebirr (Self)':
@@ -600,6 +592,7 @@ async def withdraw_phone_received(update: Update, context: ContextTypes.DEFAULT_
     context.user_data['withdraw_phone'] = phone
     return await process_withdraw_final(update, context)
 
+# ✅ የተስተካከለ: ትክክለኛውን API ተጠቅሞ ባላንስ ወዲያውኑ እንዲቀንስ
 async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     amount = context.user_data.get('withdraw_amount', 0)
@@ -607,18 +600,26 @@ async def process_withdraw_final(update: Update, context: ContextTypes.DEFAULT_T
     phone = context.user_data.get('withdraw_phone', '')
     result = None
     try:
-        result = requests.post(f"{SERVER_API_URL}/api/bot/create-txn", json={
-            "type": "withdrawal", "user_id": str(user.id), "user_name": user.first_name,
-            "amount": amount, "method": method, "phone": phone
-        }, timeout=10).json()
-    except: pass
+        result = requests.post(f"{SERVER_API_URL}/api/wallet/withdraw-request", json={
+            "amount": amount, "phone": phone
+        }, headers={"X-User-Id": str(user.id), "X-Telegram-Init-Data": ""}, timeout=10).json()
+    except Exception as e:
+        logger.error(f"Withdraw error: {e}")
+
     if result and result.get('success'):
         msg = get_text(user.id, 'wd_success', name=user.first_name, method=method, amount=amount, phone=phone)
     else:
-        msg = "⚠️ Request failed. Please contact support."
+        error_msg = result.get('error', '') if result else ''
+        if 'Insufficient' in error_msg or 'Min 100' in error_msg:
+            msg = "❌ በቂ የWin Wallet ባላንስ የለዎትም ወይም ዝቅተኛው መጠን አልጠበቀም።"
+        else:
+            msg = "⚠️ ጥያቄው አልተሳካም። እባክዎ በኋላ ይሞክሩ።"
+            
     await update.message.reply_text(msg, parse_mode='HTML', reply_markup=get_main_menu(user.id))
-    if ADMIN_ID:
-        try: await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 New Withdraw Request!\nUser ID: {user.id}\n{msg}", parse_mode='HTML')
+    
+    if result and result.get('success') and ADMIN_ID:
+        try: 
+            await context.bot.send_message(chat_id=ADMIN_ID, text=f"🔔 New Withdraw Request!\nUser ID: {user.id}\nUser: {user.first_name}\nAmount: {amount} ETB\nPhone: {phone}", parse_mode='HTML')
         except: pass
     return ConversationHandler.END
 
@@ -663,7 +664,6 @@ async def handle_menu_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE
     is_rank = any(text == TEXTS[l].get('menu_rank') for l in TEXTS)
     is_rules = any(text == TEXTS[l].get('menu_rules') for l in TEXTS)
 
-    # ✅ ስልክ ከሌለው ማንኛውንም አዝራር ከመጫኑ በፊት መመዝገብ አለበት
     phone, _ = get_user_data(user.id)
     if not phone and not is_register and not is_lang:
         keyboard = [[KeyboardButton(text=t('share_contact'), request_contact=True)]]
