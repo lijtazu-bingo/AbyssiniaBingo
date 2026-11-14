@@ -27,7 +27,6 @@
     .menu-item i { width: 20px; text-align: center; }
     .notif-badge { background: var(--danger); color: white; border-radius: 10px; padding: 2px 8px; font-size: 10px; margin-left: auto; font-weight: bold; }
     
-    /* ✅ አዲስ የላይኛው ፖፕ-አፕ ኖቲፊኬሽን ስታይል */
     #push-notification-container { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); z-index: 99999; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
     .push-notification { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); color: #fff; padding: 15px; border-radius: 12px; border: 1px solid var(--blue); box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 15px; transform: translateY(-100px); opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: auto; cursor: pointer; }
     .push-notification.show { transform: translateY(0); opacity: 1; }
@@ -113,7 +112,6 @@
 </div>
 
 <div id="admin-toast"></div>
-<!-- ✅ አዲስ የላይኛው ፖፕ-አፕ ኖቲፊኬሽን መያዣ -->
 <div id="push-notification-container"></div>
 
 <div id="main-content">
@@ -123,7 +121,6 @@
             <div class="menu-label">Main</div>
             <div class="menu-item active" onclick="switchPage('game', this)"><i class="fas fa-gamepad"></i> Game Control</div>
             <div class="menu-item" onclick="switchPage('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</div>
-            <!-- ✅ Users ባጅ ተወግዷል -->
             <div class="menu-item" onclick="switchPage('users', this)"><i class="fas fa-users"></i> Users</div>
             <div class="menu-item" onclick="switchPage('deposits', this)"><i class="fas fa-receipt"></i> Deposits <span id="notif-deposits" class="notif-badge hidden">0</span></div>
             <div class="menu-item" onclick="switchPage('withdrawals', this)"><i class="fas fa-arrow-up"></i> Withdrawals <span id="notif-withdrawals" class="notif-badge hidden">0</span></div>
@@ -405,6 +402,11 @@
         <div class="info-row"><span>Joined:</span><span id="p-joined">-</span></div>
         <div class="info-row"><span>Referred By:</span><span id="p-referrer">None</span></div>
         
+        <!-- ✅ 2ኛ: አዲስ የተጨመሩ መረጃዎች -->
+        <div class="info-row"><span>Total Deposit:</span><span id="p-total-deposit" style="color: var(--gold);">0.00 ETB</span></div>
+        <div class="info-row"><span>Total Withdraw:</span><span id="p-total-withdraw" style="color: var(--danger);">0.00 ETB</span></div>
+        <div class="info-row"><span>Total Referrals:</span><span id="p-total-refs" style="color: var(--blue);">0</span></div>
+        
         <div style="margin-top: 15px;">
             <label style="font-size:13px; color:var(--text-muted);">Direct Message to User</label>
             <div style="display:flex; gap:10px; margin-top:5px;">
@@ -440,7 +442,6 @@ let allPlayersData = [];
 let currentSelectedPlayer = null;
 let latestCalledNumbers = []; 
 
-// ✅ ያለፈውን የ deposit/withdraw ብዛት እና መጠን ለማስታወስ (ለኖቲፊኬሽን ልዩነት ማወቂያ)
 let lastPendingDeposits = 0;
 let lastPendingDepositsAmount = 0;
 let lastPendingWithdrawals = 0;
@@ -508,33 +509,19 @@ function switchPage(pageId, element) {
     if (pageId !== 'game' && gameStatusInterval) { clearInterval(gameStatusInterval); gameStatusInterval = null; }
 }
 
-// ✅ 2ኛ: የላይኛው ፖፕ-አፕ ኖቲፊኬሽን (Pop-up Notification) - የገንዘብ መጠን አካትቶ
 function showPushNotification(type, amount) {
     const container = document.getElementById('push-notification-container');
     const notif = document.createElement('div');
     notif.className = `push-notification ${type}`;
-    
     let icon = type === 'deposit' ? '💰' : '💸';
     let title = type === 'deposit' ? 'New Deposit Request!' : 'New Withdrawal Request!';
-    
-    notif.innerHTML = `
-        <div class="push-icon">${icon}</div>
-        <div class="push-content">
-            <div class="push-title">${title}</div>
-            <div class="push-desc" style="font-size: 14px; font-weight: bold; color: var(--gold);">Amount: ${amount} ETB</div>
-        </div>
-    `;
-    
+    notif.innerHTML = `<div class="push-icon">${icon}</div><div class="push-content"><div class="push-title">${title}</div><div class="push-desc" style="font-size: 14px; font-weight: bold; color: var(--gold);">Amount: ${amount} ETB</div></div>`;
     notif.onclick = () => { switchPage(type === 'deposit' ? 'deposits' : 'withdrawals', document.querySelector(`.menu-item:nth-child(${type === 'deposit' ? 4 : 5})`)); notif.remove(); };
     container.appendChild(notif);
     setTimeout(() => notif.classList.add('show'), 10);
-    setTimeout(() => {
-        notif.classList.remove('show');
-        setTimeout(() => notif.remove(), 400);
-    }, 5000);
+    setTimeout(() => { notif.classList.remove('show'); setTimeout(() => notif.remove(), 400); }, 5000);
 }
 
-// ✅ የ Polling ሎጂክ (አዲስ ጥያቄ እና ገንዘብ መኖሩን ለማወቅ)
 async function checkNotifications() {
     if (!AUTH_TOKEN) return;
     try {
@@ -543,45 +530,23 @@ async function checkNotifications() {
             updateNotifBadge('notif-deposits', d.data.pendingDeposits);
             updateNotifBadge('notif-withdrawals', d.data.pendingWithdrawals);
             
-            // ✅ አዲስ Deposit ካለ
             if (d.data.pendingDeposits > lastPendingDeposits) {
                 const newAmount = d.data.pendingDepositAmount - lastPendingDepositsAmount;
-                if (lastPendingDeposits > 0 || d.data.pendingDeposits === 1) {
-                    showPushNotification('deposit', newAmount.toFixed(2));
-                }
+                if (lastPendingDeposits > 0 || d.data.pendingDeposits === 1) showPushNotification('deposit', newAmount.toFixed(2));
             }
-            
-            // ✅ አዲስ Withdrawal ካለ
             if (d.data.pendingWithdrawals > lastPendingWithdrawals) {
                 const newAmount = d.data.pendingWithdrawalAmount - lastPendingWithdrawalsAmount;
-                if (lastPendingWithdrawals > 0 || d.data.pendingWithdrawals === 1) {
-                    showPushNotification('withdraw', newAmount.toFixed(2));
-                }
+                if (lastPendingWithdrawals > 0 || d.data.pendingWithdrawals === 1) showPushNotification('withdraw', newAmount.toFixed(2));
             }
-            
-            // የነበረውን ቁጥር እና መጠን ማደስ
-            lastPendingDeposits = d.data.pendingDeposits;
-            lastPendingDepositsAmount = d.data.pendingDepositAmount || 0;
-            lastPendingWithdrawals = d.data.pendingWithdrawals;
-            lastPendingWithdrawalsAmount = d.data.pendingWithdrawalAmount || 0;
+            lastPendingDeposits = d.data.pendingDeposits; lastPendingDepositsAmount = d.data.pendingDepositAmount || 0;
+            lastPendingWithdrawals = d.data.pendingWithdrawals; lastPendingWithdrawalsAmount = d.data.pendingWithdrawalAmount || 0;
         }
     } catch (e) {}
 }
-function startNotificationPolling() {
-    if (pollInterval) clearInterval(pollInterval);
-    checkNotifications(); // መጀመሪያ ላይ ያለውን ያለ ኖቲፊኬሽን ለማስተካከል (ስፓም እንዳይሆን)
-    pollInterval = setInterval(checkNotifications, 10000); // በየ 10 ሰከንዱ ያረጋግጣል
-}
-function updateNotifBadge(id, count) {
-    const el = document.getElementById(id);
-    if (count > 0) { el.innerText = count; el.classList.remove('hidden'); } else { el.classList.add('hidden'); }
-}
-function clearNotif(id) {
-    document.getElementById(id).classList.add('hidden');
-    document.getElementById(id).innerText = '0';
-}
+function startNotificationPolling() { if (pollInterval) clearInterval(pollInterval); checkNotifications(); pollInterval = setInterval(checkNotifications, 10000); }
+function updateNotifBadge(id, count) { const el = document.getElementById(id); if (count > 0) { el.innerText = count; el.classList.remove('hidden'); } else { el.classList.add('hidden'); } }
+function clearNotif(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).innerText = '0'; }
 
-// ✅ 3ኛ: MULTI-SELECT CHECKBOX ሎጂክ
 function toggleSelectAll(type) {
     const isChecked = document.getElementById('select-all-' + type).checked;
     document.querySelectorAll(`.${type}-checkbox`).forEach(cb => cb.checked = isChecked);
@@ -590,7 +555,6 @@ async function bulkDelete(type) {
     const checkboxes = document.querySelectorAll(`.${type}-checkbox:checked`);
     if (checkboxes.length === 0) return showToast('Please select items to delete', true);
     if (!confirm(`Are you sure you want to delete ${checkboxes.length} item(s)?`)) return;
-    
     const ids = Array.from(checkboxes).map(cb => cb.value);
     try {
         const res = await apiFetch('/api/admin/bulk-delete', 'POST', { type, ids });
@@ -682,10 +646,12 @@ async function loadGameStatus() {
                     let bgColor = info.isBot ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)';
                     let borderColor = info.isBot ? 'var(--blue)' : 'var(--primary)';
                     let botBadge = info.isBot ? '<span style="font-size:10px; background:var(--blue); color:#fff; padding:1px 5px; border-radius:10px; margin-left:5px;">BOT</span>' : '';
+                    
+                    // ✅ 5ኛ: ለቦቶችም ጭምር View Cards እንዲኖር ተደርጓል
                     html += `<div style="background:${bgColor}; border:1px solid ${borderColor}; padding:10px; border-radius:8px; min-width:160px;">
                         <div style="font-weight:bold; font-size:14px; cursor:${info.isBot?'default':'pointer'};" ${!info.isBot ? `onclick="fetchAndOpenPlayer('${userId}')"` : ''}><i class="fas fa-user"></i> ${escapeHtml(info.name)} ${botBadge}</div>
                         <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">${info.cards.length} Cards</div>
-                        ${!info.isBot ? `<button class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center;" onclick="viewCardsDirect('${userId}', '${escapeHtml(info.name)}')"><i class="fas fa-eye"></i> View Cards</button>` : ''}
+                        <button class="btn btn-primary btn-sm" style="margin-top: 8px; width: 100%; justify-content: center;" onclick="viewCardsDirect('${userId}', '${escapeHtml(info.name)}')"><i class="fas fa-eye"></i> View Cards</button>
                     </div>`;
                 });
                 plist.innerHTML = html;
@@ -743,6 +709,12 @@ async function fetchAndOpenPlayer(id) {
             document.getElementById('p-wins').innerText = p.total_wins || 0;
             document.getElementById('p-joined').innerText = new Date(p.registered_at).toLocaleDateString();
             document.getElementById('p-referrer').innerText = p.referred_by || 'None';
+            
+            // ✅ 2ኛ: አዲስ የተጨመሩ መረጃዎች
+            document.getElementById('p-total-deposit').innerText = Number(p.totalDeposit || 0).toFixed(2) + ' ETB';
+            document.getElementById('p-total-withdraw').innerText = Number(p.totalWithdraw || 0).toFixed(2) + ' ETB';
+            document.getElementById('p-total-refs').innerText = p.totalReferrals || 0;
+
             document.getElementById('player-overlay').classList.add('active'); document.getElementById('player-panel').classList.add('active');
         }
     } catch(e) {}
@@ -767,12 +739,21 @@ async function deletePlayerProfile() {
     try { const res = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}`, 'DELETE'); if (res.success) { showToast('Player deleted!'); closePlayerPanel(); if(currentPage === 'users') loadPlayers(); else if(currentPage === 'game') loadGameStatus(); } } catch (e) { showToast('Server Error', true); }
 }
 
+// ✅ 1ኛ: የባላንስ ማስተካከያ (ወደ ነበረበት እንዳይመለስ ተስተካክሏል)
 async function editPlayerBalance() {
     if(!currentSelectedPlayer) return;
     let np = prompt("New Play Balance:", currentSelectedPlayer.play_balance); if(np===null) return;
     let nw = prompt("New Win Balance:", currentSelectedPlayer.win_balance); if(nw===null) return;
-    try { const r = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', {play_balance:Number(np), win_balance:Number(nw)}); if(r.success) { showToast('Updated'); fetchAndOpenPlayer(currentSelectedPlayer.id); if(currentPage === 'users') loadPlayers(); } } catch(e){}
+    try { 
+        const r = await apiFetch(`/api/admin/users/${currentSelectedPlayer.id}/balance`, 'POST', {play_balance:Number(np), win_balance:Number(nw)}); 
+        if(r.success) { 
+            showToast('Updated'); 
+            await fetchAndOpenPlayer(currentSelectedPlayer.id); // ዳታውን እንደገና ጫን
+            if(currentPage === 'users') loadPlayers(); 
+        } 
+    } catch(e){}
 }
+
 async function deletePlayerDirect(id, name) { if(!confirm(`Delete ${name}?`)) return; try { const r = await apiFetch(`/api/admin/users/${id}`, 'DELETE'); if(r.success) { showToast('Deleted'); loadPlayers(); } } catch(e){} }
 
 async function loadPlayers() {

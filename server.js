@@ -121,15 +121,9 @@ async function sendTelegramMessage(chatId, text, parseMode = 'HTML') {
             body: JSON.stringify({ chat_id: String(chatId), text: text, parse_mode: parseMode })
         });
         const data = await response.json();
-        if (!data.ok) {
-            console.error(`❌ Telegram send failed for ${chatId}:`, data.description);
-            return false;
-        }
+        if (!data.ok) return false;
         return true;
-    } catch (err) {
-        console.error(`❌ Telegram send error for ${chatId}:`, err.message);
-        return false;
-    }
+    } catch (err) { return false; }
 }
 
 function verifyTelegramInitData(initData, botToken) {
@@ -468,7 +462,6 @@ app.post('/api/admin/auto-game', adminAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// ✅ 1ኛ እና 3ኛ: DASHBOARD REPORT + NOTIFICATIONS (አሁን የገንዘብ መጠንም ይመልሳል)
 app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
     try {
         const now = new Date();
@@ -481,7 +474,7 @@ app.get('/api/admin/dashboard', adminAuth, async (req, res) => {
             depAgg, wdAgg,
             dailyDep, dailyWd, weeklyDep, weeklyWd, monthlyDep, monthlyWd,
             newUsersCount,
-            pendingDepositAmount, pendingWithdrawalAmount // ✅ አዲስ የተጨመረ
+            pendingDepositAmount, pendingWithdrawalAmount
         ] = await Promise.all([
             User.countDocuments(), 
             Transaction.countDocuments({ type: 'deposit', status: 'pending' }), 
@@ -523,8 +516,25 @@ app.get('/api/admin/users', adminAuth, async (req, res) => {
     catch (e) { res.status(500).json({ success: false }); }
 });
 
+// ✅ 2ኛ: የተጫዋች ዝርዝር መረጃ (ዲፖዚት፣ ዊዝድራው፣ ሪፈራል ቆጣሪ ተጨምሯል)
 app.get('/api/admin/users/:id', adminAuth, async (req, res) => {
-    try { const user = await User.findOne({ id: req.params.id }).lean(); if (!user) return res.status(404).json({ success: false }); res.json({ success: true, data: user }); }
+    try { 
+        const user = await User.findOne({ id: req.params.id }).lean(); 
+        if (!user) return res.status(404).json({ success: false }); 
+        
+        const depAgg = await Transaction.aggregate([{ $match: { user_id: String(user.id), type: 'deposit', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+        const wdAgg = await Transaction.aggregate([{ $match: { user_id: String(user.id), type: 'withdrawal', status: 'approved' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+        const refCount = await User.countDocuments({ referred_by: String(user.id) });
+
+        const userData = {
+            ...user,
+            totalDeposit: depAgg[0]?.total || 0,
+            totalWithdraw: wdAgg[0]?.total || 0,
+            totalReferrals: refCount
+        };
+
+        res.json({ success: true, data: userData }); 
+    }
     catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -588,6 +598,55 @@ app.post('/api/admin/transactions/:id/reject', adminAuth, async (req, res) => {
             await sendTelegramMessage(txn.user_id, message);
         }
         res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ 1ኛ: ባላንስ በአድሚን ሲቀየር በትክክል እንዲቀመጥ
+app.post('/api/admin/users/:id/balance', adminAuth, async (req, res) => {
+    try {
+        const { id } = req.params; const { play_balance, win_balance } = req.body;
+        const update = {};
+        if (typeof play_balance === 'number') update.play_balance = play_balance;
+        if (typeof win_balance === 'number') update.win_balance = win_balance;
+        const user = await User.findOneAndUpdate({ id: String(id) }, { $set: update }, { new: true, lean: true });
+        io.to(`user_${id}`).emit('wallet_updated', {});
+        res.json({ success: true, data: user });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ 3ኛ: ባላንስ በራሱ እንዳይጨምር የዕለት ቦነስ ሎጂክ ማስተካከል
+app.get('/api/wallet/me', async (req, res) => {
+    try {
+        const user = authFromHeaders(req);
+        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
+        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
+        const todayStr = new Date().toISOString().split('T')[0];
+        let dbUser = await User.findOne({ id: userId });
+        if (!dbUser) dbUser = new User({ id: userId });
+        
+        // የዕለት ቦነስ በቀን አንድ ጊዜ ብቻ እንዲሰጥ
+        if (dbUser.last_daily_bonus !== todayStr) {
+            dbUser.last_daily_bonus = todayStr;
+            dbUser.play_balance = (Number(dbUser.play_balance) || 0) + 5;
+            await dbUser.save();
+            io.to(`user_${userId}`).emit('daily_bonus_claimed', { amount: 5 });
+        }
+        res.json({ success: true, data: dbUser });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
+
+// ✅ 4ኛ: ዊዝድራው ሲጠየቅ ወዲያውኑ መቀነስ
+app.post('/api/wallet/withdraw-request', async (req, res) => {
+    try {
+        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
+        const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
+        if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
+        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
+        if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
+        const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
+        io.to(`user_${user.id}`).emit('wallet_updated', {});
+        res.json({ success: true, data: { txnId } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
@@ -715,24 +774,6 @@ app.post('/api/promo/claim', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-app.get('/api/wallet/me', async (req, res) => {
-    try {
-        const user = authFromHeaders(req);
-        if (!user && !req.headers['x-user-id']) return res.status(401).json({ success: false });
-        const userId = user ? String(user.id) : String(req.headers['x-user-id']);
-        const todayStr = new Date().toISOString().split('T')[0];
-        let dbUser = await User.findOne({ id: userId });
-        if (!dbUser) dbUser = new User({ id: userId });
-        if (dbUser.last_daily_bonus !== todayStr) {
-            dbUser.last_daily_bonus = todayStr;
-            dbUser.play_balance = (Number(dbUser.play_balance) || 0) + 5;
-            await dbUser.save();
-            io.to(`user_${userId}`).emit('daily_bonus_claimed', { amount: 5 });
-        }
-        res.json({ success: true, data: dbUser });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
 app.get('/api/wallet/history', async (req, res) => {
     try {
         const user = authFromHeaders(req); 
@@ -748,20 +789,6 @@ app.delete('/api/wallet/history/clear', async (req, res) => {
         const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
         await Transaction.deleteMany({ user_id: String(user.id) });
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ success: false }); }
-});
-
-app.post('/api/wallet/withdraw-request', async (req, res) => {
-    try {
-        const user = authFromHeaders(req); if (!user) return res.status(401).json({ success: false });
-        const amt = Number(req.body.amount); const phone = String(req.body.phone || '').trim();
-        if (!Number.isFinite(amt) || amt < 100) return res.status(400).json({ success: false, error: 'Min 100 ETB' });
-        const result = await User.findOneAndUpdate({ id: String(user.id), win_balance: { $gte: amt } }, { $inc: { win_balance: -amt } }, { new: true });
-        if (!result) return res.status(400).json({ success: false, error: 'Insufficient win balance' });
-        const txnId = 'wdr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-        await Transaction.create({ id: txnId, type: 'withdrawal', user_id: String(user.id), user_name: result.name || 'Unknown', amount: amt, method: 'telebirr', phone, status: 'pending', created: new Date().toISOString(), notified: false });
-        io.to(`user_${user.id}`).emit('wallet_updated', {});
-        res.json({ success: true, data: { txnId } });
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
